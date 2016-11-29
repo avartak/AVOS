@@ -22,9 +22,45 @@ BITS 16
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Kernel:
 
-	; The following code can be thought of as a code module that prints a string to screen
+	; We should initialize the segment registers to the base-address values that we want to use
+	; We should not assume the segment registers to be initialized in a certain way when we are handed control
+	; The segment registers known in 16-bit environment are : CS, DS, ES, SS
+	; Physical address given by reg:add combination is : [reg] x 0x100 + add
+	; This allows us to address a memory range starting from 0 to 0xFFFF00+0xFFFF
+	; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus can physically access
+	; By default the addresses beyond the 1 MB mark get looped baxck to 0
+	; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
+	; To enable access to this >1MB address space in real mode, we would need to enable the A20 line
+	; We will do this later
+	
+	; Now, we will just initialize the registers DS, ES to 0 
+
+	mov ax, 0
+	mov ds, ax
+	mov es, ax
+	
+	; We should also create a stack 
+	; Our OS is quite small, so let us set up the stack at 0x8000
+	; Let us be generous and allocate 4 KB to the stack
+	; This means putting 4096 in the stack pointer SP - remember the stack grows downwards 
+
+	mov ax, 0x8000
+	mov ss, ax
+	mov sp, 4096
+
+	; We now call the 'Print' function to display our welcome message (function defined later)
+	; After printing the welcome message the OS has performed its goal in life
+
+	call Print
+	cli                                       ; Clear all interrupts so that we won't be disturbed            
+	hlt                                       ; Halt the system	
+
+	; The Print function - displays a string on screen
 	; We will use the BIOS interrupt service routine 0x10 to do the printing
 
+Print:	
+	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
+	                                          ; This way we can restore their values after the function returns     
 	mov si, Welcome_Message	                  ; Load the string pointer into the SI register
 	mov ah, 0Eh		                  ; We want a teletype output - printing basic characters to the screen 
 	.printchar:                               ; We set up a loop here to print every single character
@@ -35,11 +71,8 @@ Kernel:
 		jmp .printchar                    ; Continue the printing loop
 
 	.done:                                    ; Printing is done
-
-	; The OS has performed its goal in life
-
-	cli                                       ; Clear all interrupts so that we won't be disturbed            
-	hlt                                       ; Halt the system	
+	popa                                      ; Restore the original state of the general-purpose registers 	
+	ret                                       ; Return control to the kernel
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
