@@ -28,10 +28,10 @@ Kernel:
 	; Physical address given by reg:add combination is : [reg] x 0x100 + add
 	; This allows us to address a memory range starting from 0 to 0xFFFF00+0xFFFF
 	; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus can physically access
-	; By default the addresses beyond the 1 MB mark get looped baxck to 0
+	; By default the addresses beyond the 1 MB mark get looped back to 0
 	; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
 	; To enable access to this >1MB address space in real mode, we would need to enable the A20 line
-	; We will do this later
+	; We will do that later
 	
 	; Now, we will just initialize the registers DS, ES to 0 
 
