@@ -3,7 +3,7 @@
 ; We start with the bootloader - and a very basic one
 ; Let us recall how we get here :
 ; - The PC BIOS initializes the machine
-; - It loads the boot sector (first 512 bytes) of the boot device into memory
+; - It loads the boot sector (first 512 bytes) of the boot device (in our case a floppy disk) into memory
 ; - The boot sector is loaded at memory location 0x7C00
 ; The bootloader is not equipped to perform complicated tasks due to its small size
 ; It uses the BIOS routines to load the OS kernel in memory and hands over the control of the machine to the kernel
@@ -58,34 +58,36 @@ Boot:
 	; We will use the BIOS interrupt routine 0x13 to load this sector at memory location 0x7E00 (just following this bootloader)
 	; We will first read the drive parameters using the 'GetDriveInfo' function
 	; We will then read the kernel from disk using the 'LoadKernel' function 
-	; Once the kernel is loaded to memory we will transfer control to it with a simple jump
+	; This kernel is dumb -- it contains no executable code, just a display string that the Print function will read and display
 
 	call GetDriveInfo
 	mov si, Kernel_Start                      ; LoadKernel function will copy the kernel image from disk to ES:SI
 	call LoadKernel
-	jmp Kernel_Start                          ; Jump to the location of the kernel in memory 
+	call Print                                ; Call Print function that displays the kernel message
+	cli                                       ; Clear all interrupts so that we won't be disturbed            
+	hlt                                       ; Halt the system	
 
 ; The GetDriveInfo function - obtain the drive parameters
 
 GetDriveInfo:
-        pusha                                     ; We start by pushing all the general-purpose registers onto the stack
+	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
 	                                          ; This way we can restore their values after the function returns 
 
 	; Get drive parameters so that we can read the kernel image
 	push es
-        mov ax, 0
+	mov ax, 0
 	mov es, ax
-        mov di, ax                                ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS
-        mov ah, 8                                 ; AH=8 tells the BIOS to read the drive parameters
-        int 0x13                                  ; INT 0x13 is all about I/O from disks
-        and cx, 0x3F                              ; Bits 0-5 of CX store the number of sectors per track
-        mov [Sectors_Per_Track], cx               ; Store this information in a variable
-        add dh, 1                                 ; Number of heads is stored in DH (numbering starts at 0, hence the increment)
-        mov [Sides], dh                           ; Store this information in a variable
+	mov di, ax                                ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS
+	mov ah, 8                                 ; AH=8 tells the BIOS to read the drive parameters
+	int 0x13                                  ; INT 0x13 is all about I/O from disks
+	and cx, 0x3F                              ; Bits 0-5 of CX store the number of sectors per track
+	mov [Sectors_Per_Track], cx               ; Store this information in a variable
+	add dh, 1                                 ; Number of heads is stored in DH (numbering starts at 0, hence the increment)
+	mov [Sides], dh                           ; Store this information in a variable
 
 	pop es                                    ; Restore the ES register to its original state
-        popa                                      ; Restore the original state of the general-purpose registers
-        ret                                       ; Return control to the bootloader
+	popa                                      ; Restore the original state of the general-purpose registers
+	ret                                       ; Return control to the bootloader
 
 ; The LoadKernel function - load kernel image from disk to memory (ES:SI to be specific)
 ; We are missing some functionality here
@@ -93,9 +95,9 @@ GetDriveInfo:
 ; Also, who uses floppy disks anymore ? :) But ok, baby steps ...
 
 LoadKernel:
-        pusha                                     ; Push all the general-purpose registers onto the stack
+	pusha                                     ; Push all the general-purpose registers onto the stack
 
-        ; Reading the kernel image from disk (The kernel is just one sector long for now)
+	; Reading the kernel image from disk (The kernel is just one sector long for now)
 	; When need to use the CHS scheme when using INT 0x13 to read from disk
 	; The following relations give the conversion from LBA to CHS
 	; Temp     = LBA / (Sectors per Track) 
@@ -103,26 +105,68 @@ LoadKernel:
 	; Head     = Temp % (Number of Heads)
 	; Cylinder = Temp / (Number of Heads) 
 
-        mov ax, 1                                 ; Logical block address (LBA) of the sector to be read - starts from 0
-        mov dx, 0                                 ; 
-        div word [Sectors_Per_Track]              ; Division by a word --> dividend is DX (MSB) : AX (LSB)
+	mov ax, 1                                 ; Logical block address (LBA) of the sector to be read - starts from 0
+	mov dx, 0                                 ; 
+	div word [Sectors_Per_Track]              ; Division by a word --> dividend is DX (MSB) : AX (LSB)
 	                                          ; Result : Quotient --> AX ; Remainder --> DX						
 	add dx, 1                                 ; Sectors start at 1, hence we need to increment the remainder 
-        mov cl, dl                                ; Sector number on the track should be stored in CL
-        mov dx, 0                                 
-        div word [Sides]                          ; Divide the quotient (number of tracks) by the number of heads
-        mov ch, al                                ; The quotient is the cylinder which goes in CH
-        mov dh, dl                                ; The remainder is the head which should go in DH
+	mov cl, dl                                ; Sector number on the track should be stored in CL
+	mov dx, 0                                 
+	div word [Sides]                          ; Divide the quotient (number of tracks) by the number of heads
+	mov ch, al                                ; The quotient is the cylinder which goes in CH
+	mov dh, dl                                ; The remainder is the head which should go in DH
+	
+	mov dl, byte [bootdev]                    ; Drive ID in dl
+	
+	mov bx, si                                ; INT 0x13 will load the data from the disk at ES:BX
+	mov ah, 2                                 ; AH=2 tells the BIOS to read from the disk
+	mov al, 1                                 ; AL contains the numbers of sectors to be read out
+	int 0x13                                   
+	
+	popa                                      ; Restore the original state of the general-purpose registers
+	ret                                       ; Return control to the bootloader
 
-        mov dl, byte [bootdev]                    ; Drive ID in dl
+; The Print function - displays a string on screen
+; We will write directly to the video buffer
+; The function first clears the scree, then displays the welcome message
 
-        mov bx, si                                ; INT 0x13 will load the data from the disk at ES:BX
-        mov ah, 2                                 ; AH=2 tells the BIOS to read from the disk
-        mov al, 1                                 ; AL contains the numbers of sectors to be read out
-        int 0x13                                   
+Print:
+        pusha                                     ; We start by pushing all the general-purpose registers onto the stack
+                                                  ; This way we can restore their values after the function returns 
+        push es                                   ; Push the ES register onto the stack - we will use it to access the video memory
+        mov ax, 0xB800                            ; In the PC architecture the video buffer sits at 0xB8000
+        mov es, ax                                ; We put the ES segment at that location
+        mov di, 0                                 ; We start writing from the beginning of the video buffer
+        mov ax, 80                                ; There are 80 columns
+        mov bx, 25                                ; And 25 rows
+        mul bx                                    ; Total number of characters we can print: 80x25
+        mov cx, ax                                ; Set this number in the counter register - to be used for clearing the creen
 
-        popa                                      ; Restore the original state of the general-purpose registers
-        ret                                       ; Return control to the bootloader
+        .clearscreen:
+			xor ax, ax                            ; Clear the AX register
+			stosw                                 ; Store the contents of the AX register at ES:DI, and increment the value of DI
+			loop .clearscreen                     ; Loop as long as CX is non-zero (CX is decremented everytime loop is executed)
+
+		mov di, 0                                 ; Having cleared the screen, lets move to the beginning of the screen and display the welcome message
+		push ax
+		mov ax, 0
+		mov ds, ax
+		mov si, Kernel_Start                      ; Load the string pointer into the SI register
+		pop ax
+
+		.printchar:
+			lodsb                                 ; Load the byte from the address in SI into AL, then increment the address in SI
+			cmp al, 0                             ; Have we reached the end of the string ?
+			je .done                              ; If so, break out of the loop
+			mov ah, 0x0A                          ; We want to print characters in bright green - this is the color code
+			stosw                                 ; Store the AX register (color code + character) into the video buffer
+			jmp .printchar                        ; Continue the printing loop
+		.done:                                    ; Printing is done
+		
+		pop es                                    ; Restore the ES register back to its original segment address
+		popa                                      ; Restore the original state of the general-purpose registers
+		ret                                       ; Return control to the kernel
+
 
 
 Sectors_Per_Track dw 18
