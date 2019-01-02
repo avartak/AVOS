@@ -30,44 +30,23 @@ Kernel:
 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 
-	Call check_a20                            ; Check if A20 line is enabled
-	cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
-	jz  .printA20disabled
-	jmp .printA20enabled
+	call Switch_On_A20                        ; Check and enable A20
 
-	.printA20enabled:                         ; Print a message that the A20 line is enabled
-		mov si, A20_Enabled_Message
-		inc dl
-		inc dl
-		call Print 
-		jmp .halt                             ; Halt the machine -- we are done
+	hlt                                       ; Halt the system	
 
-	.printA20disabled:                        ; Print a message that the A20 line is disabled
-		mov si, A20_Disabled_Message
-		inc dl
-		inc dl
-		call Print 
-
-		mov si, A20_Enabling_Message          ; Print a message saying that we are trying to enable the A20 line
-		inc dl
-		inc dl
-		call Print 
-		mov ax, 0x2401                        ; This is the interrupt to enable the A20 line. 
-		int 0x15
-
-		Call check_a20                        ; Check again and print the A20 line status
-		cmp ax, 0
-		jnz .printA20enabled
-		mov si, A20_Enabled_Message
-		inc dl
-		inc dl
-		call Print 
-
-	.halt:
-		hlt                                   ; Halt the system	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-; Clear_Screen function clears the video buffer
+
+
+
+
+
+
+
+
+; Function: Clear_Screen
+; Clears the video buffer
 
 Clear_Screen:
     pusha                                     ; We start by pushing all the general-purpose registers onto the stack
@@ -94,7 +73,8 @@ Clear_Screen:
 
 
 
-; The Print function - displays a string whose addess is in SI on screen
+; Function: Print
+; Displays a string whose addess is in SI on screen
 ; We will write directly to the video buffer
 ; We will write to the line number stored in dl
 
@@ -125,16 +105,53 @@ Print:
 	ret                                       ; Return control to the kernel
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
 
 
 
+; Function: Switch_On_A20
+; Checks if A20 line is enabled, if not, tries to enable it once, and then checks again
+
+Switch_On_A20:
+	pusha
+
+    Call Check_A20                            ; Check if A20 line is enabled
+    cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
+    jne .printA20enabled
+    mov si, A20_Disabled_Message
+    inc dl
+    inc dl
+    call Print
+
+    mov si, A20_Enabling_Message              ; Print a message saying that we are trying to enable the A20 line
+    inc dl
+    inc dl
+    call Print
+    call Enable_A20_BIOS
+
+    Call Check_A20                            ; Check again and print the A20 line status
+    cmp ax, 0
+    jne .printA20enabled
+    mov si, A20_Enabled_Message
+    inc dl
+    inc dl
+    call Print
+
+    .printA20enabled:                         ; Print a message that the A20 line is enabled
+        mov si, A20_Enabled_Message
+        inc dl
+        inc dl
+        call Print
+
+	popa
+	ret
 
 ; The following code is public domain licensed
  
-; Function: check_a20
+; Function: Check_A20
 ;
 ; Purpose: to check the status of the A20 line in a completely self-contained state-preserving way.
 ;          The function can be modified as necessary by removing push's at the beginning and their
@@ -145,7 +162,7 @@ Print:
 
 
 
-check_a20:
+Check_A20:
     pushf
     push ds
     push es
@@ -181,11 +198,11 @@ check_a20:
     mov byte [es:di], al
  
     mov ax, 0                
-    je check_a20__exit       ; If A20 line is disabled store 0 in AX, else store 1 in AX
+    je .check_a20__exit      ; If A20 line is disabled store 0 in AX, else store 1 in AX
  
     mov ax, 1
  
-check_a20__exit:
+	.check_a20__exit:
     pop si
     pop di
     pop es
@@ -193,6 +210,20 @@ check_a20__exit:
     popf
  
     ret
+
+
+
+
+
+; Function to enable the A20 line
+
+Enable_A20_BIOS:
+	push ax
+	mov ax, 0x2401            ; This is the interrupt to enable the A20 line. 
+	int 0x15
+	pop ax
+	ret
+
 
 
 ; Welcome message of the kernel
