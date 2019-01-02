@@ -62,13 +62,13 @@ Print:
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
 	                                          ; This way we can restore their values after the function returns     
 	mov si, Welcome_Message	                  ; Load the string pointer into the SI register
-	mov ah, 0Eh		                  ; We want a teletype output - printing basic characters to the screen 
+	mov ah, 0Eh                               ; We want a teletype output - printing basic characters to the screen 
 	.printchar:                               ; We set up a loop here to print every single character
-		lodsb			          ; Load the byte from the address in SI into AL, then increment the address in SI
-		cmp al, 0                         ; Have we reached the end of the string ?
-		je .done		          ; If so, break out of the loop
-		int 10h                           ; Call the BIOS routine 0x10 to print the character stored in AL 
-		jmp .printchar                    ; Continue the printing loop
+		lodsb                                 ; Load the byte from the address in SI into AL, then increment the address in SI
+		cmp al, 0                             ; Have we reached the end of the string ?
+		je .done                              ; If so, break out of the loop
+		int 10h                               ; Call the BIOS routine 0x10 to print the character stored in AL 
+		jmp .printchar                        ; Continue the printing loop
 
 	.done:                                    ; Printing is done
 	popa                                      ; Restore the original state of the general-purpose registers 	
