@@ -33,7 +33,7 @@ Boot:
 	; By default the addresses beyond the 1 MB mark get looped back to 0
 	; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
 	; To enable access to this >1MB address space in real mode, we would need to enable the A20 line
-	; We will do that later
+	; Our kernel will, check the status of the A20 line and will try once to enable it in case it is disabled
 	
 	; Now, we will just initialize the registers DS, ES to 0 
 

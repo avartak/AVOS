@@ -16,40 +16,100 @@ times 512 db 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Kernel:
 
-	; We now call the 'Print' function to display our welcome message (function defined later)
-	; After printing the welcome message the OS has performed its goal in life
+	; This kernel prints a welcome message and then tests the status of the A20 line
+	; If the A20 line is disabled it makes one attempt to enable it and the tests again
+	; We first clear the screen by calling the 'Clear_Screen' function
+	; We then call the 'Print' function to display our welcome message
+	; We then test the status of the A20 line and print it on the screen
+	; After this the OS has performed its goal in life
 
+	call Clear_Screen                         ; Clears screen
+	mov dl, 0                                 ; On which line to print a message
+	mov si, Welcome_Message                   ; Load the pointer to the welcome message into SI
 	call Print
-	cli                                       ; Clear all interrupts so that we won't be disturbed            
-	hlt                                       ; Halt the system	
 
-; The Print function - displays a string on screen
+	cli                                       ; Clear all interrupts so that we won't be disturbed            
+
+	Call check_a20                            ; Check if A20 line is enabled
+	cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
+	jz  .printA20disabled
+	jmp .printA20enabled
+
+	.printA20enabled:                         ; Print a message that the A20 line is enabled
+		mov si, A20_Enabled_Message
+		inc dl
+		inc dl
+		call Print 
+		jmp .halt                             ; Halt the machine -- we are done
+
+	.printA20disabled:                        ; Print a message that the A20 line is disabled
+		mov si, A20_Disabled_Message
+		inc dl
+		inc dl
+		call Print 
+
+		mov si, A20_Enabling_Message          ; Print a message saying that we are trying to enable the A20 line
+		inc dl
+		inc dl
+		call Print 
+		mov ax, 0x2401                        ; This is the interrupt to enable the A20 line. 
+		int 0x15
+
+		Call check_a20                        ; Check again and print the A20 line status
+		cmp ax, 0
+		jnz .printA20enabled
+		mov si, A20_Enabled_Message
+		inc dl
+		inc dl
+		call Print 
+
+	.halt:
+		hlt                                   ; Halt the system	
+
+
+; Clear_Screen function clears the video buffer
+
+Clear_Screen:
+    pusha                                     ; We start by pushing all the general-purpose registers onto the stack
+                                              ; This way we can restore their values after the function returns 
+    push es                                   ; Push the ES register onto the stack - we will use it to access the video memory
+    mov ax, 0xB800                            ; In the PC architecture the video buffer sits at 0xB8000
+    mov es, ax                                ; We put the ES segment at that location
+
+    mov di, 0                                 ; We start writing from the beginning of the video buffer
+    mov ax, 80                                ; There are 80 columns
+    mov bx, 25                                ; And 25 rows
+    mul bx                                    ; Total number of characters we can print: 80x25
+    mov cx, ax                                ; Set this number in the counter register - to be used for clearing the creen
+
+    .clearscreen:
+        xor ax, ax                            ; Clear the AX register
+        stosw                                 ; Store the contents of the AX register at ES:DI, and increment the value of DI
+        loop .clearscreen                     ; Loop as long as CX is non-zero (CX is decremented everytime loop is executed)
+
+    pop es                                    ; Restore the ES register back to its original segment address
+    popa                                      ; Restore the original state of the general-purpose registers
+    ret                                       ; Return control to the kernel
+
+
+
+
+; The Print function - displays a string whose addess is in SI on screen
 ; We will write directly to the video buffer
-; The function first clears the screen, then displays the welcome message
+; We will write to the line number stored in dl
 
 Print:
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
 	                                          ; This way we can restore their values after the function returns 
-	push es                                   ; Push the ES register onto the stack - we will use it to access the video memory
-	mov ax, 0xB800                            ; In the PC architecture the video buffer sits at 0xB8000
-	mov es, ax                                ; We put the ES segment at that location
-	mov di, 0                                 ; We start writing from the beginning of the video buffer
-	mov ax, 80                                ; There are 80 columns
-	mov bx, 25                                ; And 25 rows
-	mul bx                                    ; Total number of characters we can print: 80x25
-	mov cx, ax                                ; Set this number in the counter register - to be used for clearing the creen
-	
-	.clearscreen:
-	    xor ax, ax                            ; Clear the AX register
-	    stosw                                 ; Store the contents of the AX register at ES:DI, and increment the value of DI
-	    loop .clearscreen                     ; Loop as long as CX is non-zero (CX is decremented everytime loop is executed)
-	
-	mov di, 0                                 ; Having cleared the screen, lets move to the beginning of the screen and display the welcome message
-	push ax
+    push es                                   ; Push the ES register onto the stack - we will use it to access the video memory
+    mov ax, 0xB800                            ; In the PC architecture the video buffer sits at 0xB8000
+    mov es, ax                                ; We put the ES segment at that location
+
 	mov ax, 0
-	mov ds, ax
-	mov si, Welcome_Message                   ; Load the string pointer into the SI register
-	pop ax
+	mov al, dl                                ; The line number is stored in dl
+	mov bx, 80                                ; Number of columns per line
+	mul bx                                    ; Get the character position to print the line
+	mov di, ax                                ; Store the character position in DI
 	
 	.printchar:
 	    lodsb                                 ; Load the byte from the address in SI into AL, then increment the address in SI
@@ -67,8 +127,85 @@ Print:
 
 
 
-; Starting point of the kernel
-Welcome_Message db 'Welcome to AVOS!', 0
+
+
+
+
+
+; The following code is public domain licensed
+ 
+; Function: check_a20
+;
+; Purpose: to check the status of the A20 line in a completely self-contained state-preserving way.
+;          The function can be modified as necessary by removing push's at the beginning and their
+;          respective pop's at the end if complete self-containment is not required.
+;
+; Returns: 0 in ax if the A20 line is disabled (memory wraps around)
+;          1 in ax if the A20 line is enabled (memory does not wrap around)
+
+
+
+check_a20:
+    pushf
+    push ds
+    push es
+    push di
+    push si
+ 
+    xor ax, ax               ; ax = 0x0000
+    mov es, ax               ; es = 0x0000
+ 
+    not ax                   ; ax = 0xFFFF
+    mov ds, ax               ; ds = 0xFFFF
+ 
+    mov di, 0x0500           ; ES:DI = 0x0000:0x0500
+    mov si, 0x0510           ; DS:SI = 0xFFFF:0x0510
+	                         ; If A20 line is disabled both these addresses will point to the same physical location
+ 
+    mov al, byte [es:di]     ; Push the contents of ES:DI to stack
+    push ax
+ 
+    mov al, byte [ds:si]     ; Push the contents of ES:DI to stack
+    push ax
+ 
+    mov byte [es:di], 0x00   ; Store 0x00 at ES:DI
+    mov byte [ds:si], 0xFF   ; Store 0xFF at DS:SI
+	                         ; If A20 line is disabled both ES:DI and DS:SI will contain 0xFF
+ 
+    cmp byte [es:di], 0xFF   ; Check if ES:DI contains 0xFF i.e. if A20 line is disabled
+ 
+    pop ax                   ; We are done, so restore the contents of ES:DI and DS:SI
+    mov byte [ds:si], al
+ 
+    pop ax
+    mov byte [es:di], al
+ 
+    mov ax, 0                
+    je check_a20__exit       ; If A20 line is disabled store 0 in AX, else store 1 in AX
+ 
+    mov ax, 1
+ 
+check_a20__exit:
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
+ 
+    ret
+
+
+; Welcome message of the kernel
+Welcome_Message      db 'Welcome to AVOS!', 0
+
+; Message saying A20 line is disabled
+A20_Enabled_Message  db 'A20 line is enabled', 0
+
+; Message saying A20 line is enabled
+A20_Disabled_Message db 'A20 line is disabled', 0
+
+; Message saying A20 line enabling in progess
+A20_Enabling_Message db 'Enabling the A20 line', 0
 
 ; Adding a zero padding to the boot sector
 times 1024-($-$$) db 0 
