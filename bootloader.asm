@@ -24,7 +24,7 @@ Kernel:
 
 	; The following code can be thought of as a code module that prints a string to screen
 	; We will use the BIOS interrupt service routine 0x10 to do the printing
-
+	
 	mov si, Welcome_Message	                  ; Load the string pointer into the SI register
 	mov ah, 0Eh                               ; We want a teletype output - printing basic characters to the screen 
 	.printchar:                               ; We set up a loop here to print every single character
@@ -33,11 +33,11 @@ Kernel:
 		je .done                              ; If so, break out of the loop
 		int 10h                               ; Call the BIOS routine 0x10 to print the character stored in AL 
 		jmp .printchar                        ; Continue the printing loop
-
+	
 	.done:                                    ; Printing is done
-
+	
 	; The OS has performed its goal in life
-
+	
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 	hlt                                       ; Halt the system	
 
