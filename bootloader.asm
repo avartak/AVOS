@@ -46,7 +46,7 @@ Boot:
 	; Let us be generous and allocate 4 KB to the stack
 	; This means putting 4096 in the stack pointer SP - remember the stack grows downwards 
 
-	mov ax, 0x8000
+	mov ax, 0x9000
 	mov ss, ax
 	mov sp, 4096
 

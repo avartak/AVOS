@@ -6,7 +6,7 @@
 ORG 0x7C00
 
 ; We are still in real mode
-BITS 16
+[BITS 16]
 
 ; The first 512 bytes will be replaced in the disk image by the bootloader code
 times 512 db 0
@@ -25,19 +25,22 @@ Kernel:
 
 	call Clear_Screen                         ; Clears screen
 	mov dl, 0                                 ; On which line to print a message
-	mov si, Welcome_Message                   ; Load the pointer to the welcome message into SI
+	mov si, Welcome_Message_RM                ; Load the pointer to the welcome message into SI
 	call Print
 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 
 	call Switch_On_A20                        ; Check and enable A20
 
-	hlt                                       ; Halt the system	
+	lgdt [GDT_Desc]                           ; Load the GDT
+
+	mov eax, cr0                              ; Enter protected mode
+	or eax, 1
+	mov cr0, eax
+
+	jmp CODE_SEG:Enter32                      ; Make a far jump
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
 
 
 
@@ -87,7 +90,7 @@ Print:
 
 	mov ax, 0
 	mov al, dl                                ; The line number is stored in dl
-	mov bx, 80                                ; Number of columns per line
+	mov bx, 160                               ; Number of columns per line
 	mul bx                                    ; Get the character position to print the line
 	mov di, ax                                ; Store the character position in DI
 	
@@ -105,6 +108,39 @@ Print:
 	ret                                       ; Return control to the kernel
 
 
+
+
+; Function: Print32
+; 32-bit equivalent of the Print function
+
+[BITS 32]
+
+Print32:
+    pusha                                     ; We start by pushing all the general-purpose registers onto the stack
+                                              ; This way we can restore their values after the function returns 
+	mov eax, 0
+    mov al, dl                                ; The line number is stored in dl
+    mov bx, 160                               ; Number of columns per line
+    mul bx                                    ; Get the character position to print the line
+	mov ebx, 0xB8000                          ; Address of the video buffer
+	add eax, ebx
+    mov edi, eax                              ; Store the character position in DI
+
+    .printchar:
+        lodsb                                 ; Load the byte from the address in SI into AL, then increment the address in SI
+        cmp al, 0                             ; Have we reached the end of the string ?
+        je .done                              ; If so, break out of the loop
+        mov ah, 0x0A                          ; We want to print characters in bright green - this is the color code
+        stosw                                 ; Store the AX register (color code + character) into the video buffer
+        jmp .printchar                        ; Continue the printing loop
+    .done:                                    ; Printing is done
+
+    popa                                      ; Restore the original state of the general-purpose registers
+    ret                                       ; Return control to the kernel
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -115,6 +151,8 @@ Print:
 ; Function: Switch_On_A20
 ; Checks if A20 line is enabled, if not, tries to enable it once, and then checks again
 
+[BITS 16]
+
 Switch_On_A20:
 	pusha
 
@@ -123,11 +161,9 @@ Switch_On_A20:
     jne .printA20enabled
     mov si, A20_Disabled_Message
     inc dl
-    inc dl
     call Print
 
     mov si, A20_Enabling_Message              ; Print a message saying that we are trying to enable the A20 line
-    inc dl
     inc dl
     call Print
     call Enable_A20_BIOS
@@ -137,16 +173,16 @@ Switch_On_A20:
     jne .printA20enabled
     mov si, A20_Enabled_Message
     inc dl
-    inc dl
     call Print
 
     .printA20enabled:                         ; Print a message that the A20 line is enabled
         mov si, A20_Enabled_Message
         inc dl
-        inc dl
         call Print
 
+	mov [Ln], dl                              ; Increments to dl will get lost after popping -- store dl value in memory
 	popa
+	mov dl, [Ln]                              ; Retrieve line number 
 	ret
 
 ; The following code is public domain licensed
@@ -224,10 +260,107 @@ Enable_A20_BIOS:
 	pop ax
 	ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-; Welcome message of the kernel
-Welcome_Message      db 'Welcome to AVOS!', 0
+
+
+
+
+
+; Global Descriptor Table
+; 8-byte entries for each segemnt type
+; First entry is default, contains all zeroes
+; For details on segment descriptors see : https://wiki.osdev.org/Global_Descriptor_Table
+
+GDT_Start:
+GDT_Null:
+    dw 0x0000
+    dw 0x0000
+    db 0x00
+    db 0x00
+    db 0x00
+    db 0x00
+GDT_Code:
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    db 0x9A
+    db 0xCF
+    db 0x00
+GDT_Data:
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    db 0x92
+    db 0xCF
+    db 0x00
+GDT_Stack:
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    db 0x96
+    db 0xCF
+    db 0x00
+GDT_End:
+
+GDT_Desc:
+   dw GDT_End - GDT_Start - 1
+   dd GDT_Start
+
+CODE_SEG  equ GDT_Code  - GDT_Start
+DATA_SEG  equ GDT_Data  - GDT_Start
+STACK_SEG equ GDT_Stack - GDT_Start
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+
+
+; Entering protected mode from a far jump
+
+[BITS 32]
+
+Enter32:
+	mov ax, DATA_SEG
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ax, STACK_SEG
+	mov ss, ax
+
+	mov esp, 0x90000
+
+	inc dl
+	mov esi, Welcome_Message_PM
+	call Print32
+
+	hlt                                       ; Halt the system	
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+
+
+
+
+; Welcome message for the OS in real mode
+Welcome_Message_RM   db 'Welcome to AVOS (Real mode)!', 0
+
+; Welcome message for the OS in the protected mode
+Welcome_Message_PM   db 'Welcome to AVOS (Protected mode)!', 0
 
 ; Message saying A20 line is disabled
 A20_Enabled_Message  db 'A20 line is enabled', 0
@@ -237,6 +370,9 @@ A20_Disabled_Message db 'A20 line is disabled', 0
 
 ; Message saying A20 line enabling in progess
 A20_Enabling_Message db 'Enabling the A20 line', 0
+
+; Byte to store the screen line number 
+Ln db 0
 
 ; Adding a zero padding to the boot sector
 times 1024-($-$$) db 0 
