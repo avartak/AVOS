@@ -104,7 +104,8 @@ Enter32:
 	mov ax, STACK_SEG
 	mov ss, ax
 
-	mov esp, 0x90000
+	mov ebp, 0x90000
+	mov esp, ebp
 
 	mov cl, 0x0A
 	inc dl
