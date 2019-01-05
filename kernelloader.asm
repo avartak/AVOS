@@ -138,9 +138,6 @@ Enter32:
     mov ax, STACK_SEG
     mov ss, ax
 
-    mov ebp, 0x200000                          ; Lets put the stack at 2 MB physical address
-    mov esp, ebp
-
 	jmp CODE_SEG:0x100000
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

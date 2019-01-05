@@ -11,4 +11,4 @@ dd conv=notrunc if=bootloader.bin of=avos.flp
 
 # Delete the binary file - we don't need it anymore
 # If you feel like it, comment the line below and keep the binary file
-rm *.bin
+#rm *.bin
