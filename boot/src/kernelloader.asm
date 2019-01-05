@@ -101,43 +101,43 @@ EnterUnreal:
 	mov bx, DATA_SEG                          ; We will update the DS and ES segment register to 32-bit mode
 	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
 	mov es, bx                                ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is
-
+	
 	and al,0xFE                               ; Switch back to real mode
 	mov cr0, eax
-
+	
 	mov ax, 0                                 ; Set the DS, ES segment address to 0x0
 	mov ds, ax
 	mov es, ax
-
+	
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
-
-    call GetFloppyInfo                        ; Load the kernel at 0x100000
+	
+	call GetFloppyInfo                        ; Load the kernel at 0x100000
 	mov ax, 3
 	mov dl, 1
 	mov esi, 0x8000
 	mov edi, 0x100000
-    call ReadAndMove	
-
-    cli                                       ; Clear all interrupts as we now enter the protected mode for good           
-
-    mov eax, cr0                              ; Enter protected mode
-    or eax, 1
-    mov cr0, eax
-
-    jmp CODE_SEG:Enter32                      ; Make a far jump this time to update the code segment to 32-bit 
+	call ReadAndMove	
+	
+	cli                                       ; Clear all interrupts as we now enter the protected mode for good           
+	
+	mov eax, cr0                              ; Enter protected mode
+	or eax, 1
+	mov cr0, eax
+	
+	jmp CODE_SEG:Enter32                      ; Make a far jump this time to update the code segment to 32-bit 
 
 [BITS 32]
 
 Enter32:
 
-    mov ax, DATA_SEG
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ax, STACK_SEG
-    mov ss, ax
-
+	mov ax, DATA_SEG
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ax, STACK_SEG
+	mov ss, ax
+	
 	jmp CODE_SEG:0x100000
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
