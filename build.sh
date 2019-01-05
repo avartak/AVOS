@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# First we create the binary image of the OS
-# Our OS is written in NASM assembly code
-nasm -f bin -o bootloader.bin bootloader.asm
-nasm -f bin -o kernel.bin kernel.asm
+nasm -f bin   -o bootloader.bin bootloader.asm
+nasm -f elf32 -o start.o        start.asm
+
+gcc --target=i386-jos-elf -ffreestanding -o kmain.o -c kmain.c
+i386-elf-ld -m elf_i386 -T linker.ld -o kernel.bin start.o kmain.o
 
 # Create a floppy image that can be run using QEMU
 dd conv=notrunc if=kernel.bin of=avos.flp seek=3
 dd conv=notrunc if=bootloader.bin of=avos.flp
 
-# Delete the binary file - we don't need it anymore
-# If you feel like it, comment the line below and keep the binary file
-#rm *.bin
+rm *.bin *.o
