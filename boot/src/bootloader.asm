@@ -70,7 +70,7 @@ Boot:
 
 	jmp Kernel_Loader
 
-%include "biosio.asm"
+%include "boot/src/biosio.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -85,4 +85,4 @@ dw 0xAA55
 
 ; Start of the kernel loader 
 ; Kernel_Loader:
-%include "kernelloader.asm"
+%include "boot/src/kernelloader.asm"
