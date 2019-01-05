@@ -40,10 +40,10 @@ void print(const char* str, char attr, int line, int pos) {
 
 void kmain() {
 
-    char str[] = "Welcome to AVOS!";
-    char attr  = 0x04;
-    int  line  = 0;
-	int   pos  = 32; 
+    char*  str  = "Welcome to AVOS!";
+    char  attr  = 0x04;
+    int   line  = 0;
+	int    pos  = 32; 
 
 	cls();
     
