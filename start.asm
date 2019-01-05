@@ -1,3 +1,10 @@
+section .bss
+align 16
+stack_bottom:
+resb 16384
+stack_top:
+ 
+
 section .text
 global start
 start:
@@ -12,9 +19,3 @@ start:
 	jmp .hang
 .end:
 
-section .bss
-align 16
-stack_bottom:
-resb 16384
-stack_top:
- 
