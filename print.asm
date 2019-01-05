@@ -8,16 +8,14 @@ Clear_Screen:
     pusha                                     ; We start by pushing all the general-purpose registers onto the stack
                                               ; This way we can restore their values after the function returns 
 
-    mov edi, 0xB8000                          ; We start writing from the beginning of the video buffer
-    mov ax, 80                                ; There are 80 columns
-    mov bx, 25                                ; And 25 rows
-    mul bx                                    ; Total number of characters we can print: 80x25
-    mov cx, ax                                ; Set this number in the counter register - to be used for clearing the creen
+	mov eax, 0xB8000
+    mov edi, eax                              ; We start writing from the beginning of the video buffer
+    mov ecx, 0x7D0                            ; 80x25 --> Number of characters displayed on the teletype
 
     .clearscreen:
         xor ax, ax                            ; Clear the AX register
         stosw                                 ; Store the contents of the AX register at ES:DI, and increment the value of DI
-        loop .clearscreen                     ; Loop as long as CX is non-zero (CX is decremented everytime loop is executed)
+		loop .clearscreen
 
     popa                                      ; Restore the original state of the general-purpose registers
     ret                                       ; Return control to the kernel

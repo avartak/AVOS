@@ -7,7 +7,7 @@
 ; - The boot sector is loaded at memory location 0x7C00
 ; The bootloader is not equipped to perform complicated tasks due to its small size
 ; It uses the BIOS routines to load the OS kernel in memory and hands over the control of the machine to the kernel
-; Our bootloader will load a very rudimentary 16-bit kernel that will print a welcome message on the screen
+; Our bootloader will load a very rudimentary 32-bit kernel at physical memory 0x100000 that will print a welcome message on the screen
 
 ; We need to tell the assembler the memory location at which the bootloader code will be placed
 ; This will help the assembler to translate the labels in our code to the correct memory locations
@@ -33,8 +33,8 @@ Boot:
 	; By default the addresses beyond the 1 MB mark get looped back to 0
 	; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
 	; To enable access to this >1MB address space in real mode, we would need to enable the A20 line
-	; Our kernel will, check the status of the A20 line and will try once to enable it in case it is disabled
-	
+	; We will then load the kernel loader that will enable the A20 line, enter the "unreal" mode in order to load the kernel at 0x100000 using BIOS (this is a way to access memory beyond 1 MB and still use BIOS routines)	
+
 	; Now, we will just initialize the registers DS, ES to 0 
 
 	mov ax, 0
@@ -50,43 +50,29 @@ Boot:
 	mov ss, ax
 	mov sp, 4096
 
-	; Welcome from the boot loader
-	call Clear_Screen_Boot                    ; Clears screen
-	mov cl, 0x0F                              ; Font attribute -- white color 
-	mov dl, 0                                 ; On which line to print a message
-	mov si, Boot_Message                      ; Load the pointer to the welcome message into SI
-	call Print_Boot
-	inc dl
-
-	; We will now load the kernel to memory
+	; We will now load the kernel loader to memory
 	; We adopt an overly simplistic approach
 	; We assume that 
 	; 1) a floppy disk is being used for booting
-	; 2) the kernel image is sitting in the second sector of that disk 
-	; We will use the BIOS interrupt routine 0x13 to load this sector at memory location 0x7E00 (just following this bootloader)
-	; We will first read the drive parameters using the 'GetDriveInfo' function
-	; We will then read the kernel from disk using the 'LoadKernel' function 
-	; We will lastly enable the A20 line and jump to the kernel
+	; 2) The kernel loader image is sitting in the second sector of that disk 
+	; 3) The kernel itself is sitting on the 4th sector of the disk
+	; We will use the BIOS interrupt routine 0x13 to load the kernel loader at memory location 0x7E00 (just following this bootloader)
+	; We will first read the drive parameters using the 'GetFloppyInfo' function
+	; We will then read the kernel loader from disk using the 'LoadKernel' function 
+	; The kernel loader will enable the A20 line, switch to unreal mode, load the kernel, switch to protected mode and jump to the kernel
 	; This kernel is our first executable kernel. It prints a welcome message
 
-	call GetDriveInfo
-	mov si, Kernel_Start                      ; LoadKernel function will copy the kernel image from disk to ES:SI
-	call LoadKernel
+	call GetFloppyInfo
+	mov si, Kernel_Loader                     ; LoadKernel function will copy the kernel image from disk to ES:SI
+	mov ax, 1
+	mov bl, 2
+	call ReadFromDisk
 
-	cli                                       ; Clear all interrupts so that we won't be disturbed            
-	call Switch_On_A20                        ; Check and enable A20
-	sti                                       ; Re-enable interrupts
+	jmp Kernel_Loader
 
-	jmp Kernel_Start
-
-%include "bootprint.asm"
-%include "bootio.asm"
-%include "a20.asm"
+%include "biosio.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Welcome message for the OS in real mode
-Boot_Message         db '                         Preparting to load the AVOS kernel', 0
 
 ; Adding a zero padding to the boot sector
 
@@ -97,5 +83,6 @@ times 510-($-$$) db 0
 
 dw 0xAA55
 
-; Start of the kernel code 
-Kernel_Start:
+; Start of the kernel loader 
+; Kernel_Loader:
+%include "kernelloader.asm"

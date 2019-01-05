@@ -5,34 +5,18 @@ Switch_On_A20:
 
     Call Check_A20                            ; Check if A20 line is enabled
     cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
-    jne .printA20enabled
-    mov si, A20_Disabled_Message
-	mov cl, 0x0A
-    inc dl
-    call Print_Boot
+    jne .a20enabled
 
-    mov si, A20_Enabling_Message              ; Print a message saying that we are trying to enable the A20 line
-    inc dl
-    call Print_Boot
-    call Enable_A20_BIOS
+    Call Enable_A20_BIOS                      ; Enable the A20 line
 
     Call Check_A20                            ; Check again and print the A20 line status
-    cmp ax, 0
-    jne .printA20enabled
-    mov si, A20_Enabled_Message
-	mov cl, 0x0A
-    inc dl
-    call Print_Boot
+    cmp ax, 0                                 ; Check again
+    jne .a20enabled
 
-    .printA20enabled:                         ; Print a message that the A20 line is enabled
-        mov si, A20_Enabled_Message
-		mov cl, 0x0A
-        inc dl
-        call Print_Boot
+	hlt                                       ; If the A20 is still not enabled stop here -- this should be refined
 
-	mov [Ln], dl                              ; Increments to dl will get lost after popping -- store dl value in memory. Find a cleaner way to do this
+	.a20enabled:
 	popa
-	mov dl, [Ln]                              ; Retrieve line number 
 	ret
 
 
@@ -114,20 +98,4 @@ Enable_A20_BIOS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-
-
-
-
-; Message saying A20 line is disabled
-A20_Enabled_Message  db '[OK]      A20 line is enabled', 0
-
-; Message saying A20 line is enabled
-A20_Disabled_Message db '[Not OK]  A20 line is disabled', 0
-
-; Message saying A20 line enabling in progess
-A20_Enabling_Message db '[Working] Enabling the A20 line', 0
-
-; Byte to store the screen line number 
-Ln db 0
 
