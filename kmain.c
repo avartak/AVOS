@@ -24,14 +24,16 @@ void cls() {
 
 }
 
-void print(const char* str, char attr, int line) {
+void print(const char* str, char attr, int line, int pos) {
 
     char* video_memory = (char*)0xb8000;
 
+	int startpos = (line*80 + pos)*2;
+
     int i = 0;
     while (str[i] != 0) {
-        video_memory[line*80*2 + 2*i]   = str[i];
-        video_memory[line*80*2 + 2*i+1] = attr;
+        video_memory[startpos + 2*i]   = str[i];
+        video_memory[startpos + 2*i+1] = attr;
         i++;
     }
 }
@@ -41,10 +43,11 @@ void kmain() {
     char str[] = "Welcome to AVOS!";
     char attr  = 0x04;
     int  line  = 0;
+	int   pos  = 32; 
 
 	cls();
     
-	print(str, attr, line);
+	print(str, attr, line, pos);
 
     return;
 }
