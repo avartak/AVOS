@@ -1,5 +1,5 @@
-#ifndef MEMORY_DRIVER_H
-#define MEMORY_DRIVER_H
+#ifndef MEMORY_CSUPPORT_H
+#define MEMORY_CSUPPORT_H
 
 void* memcpy (void*, const void*, unsigned);
 

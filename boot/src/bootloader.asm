@@ -1,21 +1,21 @@
-; We are creating a very simple operating system - AVOS
-; It's aim in life is to print a welcome message and then halt the system
-; We start with the bootloader - and a very basic one
-; Let us recall how we get here :
-; - The PC BIOS initializes the machine
-; - It loads the boot sector (first 512 bytes) of the boot device (in our case a floppy disk) into memory
-; - The boot sector is loaded at memory location 0x7C00
-; The bootloader is not equipped to perform complicated tasks due to its small size
-; It uses the BIOS routines to load the OS kernel in memory and hands over the control of the machine to the kernel
-; Our bootloader will load a very rudimentary 32-bit kernel at physical memory 0x100000 that will print a welcome message on the screen
+; Master boot record (MBR) of the boot loader for AVOS
+; This is a single sector (exactly 512 B) of code loaded from the first sector of the boot drive
+; The last word of this sector has to be 0xAA55 -- this is the boot signature
+; The BIOS will look for this signature and then load the 512 B at the memory location 0x7C00
+; We need to tell the assembler (NASM) that all labels need to be based relative to 0x7C00 when it produces a binary for this sector
+; This is specified by the ORG command below 
 
-; We need to tell the assembler the memory location at which the bootloader code will be placed
-; This will help the assembler to translate the labels in our code to the correct memory locations
+; First let us include some definitions of constants (the constants themselves are described in comments)
 
-ORG 0x7C00
+%include "boot/src/defs.asm"
 
-; We start in the REAL mode - effectively our system resembles the 16-bit 8086 ancestors
-; We need to tell the assembler to produce 16-bit instructions
+; Tell NASM that the code will be loaded at 0x7C00
+
+ORG START_BOOT1
+
+; The x86 system always starts in the REAL mode
+; This is the 16-bit mode without any of the protected mode features
+; We need to tell the assembler to produce 16-bit code
 
 BITS 16
 
@@ -27,62 +27,92 @@ Boot:
 	; We should initialize the segment registers to the base-address values that we want to use
 	; We should not assume the segment registers to be initialized in a certain way when we are handed control
 	; The segment registers known in 16-bit environment are : CS, DS, ES, SS
-	; Physical address given by reg:add combination is : [reg] x 0x100 + add
-	; This allows us to address a memory range starting from 0 to 0xFFFF00+0xFFFF
+	; Physical address given by reg:add combination is : [reg] x 0x10 + add
+	; This allows us to address a memory range starting from 0 to 0xFFFF0+0xFFFF
 	; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus can physically access
 	; By default the addresses beyond the 1 MB mark get looped back to 0
 	; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
-	; To enable access to this >1MB address space in real mode, we would need to enable the A20 line
-	; We will then load the kernel loader that will enable the A20 line, enter the "unreal" mode in order to load the kernel at 0x100000 using BIOS (this is a way to access memory beyond 1 MB and still use BIOS routines)	
+	; To enable access to this >1MB address space, we would need to enable the A20 line
+	; This will be done later
 
-	; Now, we will just initialize the registers DS, ES to 0 
+	; Now, this is how the 'bootstrap' will happen
+	; The 512 B available here are too few to do much in terms of loading an OS
+	; Instead the code in the boot sector will simply load 8 KB from the floppy drive (specifically, logical address of 4 KB - 12 KB on the floppy drive) to the memory location 0x8000
+	; This is meant to be the 2nd stage of the boot process. It's a loader that will set up the 32-bit system (protected mode) and load the 3rd stage 
+	; The 3rd stage is an 8 KB, 32-bit code that will set up paging, load the kernel at 1 MB physical address, and map it to 3 GB virtual address, and then launch the kernel
+	; The third stage is copied from logical address 12 KB - 20 KB of the floppy drive to memory location 0xA000
+	; The kernel is assumed to be 1 MB of code starting at 20 KB logical address on the floppy
 
-	mov ax, 0
+	; For now the three stages of the bootstrap will only perform the minimal tasks highlighted above and launch the kernel
+	; There remains a lot of room for running a more sophisticated boot in the 16-bit and 32-bit environments if needed -- assuming 8 KB is sufficient for that purpose
+	; Take note of the mapping of the first MB of the physical memory in the PC architecture. 
+
+	; 0x000000 - 0x000400 : Interrupt Vector Table  
+	; 0x000400 - 0x000500 : BIOS data area          
+	; 0x000500 - 0x007C00 : Free area         
+	; 0x007C00 - 0x007E00 : Boot sector             
+	; 0x007E00 - 0x09FC00 : Free area               
+	; 0x09FC00 - 0x0A0000 : Extended bios data area 
+	; 0x0A0000 - 0x0C0000 : Video memory            
+	; 0x0C0000 - 0x100000 : BIOS            
+
+	; As mentioned above our three stages of bootstrap will reside in :
+	; 0x007C00 - 0x007E00
+	; 0x008000 - 0x00A000
+	; 0x00A000 - 0x00C000
+
+	; There is an 8 KB stack set up at :
+	; 0x00C000 - 0x00E000
+
+	; There is some scratch space of 4 KB
+	; 0x00E000 - 0x00F000
+
+	; There is 4 KB space for the GDT and IDT
+	; 0x00F000 - 0x010000
+
+	; Finally, we will need some space (8 KB to be precise) to put the paging tables required to set up the higher half kernel
+	; 0x10000  - 0x12000
+
+	; So, lets set up the segment registers -- DS, ES at 0, and SS at 0xC00, and the stack pointer (SP) at 0x2000
+
+	mov ax, SEG_DS16
 	mov ds, ax
+	mov ax, SEG_ES16
 	mov es, ax
-	
-	; We should also create a stack 
-	; Our OS is quite small, so let us set up the stack at 0x8000
-	; Let us be generous and allocate 4 KB to the stack
-	; This means putting 4096 in the stack pointer SP - remember the stack grows downwards 
-
-	mov ax, 0x9000
+	mov ax, SEG_SS16
 	mov ss, ax
-	mov sp, 4096
+	mov sp, SIZE_STACK
 
-	; We will now load the kernel loader to memory
-	; We adopt an overly simplistic approach
-	; We assume that 
-	; 1) a floppy disk is being used for booting
-	; 2) The kernel loader image is sitting in the second sector of that disk 
-	; 3) The kernel itself is sitting on the 4th sector of the disk
-	; We will use the BIOS interrupt routine 0x13 to load the kernel loader at memory location 0x7E00 (just following this bootloader)
-	; We will first read the drive parameters using the 'GetFloppyInfo' function
-	; We will then read the kernel loader from disk using the 'LoadKernel' function 
-	; The kernel loader will enable the A20 line, switch to unreal mode, load the kernel, switch to protected mode and jump to the kernel
-	; This kernel is our first executable kernel. It prints a welcome message
+	; We will now load the 2nd stage (loader16) from the floppy disk to memory
+	; Clearly, this functionality needs to be expanded to read from other sources other than floppies.
+	; But we will build on this later
+	; We start by obtaining the parameters of the drive that we want to read from
+	; The drive ID is passed a parameter in register DL (0 for floppy disk, 0x80 for HDD -- not tried)
+	; We will then read N sectors starting from sector S and these will be placed in memory contiguously from ES:SI
+	; For this we will invoke the ReadSectorsFromDrive function
+	; Parameter S is stored in AX, N is stored in BL, drive ID is stored in DL
+	; In principle, things are quite general till this point -- this should work for floppies as well as hard disks. Although this has only been tested with floppies
 
-	call GetFloppyInfo
-	mov si, Kernel_Loader                     ; LoadKernel function will copy the kernel image from disk to ES:SI
-	mov ax, 1
-	mov bl, 2
-	call ReadFromDisk
+	mov dl, FLOPPY_ID                         ; Pass the Drive ID parameter 
+	call ReadDriveParameters
 
-	jmp Kernel_Loader
+	mov si, START_BOOT2                       ; LoadKernel function will copy the kernel image from disk to ES:SI
+	mov ax, START_BOOT2_DISK                  ; Copy data starting from 4 KB logical address of the disk
+	mov bl, SIZE_BOOT2_DISK                   ; Copy 8 KB of data (16 sectors)
+	call ReadSectorsFromDrive
 
-%include "boot/src/biosio.asm"
+	jmp 0x0:START_BOOT2 
+
+%include "boot/src/biosio.asm"                ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Adding a zero padding to the boot sector
 
-times 510-($-$$) db 0 
+times SIZE_BOOT1-2-($-$$) db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature 
 ; Otherwise BIOS will not recognize this as a boot sector
 
-dw 0xAA55
+dw BOOTSECT_MAGIC
 
-; Start of the kernel loader 
-; Kernel_Loader:
-%include "boot/src/kernelloader.asm"

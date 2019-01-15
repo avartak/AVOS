@@ -1,44 +1,54 @@
-[BITS 16]
+BITS 16
 
-Switch_On_A20:
-	pusha
+; SwitchOnA20 : Enable the A20 line. 
+; First the code checks if the line is already enabled
+; If not, it tries to enable it
+; It checks again if the line is enabled
+; If the line is enabled it returns
+; Otherwise, it halts the computer
+; There needs to be better exception handling introduced here, something to be improved later
 
-    Call Check_A20                            ; Check if A20 line is enabled
+SwitchOnA20:
+	pusha                                     ; Push all general purpose registers to the stack
+	pushf                                     ; Push the FLAGS register to the stack
+
+    Call CheckA20                             ; Check if A20 line is enabled
     cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
     jne .a20enabled
 
-    Call Enable_A20_BIOS                      ; Enable the A20 line
+    Call EnableA20BIOS                        ; Enable the A20 line
 
-    Call Check_A20                            ; Check again and print the A20 line status
+    Call CheckA20                             ; Check again and print the A20 line status
     cmp ax, 0                                 ; Check again
     jne .a20enabled
 
 	hlt                                       ; If the A20 is still not enabled stop here -- this should be refined
 
 	.a20enabled:
-	popa
+	popf                                      ; Reload the FLAGS register
+	popa                                      ; Reload all the general purpose registers
 	ret
 
 
 ; The following code is public domain licensed
  
-; Function: Check_A20
+; CheckA20 : Check the status of the A20 line in a completely self-contained state-preserving way.
+; The function can be modified as necessary by removing push's at the beginning and their
+; respective pop's at the end if complete self-containment is not required.
 ;
-; Purpose: to check the status of the A20 line in a completely self-contained state-preserving way.
-;          The function can be modified as necessary by removing push's at the beginning and their
-;          respective pop's at the end if complete self-containment is not required.
-;
-; Returns: 0 in ax if the A20 line is disabled (memory wraps around)
-;          1 in ax if the A20 line is enabled (memory does not wrap around)
+; Returns: 
+; 0 in ax if the A20 line is disabled (memory wraps around)
+; 1 in ax if the A20 line is enabled (memory does not wrap around)
 
 
 
-Check_A20:
-    pushf
-    push ds
+CheckA20:
+    pusha                    ; Push all general purpose registers to the stack
+	pushf                    ; Push the FLAGS register to the stack
+    push ds                  ; Push the data segments as well
     push es
-    push di
-    push si
+	push di                  ; Not sure why these 
+    push si                  ; two pushes are needed
  
     xor ax, ax               ; ax = 0x0000
     mov es, ax               ; es = 0x0000
@@ -69,16 +79,17 @@ Check_A20:
     mov byte [es:di], al
  
     mov ax, 0                
-    je .check_a20__exit      ; If A20 line is disabled store 0 in AX, else store 1 in AX
+    je .checka20done         ; If A20 line is disabled store 0 in AX, else store 1 in AX
  
     mov ax, 1
  
-	.check_a20__exit:
-    pop si
-    pop di
-    pop es
+	.checka20done:
+	pop si
+	pop di
+    pop es                   ; Reload the data segments
     pop ds
-    popf
+    popf                     ; Reload the FLAGS register
+    popa                     ; Reload all general purpose registers
  
     ret
 
@@ -86,11 +97,12 @@ Check_A20:
 
 
 
-; Function to enable the A20 line
+; EnableA20BIOS : Enable the A20 line using INT 15H
+; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
-Enable_A20_BIOS:
+EnableA20BIOS:
 	push ax
-	mov ax, 0x2401            ; This is the interrupt to enable the A20 line. 
+	mov ax, 0x2401            ; This is the parameter to INT 15H to enable the A20 line. 
 	int 0x15
 	pop ax
 	ret

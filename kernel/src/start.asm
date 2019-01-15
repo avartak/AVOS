@@ -1,21 +1,13 @@
-section .bss
-align 16
-stack_bottom:
-resb 16384
-stack_top:
- 
-
 section .text
-global start
-start:
 
-	mov esp, stack_top
- 
-	extern kmain
-	call kmain
- 
+global Kstart
+Kstart:
+
 	cli
-.hang:	hlt
-	jmp .hang
-.end:
+	mov esp, 0xC0300000
+ 
+	extern Kmain
+	call Kmain
+ 
+	hlt
 

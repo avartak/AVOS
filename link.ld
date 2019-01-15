@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(start)
+ENTRY(Kstart)
 
 /* Output format */
 OUTPUT_FORMAT("binary")
@@ -11,7 +11,7 @@ OUTPUT(kernel.bin)
 SECTIONS
 {
 	/* Kernel loadeded at 1 MB address*/
-	. = 1M;
+	. = 0xC0100000;
 
 	/* Multiboot header and code */	 
 	.text BLOCK(4K) : ALIGN(4K)
