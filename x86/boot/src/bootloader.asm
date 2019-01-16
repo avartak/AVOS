@@ -7,7 +7,7 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-%include "boot/src/defs.asm"
+%include "x86/boot/src/defs.asm"
 
 ; Tell NASM that the code will be loaded at 0x7C00
 
@@ -103,7 +103,7 @@ Boot:
 
 	jmp 0x0:START_BOOT2 
 
-%include "boot/src/biosio.asm"                ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

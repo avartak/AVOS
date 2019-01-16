@@ -8,7 +8,7 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-%include "boot/src/defs.asm"
+%include "x86/boot/src/defs.asm"
 
 ; Starting point of the kernel loader
 
@@ -36,7 +36,7 @@ Kload16:
 
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
-	%include "boot/src/tables.asm"            ; Load the tables at designated locations in memory -- create a blank IDT and a GDT with both kernel and user segments for code, data and stack
+	%include "x86/boot/src/tables.asm"        ; Load the tables at designated locations in memory -- create a blank IDT and a GDT with both kernel and user segments for code, data and stack
  
 	lgdt [GDT_Desc]                           ; Load the GDT -- Note that GDT_Desc is defined in tables.asm
 
@@ -54,7 +54,7 @@ Kload16:
 
 
 ; Code to enable the A20 line
-%include "boot/src/a20.asm"
+%include "x86/boot/src/a20.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,6 +120,6 @@ EnterUnreal:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-%include "boot/src/biosio.asm"                ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 
 

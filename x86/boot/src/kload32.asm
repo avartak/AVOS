@@ -8,7 +8,7 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-%include "boot/src/defs.asm"
+%include "x86/boot/src/defs.asm"
 
 ; Starting point of the kernel loader
 
