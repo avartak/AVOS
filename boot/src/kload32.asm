@@ -77,7 +77,7 @@ Kload32:
 	mov eax, Page_Directory                      ; Put the address of the page directory in CR3
 	mov cr3, eax       
 
-	mov eax, cr0                                 ; Enable paging in DR0 by turning on the 32nd bit 
+	mov eax, cr0                                 ; Enable paging in CR0 by turning on the 32nd bit 
 	or eax, 0x80000000
 	mov cr0, eax
 
