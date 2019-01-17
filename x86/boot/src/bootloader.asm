@@ -101,6 +101,13 @@ Boot:
 	mov bl, SIZE_BOOT2_DISK                   ; Copy 8 KB of data (16 sectors)
 	call ReadSectorsFromDrive
 
+	mov al, [Sectors_Read_Last]
+	cmp al, bl
+	je .launchstage2
+	cli
+	hlt
+
+	.launchstage2:
 	jmp 0x0:START_BOOT2 
 
 %include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file

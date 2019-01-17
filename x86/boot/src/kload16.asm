@@ -106,7 +106,7 @@ EnterUnreal:
 	mov eax, cr0                              ; Enter protected mode
 	or eax, 1
 	mov cr0, eax
-	
+
 	jmp SEG_CS32:START_BOOT3                  ; Make a far jump this time to update the code segment to 32-bit, and launch into the 3rd stage of the boot loader 
 
 
@@ -114,5 +114,7 @@ EnterUnreal:
 
 
 %include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+
+
 
 
