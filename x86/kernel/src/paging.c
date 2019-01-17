@@ -1,6 +1,36 @@
 #include <x86/kernel/include/defs.h>
+#include <x86/kernel/include/paging.h>
 
-void SetupInitialKernelPaging() {
+static inline void EnablePGBitInCR0() {
+
+    asm volatile (
+        " \
+        movl %%cr0, %%eax;     \
+        or $0x80000000, %%eax; \
+        movl %%eax, %%cr0;     \
+        "
+        :
+        :
+        : "%eax"
+    )
+
+}
+
+static inline void LoadPageDirectory(uint32_t* pdt) {
+
+    asm volatile (
+        " \
+        movl %0, %%eax;    \
+        movl %%eax, %%cr3; \
+        "
+        :
+        : "m"(*pdt)
+        : "%eax"
+    )
+
+}
+
+void InitPaging() {
 
     // We will now clear the identity map
     uint32_t* page_directory = (uint32_t*)LOC_PAGE_DIRECTORY_VM;

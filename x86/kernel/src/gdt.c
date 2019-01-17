@@ -1,6 +1,4 @@
 #include <x86/kernel/include/gdt.h>
-#include <x86/asmc/include/pmode.h>
-#include <x86/asmc/include/segments.h>
 
 struct GDTEntry gdt[7];
 struct GDTRecord gdtr;
@@ -41,3 +39,42 @@ void SetupGDT() {
 	return;
 
 }
+
+static inline void LoadGDT(struct GDTRecord* gdtr) {
+    asm volatile ("lgdt %0" : : "m"(*gdtr));
+}
+
+static inline void LoadKernelSegments() {
+    asm volatile (
+        " \
+        movw $0x08, %%ax; \
+        movw %%ax , %%cs; \
+        movw $0x10, %%ax; \
+        movw %%ax , %%ds; \
+        movw %%ax , %%es; \
+        movw %%ax , %%fs; \
+        movw %%ax , %%gs; \
+        "
+        :
+        :
+        : "%eax"
+    );
+}
+
+static inline void LoadUserSegments() {
+    asm volatile (
+        " \
+        movw $0x20, %%ax; \
+        movw %%ax , %%cs; \
+        movw $0x28, %%ax; \
+        movw %%ax , %%ds; \
+        movw %%ax , %%es; \
+        movw %%ax , %%fs; \
+        movw %%ax , %%gs; \
+        "
+        :
+        :
+        : "%eax"
+    );
+}
+
