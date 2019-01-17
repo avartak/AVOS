@@ -33,11 +33,9 @@
     GDT_Null   equ GDT_Start
     GDT_KCode  equ GDT_Null   + 8
     GDT_KData  equ GDT_KCode  + 8
-    GDT_KStack equ GDT_KData  + 8
-    GDT_UCode  equ GDT_KStack + 8
+    GDT_UCode  equ GDT_KData  + 8
     GDT_UData  equ GDT_UCode  + 8
-    GDT_UStack equ GDT_UData  + 8
-    GDT_End    equ GDT_UStack + 8
+    GDT_End    equ GDT_UData  + 8
     GDT_Desc   equ GDT_End
 
     ; First there is a NULL segment
@@ -64,14 +62,6 @@
     mov [GDT_KData +6],  BYTE 0xCF
     mov [GDT_KData +7],  BYTE 0x00
 
-    ; And then the kernel stack segment
-    mov [GDT_KStack+0],  WORD 0xFFFF
-    mov [GDT_KStack+2],  WORD 0x0000
-    mov [GDT_KStack+4],  BYTE 0x00
-    mov [GDT_KStack+5],  BYTE 0x96
-    mov [GDT_KStack+6],  BYTE 0xCF
-    mov [GDT_KStack+7],  BYTE 0x00
-
     ; Next user code segment
     mov [GDT_UCode +0],  WORD 0xFFFF
     mov [GDT_UCode +2],  WORD 0x0000
@@ -87,14 +77,6 @@
     mov [GDT_UData +5],  BYTE 0xF2
     mov [GDT_UData +6],  BYTE 0xCF
     mov [GDT_UData +7],  BYTE 0x00
-
-    ; And finally the user stack segment
-    mov [GDT_UStack+0],  WORD 0xFFFF
-    mov [GDT_UStack+2],  WORD 0x0000
-    mov [GDT_UStack+4],  BYTE 0x00
-    mov [GDT_UStack+5],  BYTE 0xF6
-    mov [GDT_UStack+6],  BYTE 0xCF
-    mov [GDT_UStack+7],  BYTE 0x00
 
     mov [GDT_Desc  +0],  WORD GDT_End - GDT_Start - 1
     mov [GDT_Desc  +2], DWORD GDT_Start

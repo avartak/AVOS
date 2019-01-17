@@ -1,5 +1,5 @@
-#ifndef ASMC_PAGING_H
-#define ASMC_PAGING_H
+#ifndef X86_ASMC_PAGING_H
+#define X86_ASMC_PAGING_H
 
 // We define the asm code to be "volatile"
 // This is a simple fencing against optimizations of the compiler
@@ -13,10 +13,10 @@
 static inline void EnablePGBitInCR0() {
 
     asm volatile (
-        "
-        movl %%cr0, %%eax;
-        or $0x80000000, %%eax
-        movl %%eax, %%cr0
+        " \
+        movl %%cr0, %%eax;     \
+        or $0x80000000, %%eax; \
+        movl %%eax, %%cr0;     \
         "
         :
         :
@@ -28,9 +28,9 @@ static inline void EnablePGBitInCR0() {
 static inline void LoadPageDirectory(uint32_t* pdt) {
 
     asm volatile (
-        "
-        movl %0, %%eax;
-        movl %%eax, %%cr3
+        " \
+        movl %0, %%eax;    \
+        movl %%eax, %%cr3; \
         "
         :
         : "m"(*pdt)

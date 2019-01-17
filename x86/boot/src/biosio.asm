@@ -6,7 +6,6 @@ BITS 16
 
 ReadDriveParameters:
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
-	pushf                                     ; Push the FLAGS register as well -- why not
 
 	push es
 	mov ax, 0
@@ -27,8 +26,10 @@ ReadDriveParameters:
 	mov [Sectors_Per_Cylinder], ax
 
 	pop es                                    ; Restore the ES register to its original state
-	popf                                      ; Restore the FLAGS register
 	popa                                      ; Restore the all the general-purpose registers
+
+	mov [Return_Code_Last], ah                ; Lets also store the return code of the last operation
+
 	ret                                       ; Return control to the bootloader
 
 
@@ -48,7 +49,7 @@ ReadDriveParameters:
 
 ReadSectorsFromDrive:
 	pusha                                     ; Push all the general-purpose registers onto the stack
-	pushf                                     ; Push the FLAGS register as well -- why not
+
 	mov [Drive], dl                           ; Store the Drive ID (to free up DL)
 
 	mov dx, 0                                 ; 
@@ -72,17 +73,24 @@ ReadSectorsFromDrive:
 	mov al, bl                                ; AL contains the numbers of sectors to be read out (stored in BL)
 	mov bx, si                                ; INT 0x13 will load the data from the disk at ES:BX
 	int 0x13                                   
-	
-	popf                                      ; Restore the FLAGS register
+
+	mov [Sectors_Read_Last], al               ; Lets store the number of sectors that were actually read out
+	mov [Return_Code_Last], ah                ; Lets also store the return code of the last operation
+
 	popa                                      ; Restore the original state of the general-purpose registers
+
+	add ax, [Sectors_Read_Last]               ; We will increment AX with the number of sectors that were read out
+	                                          ; Currently there is no exception handling if some of the sectors were not read. This is not safe
+
 	ret                                       ; Return control to the bootloader
 
 
 
 ; ReadAndMove : Read a certain number of sectors from the drive and move them to a high address space (>1 MB)
 ReadAndMove:
-    pusha                                     ; Push all the general-purpose registers onto the stack
-	pushf                                     ; Push the FLAGS register as well -- why not
+	push bx                                   ; Only push the registers that are affected
+	push cx
+	push dx
 
 	mov bh, bl
 	mov bl, 1
@@ -90,31 +98,38 @@ ReadAndMove:
     .rnm:
         cmp bh, 0
         je .rnmdone
-        dec bh
+
+		call ReadSectorsFromDrive             ; There is a problem here -- what is we don't read that sector ? A proper exception handling is needed. This code is not safe
+		mov cx, [Sectors_Read_Last]           ; Check if a sector was actually read and only then copy ES:SI to ES:EDI
+		cmp cx, 0
+		je .rnm                               ; Keep trying to read the sector if the read failed
+
 		push si
-		call ReadSectorsFromDrive
-        mov ecx, 512
+		mov cx, 512
         .rnmloop:
-            mov dl, [es:si]
-            mov [es:edi], dl
+            mov dh, [es:si]
+            mov [es:edi], dh
             inc si
 			inc edi
-            dec ecx
-            cmp ecx, 0
-            jne .rnmloop
+			loop .rnmloop
 		pop si
-		inc ax
+
+        dec bh
 		jmp .rnm
 
     .rnmdone:
-	popf                                      ; Restore the FLAGS register
-    popa                                      ; Restore the original state of the general-purpose registers
-    ret                  
+    pop dx                                    ; Restore the original state of the affected registers
+    pop cx                                    
+    pop bx                                    
+    ret                                       ; Note that EDI is incremented by the number of bytes moved
 
 Drive                db 0
 Heads                db 2
 Sectors_Per_Track    dw 18
 Sectors_Per_Cylinder dw 18
+
+Sectors_Read_Last    db 0
+Return_Code_Last     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

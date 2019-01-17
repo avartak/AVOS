@@ -39,7 +39,7 @@ SEG_DS32          equ 0x10                               ; 32-bit data segment
 SEG_ES32          equ 0x10                               ; 32-bit extra segment
 SEG_FS32          equ 0x10                               ; 32-bit FS segment
 SEG_GS32          equ 0x10                               ; 32-bit GS segment
-SEG_SS32          equ 0x18                               ; 32-bit stack segment
+SEG_SS32          equ 0x10                               ; 32-bit stack segment
 
 FLOPPY_ID         equ 0                                  ; Floppy ID used by the BIOS
 

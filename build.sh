@@ -12,7 +12,6 @@ gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-prote
 
 i386-elf-ld -m elf_i386 -T link.ld  -o kernel.bin  start.o kernel.o kinit.o memory.o
 
-# Create a floppy image that can be run using QEMU
 dd conv=notrunc if=kernel.bin     of=avos.flp seek=40
 dd conv=notrunc if=kload32.bin    of=avos.flp seek=24
 dd conv=notrunc if=kload16.bin    of=avos.flp seek=8

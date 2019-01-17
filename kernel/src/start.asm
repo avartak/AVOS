@@ -4,10 +4,10 @@ global Kstart
 Kstart:
 
 	cli
-	mov esp, 0xC0400000
+	mov esp, 0xC0300000
  
 	extern Kmain
 	call Kmain
- 
+
 	hlt
 

@@ -1,5 +1,5 @@
-#ifndef ASMC_INTERRUPTS_H
-#define ASMC_INTERRUPTS_H
+#ifndef X86_ASMC_INTERRUPTS_H
+#define X86_ASMC_INTERRUPTS_H
 
 #include <stdint.h>
 
@@ -26,7 +26,7 @@ static inline void EnableInterrupts() {
 
 struct IDTRecord {
     uint16_t  limit;
-    uintptr_t    base;
+    uintptr_t base;
 } __attribute__((packed));
 
 static inline void LoadIDT(struct IDTRecord* idtr) {

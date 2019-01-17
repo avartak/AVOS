@@ -50,23 +50,19 @@ Kload32:
 
 	mov esp, END_STACK                           ; Resetting our stack again 
 
-	mov ecx, NUM_PDTPT_ENTRIES                   ; There are 1024 or 0x400 entries in the page directory
+	mov ecx, NUM_PDTPT_ENTRIES-1                 ; There are 1024 or 0x400 entries in the page directory
 	.fillPageDirectory:
-		dec ecx
 		mov [Page_Directory+4*ecx], DWORD 0      ; Initialize all entries to the page directory to 0. Basically none of the memory pages are accessible with this
-		cmp ecx, 0              
-		jne .fillPageDirectory                   ; Loop
+		loop .fillPageDirectory                  ; Loop
 
-    mov ecx, 0x400                               ; There are 1024 or 0x400 entries in the page table
+    mov ecx, NUM_PDTPT_ENTRIES-1                 ; There are 1024 or 0x400 entries in the page table
     .fillKernelTable:
-		dec ecx
-        mov eax, ecx                             
+        mov eax, ecx
         mov ebx, SIZE_PAGE                       ; We will set entry i in the page table to (i * 0x1000) | 3 to set up the table for the first 4 MB of physical memory
         mul ebx                                  ; i * 0x1000 --> ith page and each page has a size of 4 KB                                  
         or eax, 3                                ; 3 --> supervisor-only read/write access and page is present
         mov [Kernel_Table+4*ecx], eax            ; Note that each entry is 4 bytes long
-		cmp ecx, 0
-        jne .fillKernelTable
+		loop .fillKernelTable
 
 	mov eax, Kernel_Table
 	or eax, 3                                    ; Here again we want to set the page table to have supervisor-only read/write access and be present

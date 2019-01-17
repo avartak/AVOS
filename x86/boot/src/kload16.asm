@@ -70,7 +70,8 @@ EnterUnreal:
 	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
 	mov bx, SEG_ES32                          ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is
 	mov es, bx      
-	
+
+	mov eax, cr0	
 	and al,0xFE                               ; Switch back to real mode
 	mov cr0, eax
 	
@@ -94,17 +95,9 @@ EnterUnreal:
 	mov  si, START_SCRCH                      ; Temporary pool to hold each sector before copying it to the high memory
 	mov edi, START_KERNL                      ; Starting point in memory of the kernel
 	                                          ; We are moving 1 MB of data from the disk as kernel
-
 	.iterateReadAndMove:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
-
-		mov dx, SECTRS_PER_ITER
-		add ax, dx
-		mov edx, BYTES_PER_ITER
-		add edi, edx 
-		dec cx
-		cmp cx, 0
-		jne .iterateReadAndMove
+		loop .iterateReadAndMove
 
 ; Entering back into the protected mode 
 	

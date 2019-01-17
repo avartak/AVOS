@@ -10,7 +10,6 @@ BITS 16
 
 SwitchOnA20:
 	pusha                                     ; Push all general purpose registers to the stack
-	pushf                                     ; Push the FLAGS register to the stack
 
     Call CheckA20                             ; Check if A20 line is enabled
     cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
@@ -25,7 +24,6 @@ SwitchOnA20:
 	hlt                                       ; If the A20 is still not enabled stop here -- this should be refined
 
 	.a20enabled:
-	popf                                      ; Reload the FLAGS register
 	popa                                      ; Reload all the general purpose registers
 	ret
 
@@ -44,7 +42,6 @@ SwitchOnA20:
 
 CheckA20:
     pusha                    ; Push all general purpose registers to the stack
-	pushf                    ; Push the FLAGS register to the stack
     push ds                  ; Push the data segments as well
     push es
 	push di                  ; Not sure why these 
@@ -88,7 +85,6 @@ CheckA20:
 	pop di
     pop es                   ; Reload the data segments
     pop ds
-    popf                     ; Reload the FLAGS register
     popa                     ; Reload all general purpose registers
  
     ret

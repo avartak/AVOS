@@ -1,5 +1,5 @@
-#ifndef ASMC_IO_H
-#define ASMC_IO_H
+#ifndef X86_ASMC_IO_H
+#define X86_ASMC_IO_H
 
 #include <stdint.h>
 

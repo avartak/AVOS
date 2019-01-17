@@ -1,5 +1,5 @@
-#ifndef ASMC_MISC_H
-#define ASMC_MISC_H
+#ifndef X86_ASMC_MISC_H
+#define X86_ASMC_MISC_H
 
 #include <stdint.h>
 
@@ -21,10 +21,10 @@ static inline void HaltSystem() {
 static inline void OrCR0Bits(uint32_t bitmap) {
 
     asm volatile (
-        "
-        movl %%cr0, %%eax;
-        or %0, %%eax
-        movl %%eax, %%cr0
+        " \
+        movl %%cr0, %%eax; \
+        or %0, %%eax;      \
+        movl %%eax, %%cr0; \
         "
         :
         : "r"(bitmap)
@@ -37,10 +37,10 @@ static inline void OrCR0Bits(uint32_t bitmap) {
 static inline void AndCR0Bits(uint32_t bitmap) {
     
     asm volatile (
-        "
-        movl %%cr0, %%eax;
-        and %0, %%eax
-        movl %%eax, %%cr0
+        " \
+        movl %%cr0, %%eax; \
+        and %0, %%eax;     \
+        movl %%eax, %%cr0; \
         "
         :
         : "r"(bitmap)
