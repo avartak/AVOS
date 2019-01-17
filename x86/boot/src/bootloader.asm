@@ -96,9 +96,9 @@ Boot:
 	mov dl, FLOPPY_ID                         ; Pass the Drive ID parameter 
 	call ReadDriveParameters
 
-	mov si, START_BOOT2                       ; LoadKernel function will copy the kernel image from disk to ES:SI
 	mov ax, START_BOOT2_DISK                  ; Copy data starting from 4 KB logical address of the disk
 	mov bl, SIZE_BOOT2_DISK                   ; Copy 8 KB of data (16 sectors)
+	mov si, START_BOOT2                       ; LoadKernel function will copy the kernel image from disk to ES:SI
 	call ReadSectorsFromDrive
 
 	mov al, [Sectors_Read_Last]

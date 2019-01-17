@@ -1,7 +1,19 @@
 BITS 16
 
 ; 16-bit code for some very functions to display text on screen
-; First the clear screen function
+; The functions are designed in a way that's compatible to C declarations
+; First the stack pointer is copied to the base pointer
+; The base pointer is used to access the variables passed to the function
+; The variables are pushed in reverse order to which they are passed in a C function
+; This is how they are mapped
+; bp   --> Location of the stack pointer when the function was jumped into
+; bp+2 --> The IP of the instruction following the 'call' (pushed on the stack by call itself)
+; bp+4 --> 1st parameter passed to the C function
+; bp+6 --> 2nd parameter passed to the C function
+; ....
+; Note that push (16-bit in this case) is always 2 bytes long
+; In 32-bit mode these will be 4 bytes long
+
 
 ClearScreen:
 	push bp
