@@ -1,4 +1,4 @@
-extern void Kinit();
+#include <x86/kernel/include/kinit.h>
 
 void Kmain() {
 

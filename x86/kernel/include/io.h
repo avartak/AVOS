@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static inline void Outb(uint16_t port, uint8_t val);
-static inline unsigned char inb(uint16_t port);
+extern inline void Outb(uint16_t port, uint8_t val);
+extern inline unsigned char inb(uint16_t port);
 
 #endif

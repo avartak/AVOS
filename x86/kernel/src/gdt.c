@@ -1,6 +1,6 @@
 #include <x86/kernel/include/gdt.h>
 
-struct GDTEntry gdt[7];
+struct GDTEntry gdt[5];
 struct GDTRecord gdtr;
 
 void SetupGDTEntry(struct GDTEntry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
@@ -23,13 +23,11 @@ void SetupGDT() {
 
 	SetupGDTEntry(&(gdt[1]), 0x00000000, 0x000FFFFF, KERNEL_CODE_SEG_ACCESS , SEG_GRANULARITY);
 	SetupGDTEntry(&(gdt[2]), 0x00000000, 0x000FFFFF, KERNEL_DATA_SEG_ACCESS , SEG_GRANULARITY);
-	SetupGDTEntry(&(gdt[3]), 0x00000000, 0x000FFFFF, KERNEL_STACK_SEG_ACCESS, SEG_GRANULARITY);
 
-	SetupGDTEntry(&(gdt[4]), 0x00000000, 0x000FFFFF, USER_CODE_SEG_ACCESS   , SEG_GRANULARITY);
-	SetupGDTEntry(&(gdt[5]), 0x00000000, 0x000FFFFF, USER_DATA_SEG_ACCESS   , SEG_GRANULARITY);
-	SetupGDTEntry(&(gdt[6]), 0x00000000, 0x000FFFFF, USER_STACK_SEG_ACCESS  , SEG_GRANULARITY);
+	SetupGDTEntry(&(gdt[3]), 0x00000000, 0x000FFFFF, USER_CODE_SEG_ACCESS   , SEG_GRANULARITY);
+	SetupGDTEntry(&(gdt[4]), 0x00000000, 0x000FFFFF, USER_DATA_SEG_ACCESS   , SEG_GRANULARITY);
 
-	gdtr.limit = (sizeof(struct GDTEntry))*7 - 1;
+	gdtr.limit = (sizeof(struct GDTEntry))*5 - 1;
 	gdtr.base  = (uintptr_t)gdt;
 	
 	LoadGDT(&gdtr);
@@ -40,20 +38,19 @@ void SetupGDT() {
 
 }
 
-static inline void LoadGDT(struct GDTRecord* gdtr) {
+inline void LoadGDT(struct GDTRecord* gdtr) {
     asm volatile ("lgdt %0" : : "m"(*gdtr));
 }
 
-static inline void LoadKernelSegments() {
+inline void LoadKernelSegments() {
     asm volatile (
         " \
-        movw $0x08, %%ax; \
-        movw %%ax , %%cs; \
         movw $0x10, %%ax; \
         movw %%ax , %%ds; \
         movw %%ax , %%es; \
         movw %%ax , %%fs; \
         movw %%ax , %%gs; \
+        movw %%ax , %%ss; \
         "
         :
         :
@@ -61,16 +58,15 @@ static inline void LoadKernelSegments() {
     );
 }
 
-static inline void LoadUserSegments() {
+inline void LoadUserSegments() {
     asm volatile (
         " \
         movw $0x20, %%ax; \
-        movw %%ax , %%cs; \
-        movw $0x28, %%ax; \
         movw %%ax , %%ds; \
         movw %%ax , %%es; \
         movw %%ax , %%fs; \
         movw %%ax , %%gs; \
+        movw %%ax , %%ss; \
         "
         :
         :

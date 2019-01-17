@@ -27,14 +27,14 @@ struct GDTRecord {
     uintptr_t base;
 }__attribute__((packed));
 
-extern struct GDTEntry gdt[7];
+extern struct GDTEntry gdt[];
 extern struct GDTRecord gdtr;
 
 extern void SetupGDTEntry(struct GDTEntry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 extern void SetupGDT();
 
-static inline void LoadGDT(struct GDTRecord* gdtr);
-static inline void LoadKernelSegments();
-static inline void LoadUserSegments();
+extern inline void LoadGDT(struct GDTRecord* gdtr);
+extern inline void LoadKernelSegments();
+extern void LoadUserSegments();
 
 #endif

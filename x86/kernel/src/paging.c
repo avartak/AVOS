@@ -1,7 +1,6 @@
-#include <x86/kernel/include/defs.h>
 #include <x86/kernel/include/paging.h>
 
-static inline void EnablePGBitInCR0() {
+inline void EnablePGBitInCR0() {
 
     asm volatile (
         " \
@@ -12,11 +11,11 @@ static inline void EnablePGBitInCR0() {
         :
         :
         : "%eax"
-    )
+    );
 
 }
 
-static inline void LoadPageDirectory(uint32_t* pdt) {
+inline void LoadPageDirectory(uint32_t* pdt) {
 
     asm volatile (
         " \
@@ -26,7 +25,7 @@ static inline void LoadPageDirectory(uint32_t* pdt) {
         :
         : "m"(*pdt)
         : "%eax"
-    )
+    );
 
 }
 
@@ -46,4 +45,3 @@ void InitPaging() {
     page_directory[769] = ((uint32_t)page_map) | 3;
 
 }
-
