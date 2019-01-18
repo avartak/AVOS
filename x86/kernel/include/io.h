@@ -3,7 +3,17 @@
 
 #include <stdint.h>
 
-extern inline void Outb(uint16_t port, uint8_t val);
-extern inline unsigned char inb(uint16_t port);
+extern inline void   Outb(uint16_t port, uint8_t val);
+extern inline uint8_t Inb(uint16_t port);
+
+inline void Outb(uint16_t port, uint8_t val) {
+    asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+inline uint8_t Inb(uint16_t port) {
+    uint8_t ret;
+    asm volatile("inb %1, %0" : "=a"(ret) : "Nd"(port) );
+    return ret;
+}
 
 #endif

@@ -35,6 +35,6 @@ extern void SetupGDT();
 
 extern inline void LoadGDT(struct GDTRecord* gdtr);
 extern inline void LoadKernelSegments();
-extern void LoadUserSegments();
+extern inline void LoadUserSegments();
 
 #endif

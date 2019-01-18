@@ -13,6 +13,14 @@ void Welcome() {
         i++;
     }
 
+    // Green stripe
+	i = 0;		
+    while (i < 80) {
+        screen[2*i  ] = 0x00;
+        screen[2*i+1] = 0x20;
+        i++;
+    }
+
     // Welcome string
     char* str = "Welcome to AVOS!";
 
@@ -21,7 +29,7 @@ void Welcome() {
     i = 0;
     while (str[i] != 0) {
         screen[64 + 2*i]   = str[i];
-        screen[64 + 2*i+1] = 0x04;
+        screen[64 + 2*i+1] = 0x24;
         i++;
     }
 
