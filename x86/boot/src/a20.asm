@@ -9,7 +9,7 @@ BITS 16
 ; There needs to be better exception handling introduced here, something to be improved later
 
 SwitchOnA20:
-	pusha                                     ; Push all general purpose registers to the stack
+	push ax                                   ; Push all general purpose registers to the stack
 
     Call CheckA20                             ; Check if A20 line is enabled
     cmp ax, 0                                 ; If AX is 0, then the A20 line is disabled
@@ -24,7 +24,7 @@ SwitchOnA20:
 	hlt                                       ; If the A20 is still not enabled stop here -- this should be refined
 
 	.a20enabled:
-	popa                                      ; Reload all the general purpose registers
+	pop ax                                    ; Reload all the general purpose registers
 	ret
 
 
@@ -41,7 +41,7 @@ SwitchOnA20:
 
 
 CheckA20:
-    pusha                    ; Push all general purpose registers to the stack
+    push ax                  ; Push all general purpose registers to the stack
     push ds                  ; Push the data segments as well
     push es
 	push di                  ; Not sure why these 
@@ -85,7 +85,7 @@ CheckA20:
 	pop di
     pop es                   ; Reload the data segments
     pop ds
-    popa                     ; Reload all general purpose registers
+    pop ax                   ; Reload all general purpose registers
  
     ret
 
@@ -98,8 +98,10 @@ CheckA20:
 
 EnableA20BIOS:
 	push ax
+
 	mov ax, 0x2401            ; This is the parameter to INT 15H to enable the A20 line. 
 	int 0x15
+
 	pop ax
 	ret
 

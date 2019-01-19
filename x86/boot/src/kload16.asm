@@ -36,7 +36,7 @@ Kload16:
 
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
-	%include "x86/boot/src/tables.asm"        ; Load the tables at designated locations in memory -- create a blank IDT and a GDT with both kernel and user segments for code, data and stack
+	call CreateTables                         ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
  
 	lgdt [GDT_Desc]                           ; Load the GDT -- Note that GDT_Desc is defined in tables.asm
 
@@ -44,27 +44,8 @@ Kload16:
 	or eax, 1
 	mov cr0, eax
 
-	jmp EnterUnreal                           ; Make a near jump -- the CS does not switch to protected mode (Big Unreal)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-
-; Code to enable the A20 line
-%include "x86/boot/src/a20.asm"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-; Entering the Unreal mode
-
-EnterUnreal:
+	; Entering the Unreal mode
 
 	mov bx, SEG_DS32                          ; We will update the DS and ES segment register to 32-bit mode
 	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
@@ -81,14 +62,16 @@ EnterUnreal:
 	
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
 	
-	mov dl, FLOPPY_ID
+	mov  dl, FLOPPY_ID                        ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
-	mov ax, START_BOOT3_DISK                  ; Copy data starting from 12 KB logical address of the disk
-	mov bl, SIZE_BOOT3_DISK                   ; Copy 8 KB of data (16 sectors)
-	mov si, START_BOOT3
+	mov  dl, FLOPPY_ID
+	mov  ax, START_BOOT3_DISK                 ; Copy data starting from 12 KB logical address of the disk
+	mov  bl, SIZE_BOOT3_DISK                  ; Copy 8 KB of data (16 sectors)
+	mov  si, START_BOOT3
 	call ReadSectorsFromDrive                 ; Copy the 3rd stage of the bootloader
 
+	mov  dl, FLOPPY_ID
 	mov  cx, KERNL_COPY_ITER                  ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
 	mov  ax, START_KERNL_DISK                 ; Copy kernel starting from 20 KB logical address of the disk
 	mov  bl, SECTRS_PER_ITER                  ; Copy 64 KB of data (128 sectors) from the disk
@@ -99,7 +82,7 @@ EnterUnreal:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
 
-; Entering back into the protected mode 
+	; Entering back into the protected mode 
 	
 	cli                                       ; Clear all interrupts as we now enter the protected mode for good           
 	
@@ -113,8 +96,14 @@ EnterUnreal:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+; Code to enable the A20 line
+%include "x86/boot/src/a20.asm"
 
+; Load the tables at designated locations in memory
+%include "x86/boot/src/tables.asm"
+
+; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+%include "x86/boot/src/biosio.asm"
 
 
 

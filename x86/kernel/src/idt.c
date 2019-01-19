@@ -8,6 +8,7 @@ void SetupIDTEntry(struct IDTEntry* entry, uintptr_t address, uint16_t segment, 
 
 	entry->addr_low       = (uint16_t) (address & 0x0000FFFF);
 	entry->segment        = segment;
+	entry->zero           = 0x00;
 	entry->type_attr      = type;
 	entry->addr_high      = (uint16_t)((address & 0xFFFF0000) >> 16);
 
@@ -71,7 +72,9 @@ void SetupIDT() {
     SetupIDTEntry(&(idt[46]), (uintptr_t)Interrupt2E, KERNEL_CODE_SEG, interrupt_type);
     SetupIDTEntry(&(idt[47]), (uintptr_t)Interrupt2F, KERNEL_CODE_SEG, interrupt_type);
 
-    idtr.limit = (sizeof(struct IDTEntry))*5 - 1;
+    SetupIDTEntry(&(idt[80]), (uintptr_t)Interrupt80, KERNEL_CODE_SEG, interrupt_type);
+
+    idtr.limit = (sizeof(struct IDTEntry))*256 - 1;
     idtr.base  = (uintptr_t)idt;
    
     LoadIDT(&idtr);
@@ -87,8 +90,7 @@ inline void LoadIDT(struct IDTRecord* idtr) {
 
 void HandleInterrupt(struct CPUStateAtInterrupt cpu, struct StackStateAtInterrupt stack, uint32_t interrupt) {
 
-	if (cpu.eax == 0) {
-	}
+	int syscallid = 0;
 
 	if (stack.error_code != 0) {
 	}
@@ -97,24 +99,11 @@ void HandleInterrupt(struct CPUStateAtInterrupt cpu, struct StackStateAtInterrup
 		PIC_SendEOI(interrupt - 0x20);
 	}
 
+	if (interrupt == 0x80) {
+		syscallid = cpu.eax;
+	}
+
 	return;
 
 }
 
-void HandleSysCall(uint32_t id, struct CPUStateAtInterrupt cpu, struct StackStateAtInterrupt stack, uint32_t interrupt) {
-
-	if (id == 0) {
-	}
-
-    if (cpu.eax == 0) {
-    }
-
-    if (stack.error_code != 0) {
-    }
-
-    if (interrupt != 0x80) {
-    }
-
-    return;
-
-}

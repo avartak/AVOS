@@ -1,3 +1,9 @@
+CreateTables:
+
+	push ax
+	push cx
+	push di
+
     ; Interrupt Descriptor Table
     ; We are not enabling interrupts here
     ; This is just a place reserved for the IDT
@@ -82,3 +88,9 @@
     mov [GDT_Desc  +2], DWORD GDT_Start
     mov [GDT_Desc  +6],  WORD 0
 
+
+	pop di
+	pop cx
+	pop ax
+
+	ret
