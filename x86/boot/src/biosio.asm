@@ -5,8 +5,14 @@ BITS 16
 ; Drive ID is stored in DL 
 
 ReadDriveParameters:
+
+	push bp
+	mov bp, sp	
+
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
 	push es
+
+	mov dx, [bp+4]                            ; Drive ID
 
 	mov ax, 0
 	mov es, ax
@@ -30,6 +36,9 @@ ReadDriveParameters:
 	pop es                                    ; Restore the ES register to its original state
 	popa                                      ; Restore the all the general-purpose registers
 
+	mov sp, bp
+	pop bp
+
 	ret                                       ; Return control to the bootloader
 
 
@@ -48,8 +57,18 @@ ReadDriveParameters:
 ; Sector   = Temp % sectors_per_track + 1
 
 ReadSectorsFromDrive:
+
+	push bp
+	mov bp, sp	
+
 	pusha                                     ; Push all the general-purpose registers onto the stack
 
+    mov  dx, [bp+0x4]                         ; The Drive ID parameter 
+    mov  ax, [bp+0x6]                         ; Starting sector
+    mov  bx, [bp+0x8]                         ; Number of sectors to copy
+    mov  si, [bp+0xA]                         ; Where to load the sectors in memory
+
+	                                          ; We are moving 1 MB of data from the disk as kernel
 	mov [Drive], dl                           ; Store the Drive ID (to free up DL)
 
 	mov dx, 0                                 ; 
@@ -69,9 +88,10 @@ ReadSectorsFromDrive:
 
 	mov dl, [Drive]                           ; Restore the Drive ID into DL
 	
-	mov ah, 2                                 ; AH=2 tells the BIOS to read from the disk ; Drive ID is stored in DL
 	mov al, bl                                ; AL contains the numbers of sectors to be read out (stored in BL)
 	mov bx, si                                ; INT 0x13 will load the data from the disk at ES:BX
+
+	mov ah, 2                                 ; AH=2 tells the BIOS to read from the disk ; Drive ID is stored in DL
 	int 0x13                                   
 
 	mov [Sectors_Read_Last], al               ; Lets store the number of sectors that were actually read out
@@ -82,15 +102,28 @@ ReadSectorsFromDrive:
 	add ax, [Sectors_Read_Last]               ; We will increment AX with the number of sectors that were read out
 	                                          ; Currently there is no exception handling if some of the sectors were not read. This is not safe
 
+	mov sp, bp
+	pop bp
+
 	ret                                       ; Return control to the bootloader
 
 
 
 ; ReadAndMove : Read a certain number of sectors from the drive and move them to a high address space (>1 MB)
 ReadAndMove:
+
+	push bp
+	mov bp, sp	
+
 	push bx                                   ; Only push the registers that are affected
 	push cx
 	push dx
+
+    mov  dx, [bp+0x4]                         ; The Drive ID parameter 
+    mov  ax, [bp+0x6]                         ; Starting sector
+    mov  bx, [bp+0x8]                         ; Number of sectors to copy
+    mov  si, [bp+0xA]                         ; Temporary location to copy sectors before moving them to high memory
+    mov edi, [bp+0xC]                         ; High memory destination
 
 	mov bh, bl
 	mov bl, 1
@@ -99,7 +132,12 @@ ReadAndMove:
         cmp bh, 0
         je .rnmdone
 
-		call ReadSectorsFromDrive             ; There is a problem here -- what is we don't read that sector ? A proper exception handling is needed. This code is not safe
+		push si
+		push bx
+		push ax
+		push dx	
+	
+		call ReadSectorsFromDrive
 		mov cx, [Sectors_Read_Last]           ; Check if a sector was actually read and only then copy ES:SI to ES:EDI
 		cmp cx, 0
 		je .rnm                               ; Keep trying to read the sector if the read failed
@@ -114,6 +152,7 @@ ReadAndMove:
 			loop .rnmloop
 		pop si
 
+		add sp, 0x8
         dec bh
 		jmp .rnm
 
@@ -121,6 +160,10 @@ ReadAndMove:
     pop dx                                    ; Restore the original state of the affected registers
     pop cx                                    
     pop bx                                    
+
+	mov sp, bp
+	pop bp
+
     ret                                       ; Note that EDI is incremented by the number of bytes moved
 
 Drive                db 0

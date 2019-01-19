@@ -32,6 +32,8 @@ Kload16:
 	; 7) Enter back into 32-bit protected mode
 	; Launch the 3rd stage of the boot loader
 
+	mov bp, sp
+
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
@@ -69,22 +71,28 @@ Kload16:
 	; But when we do get around to having a file system, this is the part of the code should be updated  
 	; Basically we will need it to read the two files and place the kernel in high memory	
 
-	mov  dl, FLOPPY_ID                        ; We are reading from a floppy disk 
+	push FLOPPY_ID                            ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
-	mov  dl, FLOPPY_ID
-	mov  ax, START_BOOT3_DISK                 ; Copy data starting from 12 KB logical address of the disk
-	mov  bl, SIZE_BOOT3_DISK                  ; Copy 8 KB of data (16 sectors)
-	mov  si, START_BOOT3
+	push START_BOOT3
+	push SIZE_BOOT3_DISK                      ; Copy 8 KB of data (16 sectors)
+	push START_BOOT3_DISK                     ; Copy data starting from 12 KB logical address of the disk
+	push FLOPPY_ID
 	call ReadSectorsFromDrive                 ; Copy the 3rd stage of the bootloader
 
-	mov  dl, FLOPPY_ID
+	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
+	cmp al, SIZE_BOOT2_DISK
+	je .readkernel
+	hlt                                       ; If we did not read what we wanted to we halt 
+
+	.readkernel:
+	push DWORD START_KERNL                    ; Starting point of the kernel in high memory (1 MB)
+	push START_SCRCH                          ; Temporary pool to hold each sector before copying it to the high memory
+	push SECTRS_PER_ITER                      ; Copy 64 KB of data (128 sectors) from the disk in every interation
+	push START_KERNL_DISK                     ; Copy kernel starting from 20 KB logical address of the disk
+	push FLOPPY_ID                            ; Floppy drive ID
+
 	mov  cx, KERNL_COPY_ITER                  ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
-	mov  ax, START_KERNL_DISK                 ; Copy kernel starting from 20 KB logical address of the disk
-	mov  bl, SECTRS_PER_ITER                  ; Copy 64 KB of data (128 sectors) from the disk
-	mov  si, START_SCRCH                      ; Temporary pool to hold each sector before copying it to the high memory
-	mov edi, START_KERNL                      ; Starting point in memory of the kernel
-	                                          ; We are moving 1 MB of data from the disk as kernel
 	.iterateReadAndMove:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
@@ -94,6 +102,8 @@ Kload16:
 	
 	; Entering back into the protected mode 
 	
+	mov sp, bp
+
 	cli                                       ; Clear all interrupts as we now enter the protected mode for good           
 
 	mov eax, cr0                              ; Enter protected mode

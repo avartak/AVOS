@@ -82,38 +82,38 @@ Boot:
 	mov ax, SEG_SS16
 	mov ss, ax
 	mov sp, SIZE_STACK
+	mov bp, sp
 
 	; This is the code that reads the 2nd (16-bit) stage of the boot loader
 	; As of now, it reads a certain number of sectors starting from a given location on a floppy disk
 	; In principle it should work for hard disk drives as well if we set the drive ID appropriately, although that has not been tested
 	; The drive ID is passed as a parameter in register DL (0 for floppy disk, 0x80 for HDD -- not tried)
 	; Next, we obtain the parameters of the drive that we want to read from
-	; We then read N sectors starting from sector S and these will be placed in memory contiguously from ES:SI
+	; We then read N sectors starting from sector S
 	; For this we will invoke the ReadSectorsFromDrive function
-	; Parameter S is stored in AX, N is stored in BL, drive ID is stored in DL
-	; When we have our own file system this should be expanded to read a file from stored on the drive
 
-	mov  dl, FLOPPY_ID                        ; Pass the Drive ID parameter 
+	push FLOPPY_ID                            ; Pass the Drive ID parameter 
 	call ReadDriveParameters
 
-	mov dl, FLOPPY_ID                         ; Pass the Drive ID parameter 
-	mov ax, START_BOOT2_DISK                  ; Copy data starting from 4 KB logical address of the disk
-	mov bl, SIZE_BOOT2_DISK                   ; Copy 8 KB of data (16 sectors)
-	mov si, START_BOOT2                       ; LoadKernel function will copy the kernel image from disk to ES:SI
+	push START_BOOT2                          ; Where to put the 2nd stage of the boot loader in memory ?
+	push SIZE_BOOT2_DISK                      ; How many sectors of the disk do we want to read ?
+	push START_BOOT2_DISK                     ; Start sector from where we start the read on the disk
+	push FLOPPY_ID                            ; The Drive ID parameter 
 	call ReadSectorsFromDrive
 
-	mov al, [Sectors_Read_Last]
-	cmp al, bl
+	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
+	cmp al, SIZE_BOOT2_DISK
 	je .launchstage2
-	hlt
+	hlt                                       ; If we did not read what we wanted to we halt 
 
 	.launchstage2:
+	mov sp, bp                                ; Putting back the stack pointer to its origin location -- not really necessary but I do it
 	jmp 0x0:START_BOOT2 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are defined in this file
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
