@@ -35,8 +35,6 @@ Kernel_Table   equ START_KPT
 
 Kload32: 
 
-	cli                                          ; Lets clear all the interrupts
-
 	mov ax, SEG_DS32                             ; Lets set up the segment registers correctly (after our detour to the unreal mode in kload16)
 	mov ds, ax
 	mov ax, SEG_ES32

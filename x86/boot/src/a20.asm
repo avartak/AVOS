@@ -145,6 +145,8 @@ A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data 
 
 EnableA20Keyboard:
 
+		cli
+
 		push ax
 	
 		; Disbale PS/2 port 1
@@ -189,6 +191,9 @@ EnableA20Keyboard:
         out     IOPORT_8042_COMD, al
  
 		pop ax
+		
+		sti
+
         ret
  
 
@@ -213,10 +218,14 @@ WriteWaitFor8042:
 ; EnableA20FastGate : Enable the A20 line using the 'Fast A20 Gate'
 
 EnableA20FastGate:
+
+	cli
+
 	in al, 0x92
 	or al, 2
 	out 0x92, al	
 
+	sti
 
 
  

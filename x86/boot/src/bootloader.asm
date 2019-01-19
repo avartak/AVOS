@@ -105,7 +105,6 @@ Boot:
 	mov al, [Sectors_Read_Last]
 	cmp al, bl
 	je .launchstage2
-	cli
 	hlt
 
 	.launchstage2:
