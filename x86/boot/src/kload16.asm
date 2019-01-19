@@ -34,10 +34,10 @@ Kload16:
 
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
-	call CreateTables                         ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
- 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 
+	call CreateTables                         ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
+ 
 	lgdt [GDT_Desc]                           ; Load the GDT -- Note that GDT_Desc is defined in tables.asm
 
 	mov eax, cr0                              ; Enter protected mode
