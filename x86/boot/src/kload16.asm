@@ -44,13 +44,12 @@ Kload16:
 	or  eax, 1
 	mov cr0, eax
 
-
-	; Entering the Unreal mode
-
 	mov bx, SEG_DS32                          ; We will update the DS and ES segment register to 32-bit mode
 	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
-	mov bx, SEG_ES32                          ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is
+	mov bx, SEG_ES32                          ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is -- (for BIOS access in the unreal mode)
 	mov es, bx      
+
+	; Entering the Unreal mode
 
 	mov eax, cr0	
 	and al,0xFE                               ; Switch back to real mode
@@ -59,9 +58,17 @@ Kload16:
 	mov ax, 0                                 ; Set the DS, ES segment address to 0x0
 	mov ds, ax
 	mov es, ax
-	
+
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
-	
+
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	; This is the code that reads the 3rd (32-bit) stage of the boot loader and the kernel 
+	; It very crudely reads certain number of sectors from certain locations of the disk
+	; We do not have a file system yet, so this is how it will have to be 
+	; But when we do get around to having a file system, this is the part of the code should be updated  
+	; Basically we will need it to read the two files and place the kernel in high memory	
+
 	mov  dl, FLOPPY_ID                        ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
@@ -82,10 +89,13 @@ Kload16:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
 
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	
 	; Entering back into the protected mode 
 	
 	cli                                       ; Clear all interrupts as we now enter the protected mode for good           
-	
+
 	mov eax, cr0                              ; Enter protected mode
 	or eax, 1
 	mov cr0, eax
@@ -93,7 +103,7 @@ Kload16:
 	jmp SEG_CS32:START_BOOT3                  ; Make a far jump this time to update the code segment to 32-bit, and launch into the 3rd stage of the boot loader 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ; Code to enable the A20 line

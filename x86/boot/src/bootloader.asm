@@ -83,15 +83,15 @@ Boot:
 	mov ss, ax
 	mov sp, SIZE_STACK
 
-	; We will now load the 2nd stage (loader16) from the floppy disk to memory
-	; Clearly, this functionality needs to be expanded to read from other sources other than floppies.
-	; But we will build on this later
-	; We start by obtaining the parameters of the drive that we want to read from
-	; The drive ID is passed a parameter in register DL (0 for floppy disk, 0x80 for HDD -- not tried)
-	; We will then read N sectors starting from sector S and these will be placed in memory contiguously from ES:SI
+	; This is the code that reads the 2nd (16-bit) stage of the boot loader
+	; As of now, it reads a certain number of sectors starting from a given location on a floppy disk
+	; In principle it should work for hard disk drives as well if we set the drive ID appropriately, although that has not been tested
+	; The drive ID is passed as a parameter in register DL (0 for floppy disk, 0x80 for HDD -- not tried)
+	; Next, we obtain the parameters of the drive that we want to read from
+	; We then read N sectors starting from sector S and these will be placed in memory contiguously from ES:SI
 	; For this we will invoke the ReadSectorsFromDrive function
 	; Parameter S is stored in AX, N is stored in BL, drive ID is stored in DL
-	; In principle, things are quite general till this point -- this should work for floppies as well as hard disks. Although this has only been tested with floppies
+	; When we have our own file system this should be expanded to read a file from stored on the drive
 
 	mov  dl, FLOPPY_ID                        ; Pass the Drive ID parameter 
 	call ReadDriveParameters
