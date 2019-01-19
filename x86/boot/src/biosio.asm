@@ -6,14 +6,16 @@ BITS 16
 
 ReadDriveParameters:
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
-
 	push es
+
 	mov ax, 0
 	mov es, ax
 	mov di, ax                                ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS
 
 	mov ah, 8                                 ; AH=8 tells the BIOS to read the drive parameters ; Drive ID is stored in DL
 	int 0x13                                  ; INT 0x13 is all about I/O from disks
+
+	mov [Return_Code_Last], ah                ; Store the return code of the BIOS function
 
 	add dh, 1                                 ; Number of heads is stored in DH (numbering starts at 0, hence the increment)
 	mov [Heads], dh                           ; Store this information in a variable
@@ -27,8 +29,6 @@ ReadDriveParameters:
 
 	pop es                                    ; Restore the ES register to its original state
 	popa                                      ; Restore the all the general-purpose registers
-
-	mov [Return_Code_Last], ah                ; Lets also store the return code of the last operation
 
 	ret                                       ; Return control to the bootloader
 

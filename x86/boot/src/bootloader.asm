@@ -93,9 +93,10 @@ Boot:
 	; Parameter S is stored in AX, N is stored in BL, drive ID is stored in DL
 	; In principle, things are quite general till this point -- this should work for floppies as well as hard disks. Although this has only been tested with floppies
 
-	mov dl, FLOPPY_ID                         ; Pass the Drive ID parameter 
+	mov  dl, FLOPPY_ID                        ; Pass the Drive ID parameter 
 	call ReadDriveParameters
 
+	mov dl, FLOPPY_ID                         ; Pass the Drive ID parameter 
 	mov ax, START_BOOT2_DISK                  ; Copy data starting from 4 KB logical address of the disk
 	mov bl, SIZE_BOOT2_DISK                   ; Copy 8 KB of data (16 sectors)
 	mov si, START_BOOT2                       ; LoadKernel function will copy the kernel image from disk to ES:SI
@@ -109,6 +110,9 @@ Boot:
 
 	.launchstage2:
 	jmp 0x0:START_BOOT2 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 %include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 
