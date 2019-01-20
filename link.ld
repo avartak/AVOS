@@ -10,12 +10,13 @@ OUTPUT(kernel.bin)
 /* Various sections in the final kernel image. */
 SECTIONS
 {
-	/* Kernel loadeded at 1 MB address*/
+	/* Kernel loaded at 0xC0100000 */
 	. = 0xC0100000;
 
 	/* Multiboot header and code */	 
 	.text BLOCK(4K) : ALIGN(4K)
 	{
+		*(.multiboot)
 		*(.text)
 	}
  

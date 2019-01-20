@@ -22,5 +22,6 @@ void InitPaging() {
     page_directory[769] = (((uint32_t)pmap_pagetable) | 3) - LOC_KERNEL_HH_OFFSET;
 
 	LoadPageDirectory((uint32_t)page_directory - LOC_KERNEL_HH_OFFSET);
+	EnablePGBitInCR0();
 
 }

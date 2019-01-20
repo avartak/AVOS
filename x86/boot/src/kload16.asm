@@ -110,6 +110,19 @@ Kload16:
 	or eax, 1
 	mov cr0, eax
 
+    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly (after our detour to the unreal mode in kload16)
+    mov ds, ax
+    mov ax, SEG_ES32
+    mov es, ax
+    mov ax, SEG_FS32
+    mov fs, ax
+    mov ax, SEG_GS32
+    mov gs, ax
+    mov ax, SEG_SS32
+    mov ss, ax
+
+    mov esp, END_STACK                        ; Resetting our stack again 
+
 	jmp SEG_CS32:START_BOOT3                  ; Make a far jump this time to update the code segment to 32-bit, and launch into the 3rd stage of the boot loader 
 
 

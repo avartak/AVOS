@@ -14,7 +14,7 @@ void Kinit() {
 	// Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
 	InitPaging();
 
-	// Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
+	// Setup the IDT : First 32 interrupts for the CPU, the next 16 interrupts for the PIC, and interrupt 0x80 for syscalls -- none of these are implemented, just allocated
 	SetupIDT();
 
 	// Initialize the PIC -- remap the master and slave IRQs to interrupt vectors 0x20-0x27 and 0x28-0x30 respectively ; Mask all interrupts

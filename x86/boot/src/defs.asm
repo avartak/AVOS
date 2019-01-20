@@ -66,3 +66,4 @@ SIZE_PAGE         equ 0x1000                             ; Every page has a size
 NUM_PDTPT_ENTRIES equ 0x400                              ; There are 0x400 or 1024 entries in a page directory table or a page table
 
 KERNL_HH          equ 0xC0100000                         ; This is where we will map the kernel in high memory
+LOC_MBOOT_SIZE    equ 0x8                                ; Location in the multiboot header of the 32-bit double word containing the header size 
