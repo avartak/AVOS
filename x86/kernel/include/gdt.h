@@ -13,6 +13,11 @@
 
 #define SEG_GRANULARITY         0x0C
 
+
+#define asm __asm__
+#define volatile __volatile__
+
+
 struct GDTEntry {
     uint16_t limit_low;
     uint16_t base_low;

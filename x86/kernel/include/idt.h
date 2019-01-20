@@ -14,6 +14,9 @@
 
 #define KERNEL_CODE_SEG     0x08
 
+#define asm __asm__
+#define volatile __volatile__
+
 struct IDTEntry{
 	uint16_t addr_low;
 	uint16_t segment;
@@ -36,7 +39,7 @@ extern void SetupIDT();
 static inline void LoadIDT(struct IDTRecord* gdtr);
 
 inline void LoadIDT(struct IDTRecord* idtr) {
-    asm volatile ("lidt %0" : : "m"(*idtr));
+    asm volatile("lidt %0" : : "m"(*idtr));
 }
 
 #endif

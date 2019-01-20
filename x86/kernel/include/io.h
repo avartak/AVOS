@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+
+#define asm __asm__
+#define volatile __volatile__
+
+
 static inline void   Outb(uint16_t port, uint8_t val);
 static inline uint8_t Inb(uint16_t port);
 

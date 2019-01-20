@@ -1,11 +1,13 @@
 #include <x86/kernel/include/welcome.h>
 
+#include <stddef.h>
+
 void Welcome() {
 
     // Video buffer -- now at 0xC00B8000
     char* screen = (char*)0xC00B8000;
 
-    unsigned int i = 0;
+    size_t i = 0;
 
     // Clear screen
     while (i < 80*25*2) {

@@ -2,6 +2,8 @@
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/interrupts.h>
 
+#include <stddef.h>
+
 struct IDTEntry idt[256];
 struct IDTRecord idtr;
 
@@ -19,7 +21,7 @@ void SetupIDTEntry(struct IDTEntry* entry, uintptr_t address, uint16_t segment, 
 
 void SetupIDT() {
 
-	for (uint16_t i = 0; i < 256; i++) SetupIDTEntry(&(idt[i]), 0x00000000, 0x00, 0x00);
+	for (size_t i = 0; i < 256; i++) SetupIDTEntry(&(idt[i]), 0x00000000, 0x00, 0x00);
 
 	uint8_t interrupt_type = (INT_ACCESS_KERNEL << 4) | INT_TYPE_INTERRUPT;
 

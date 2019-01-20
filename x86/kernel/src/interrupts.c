@@ -2,6 +2,8 @@
 #include <x86/kernel/include/pic.h>
 #include <x86/drivers/include/keyboard.h>
 
+#include <stddef.h>
+
 int screenpos = 2;
 
 void HandleInterrupt(uint32_t interrupt, struct StackStateAtInterrupt stack, struct CPUStateAtInterrupt cpu) {
@@ -47,7 +49,7 @@ void IRQTest(const char* str, uint8_t color) {
 
 	char* screen = (char*)0xC00B8000;
 	
-	unsigned int i = 0;
+	size_t i = 0;
 	while (str[i] != 0) {
 	    screen[screenpos*160 + 2*i]   = str[i];
 	    screen[screenpos*160 + 2*i+1] = color;

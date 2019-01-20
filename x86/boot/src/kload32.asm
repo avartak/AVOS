@@ -1,5 +1,5 @@
 ; This is the code of the 3rd stage of the boot loader
-; We are still in protected mode
+; We are in protected mode
 ; This code is expected to reside at memory starting from 0xA000
 ; The goal is to enable paging, and launch the higher half kernel
 ; The kernel (16 KB for now) has already been copied to the physical address 1 MB
@@ -84,5 +84,4 @@ Kload32:
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 

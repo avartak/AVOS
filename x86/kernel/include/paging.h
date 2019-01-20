@@ -3,14 +3,18 @@
 
 #include <stdint.h>
 
-#define LOC_PAGE_DIRECTORY_VM 0xC0010000
-#define LOC_KERNEL_TABLE_VM   0xC0011000
-#define LOC_PAGEMAP_TABLE_VM  0xC0012000
-#define LOC_PAGEMAP_VM        0xC0400000
+#define LOC_KERNEL_HH_OFFSET  0xC0000000
 #define LOC_PAGEMAP_PM        0x400000
 
+#define asm __asm__
+#define volatile __volatile__
+
 static inline void EnablePGBitInCR0();
-static inline void LoadPageDirectory(uint32_t* pdt);
+static inline void LoadPageDirectory(uintptr_t pdt);
+
+extern uint32_t page_directory[]__attribute__((aligned(4096)));
+extern uint32_t kern_pagetable[]__attribute__((aligned(4096)));
+extern uint32_t pmap_pagetable[]__attribute__((aligned(4096)));
 
 inline void EnablePGBitInCR0() {
 
@@ -27,7 +31,7 @@ inline void EnablePGBitInCR0() {
 
 }
 
-inline void LoadPageDirectory(uint32_t* pdt) {
+inline void LoadPageDirectory(uintptr_t pdt) {
 
     asm volatile (
         " \
@@ -35,7 +39,7 @@ inline void LoadPageDirectory(uint32_t* pdt) {
         movl %%eax, %%cr3; \
         "
         :
-        : "m"(*pdt)
+        : "m"(pdt)
         : "%eax"
     );
 

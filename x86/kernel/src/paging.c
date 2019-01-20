@@ -1,18 +1,26 @@
 #include <x86/kernel/include/paging.h>
 
+#include <stdint.h>
+#include <stddef.h>
+
+uint32_t page_directory[1024]__attribute__((aligned(4096)));
+uint32_t kern_pagetable[1024]__attribute__((aligned(4096)));
+uint32_t pmap_pagetable[1023]__attribute__((aligned(4096)));
+
 void InitPaging() {
 
-    // We will now clear the identity map
-    uint32_t* page_directory = (uint32_t*)LOC_PAGE_DIRECTORY_VM;
-    page_directory[0] = 0;
+	for (size_t i = 0; i < 1024; i++) page_directory[i] = 0;	
 
-    // We will reserve physical memory 4 MB - 8 MB for page tables and map it to higher half ; The corresponding page table is put right after the kernel page table in memory (at 0x12000)
-    uint32_t* page_map = (uint32_t*)LOC_PAGEMAP_TABLE_VM;
+	for (size_t i = 0; i < 1024; i++) { 
+    	kern_pagetable[i] = (i * 0x1000) | 3;
+	}		
+    page_directory[768] = (((uint32_t)kern_pagetable) | 3) - LOC_KERNEL_HH_OFFSET;
 
-    uint32_t i;
-    for(i = 0; i < 1024; i++) {
-        page_map[i] = (i * 0x1000 + LOC_PAGEMAP_PM) | 3; // attributes: supervisor level, read/write, present.
+    for(size_t i = 0; i < 1024; i++) {
+        pmap_pagetable[i] = (i * 0x1000 + LOC_PAGEMAP_PM) | 3;
     }
-    page_directory[769] = ((uint32_t)page_map) | 3;
+    page_directory[769] = (((uint32_t)pmap_pagetable) | 3) - LOC_KERNEL_HH_OFFSET;
+
+	LoadPageDirectory((uint32_t)page_directory - LOC_KERNEL_HH_OFFSET);
 
 }

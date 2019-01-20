@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#define DisableInterrupts() asm volatile("cli" : : :);
-#define EnableInterrupts()  asm volatile("sti" : : :);
-#define HaltSystem()        asm volatile("hlt" : : :);
-#define Int(__INTERRUPT__)  asm volatile("int $"#__INTERRUPT__";" : : :)
+#define DisableInterrupts() __asm__ __volatile__("cli" : : :);
+#define EnableInterrupts()  __asm__ __volatile__("sti" : : :);
+#define HaltSystem()        __asm__ __volatile__("hlt" : : :);
+#define Int(__INTERRUPT__)  __asm__ __volatile__("int $"#__INTERRUPT__";" : : :)
 
 #endif
