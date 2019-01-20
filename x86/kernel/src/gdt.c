@@ -38,39 +38,3 @@ void SetupGDT() {
 
 }
 
-inline void LoadGDT(struct GDTRecord* gdtr) {
-    asm volatile ("lgdt %0" : : "m"(*gdtr));
-}
-
-inline void LoadKernelSegments() {
-    asm volatile (
-        " \
-        movw $0x10, %%ax; \
-        movw %%ax , %%ds; \
-        movw %%ax , %%es; \
-        movw %%ax , %%fs; \
-        movw %%ax , %%gs; \
-        movw %%ax , %%ss; \
-        "
-        :
-        :
-        : "%eax"
-    );
-}
-
-inline void LoadUserSegments() {
-    asm volatile (
-        " \
-        movw $0x20, %%ax; \
-        movw %%ax , %%ds; \
-        movw %%ax , %%es; \
-        movw %%ax , %%fs; \
-        movw %%ax , %%gs; \
-        movw %%ax , %%ss; \
-        "
-        :
-        :
-        : "%eax"
-    );
-}
-

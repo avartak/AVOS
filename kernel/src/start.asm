@@ -10,5 +10,7 @@ Kstart:
 	extern Kmain
 	call Kmain
 
-	hlt
+	.sleeploop:
+		hlt
+		jmp .sleeploop
 

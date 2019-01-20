@@ -33,8 +33,14 @@ extern struct GDTRecord gdtr;
 extern void SetupGDTEntry(struct GDTEntry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 extern void SetupGDT();
 
-extern inline void LoadGDT(struct GDTRecord* gdtr);
-extern inline void LoadKernelSegments();
-extern inline void LoadUserSegments();
+static inline void LoadGDT(struct GDTRecord* gdtr);
+
+inline void LoadGDT(struct GDTRecord* gdtr) {
+    asm volatile ("lgdt %0" : : "m"(*gdtr));
+}
+
+extern void LoadKernelSegments();
+extern void LoadUserSegments();
+
 
 #endif

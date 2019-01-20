@@ -9,8 +9,38 @@
 #define LOC_PAGEMAP_VM        0xC0400000
 #define LOC_PAGEMAP_PM        0x400000
 
-extern inline void EnablePGBitInCR0();
-extern inline void LoadPageDirectory(uint32_t* pdt);
+static inline void EnablePGBitInCR0();
+static inline void LoadPageDirectory(uint32_t* pdt);
+
+inline void EnablePGBitInCR0() {
+
+    asm volatile (
+        " \
+        movl %%cr0, %%eax;     \
+        or $0x80000000, %%eax; \
+        movl %%eax, %%cr0;     \
+        "
+        :
+        :
+        : "%eax"
+    );
+
+}
+
+inline void LoadPageDirectory(uint32_t* pdt) {
+
+    asm volatile (
+        " \
+        movl %0, %%eax;    \
+        movl %%eax, %%cr3; \
+        "
+        :
+        : "m"(*pdt)
+        : "%eax"
+    );
+
+}
+
 extern void InitPaging();
 
 #endif

@@ -48,17 +48,17 @@ HandlerForInterruptWithNoErrorCode  3
 HandlerForInterruptWithNoErrorCode  4
 HandlerForInterruptWithNoErrorCode  5
 HandlerForInterruptWithNoErrorCode  6
-HandlerForInterruptWithErrorCode    7
-HandlerForInterruptWithNoErrorCode  8
-HandlerForInterruptWithErrorCode    9
+HandlerForInterruptWithNoErrorCode  7
+HandlerForInterruptWithErrorCode    8
+HandlerForInterruptWithNoErrorCode  9
 HandlerForInterruptWithErrorCode    A
 HandlerForInterruptWithErrorCode    B
 HandlerForInterruptWithErrorCode    C
 HandlerForInterruptWithErrorCode    D
-HandlerForInterruptWithNoErrorCode  E
+HandlerForInterruptWithErrorCode    E
 HandlerForInterruptWithNoErrorCode  F
-HandlerForInterruptWithErrorCode   10
-HandlerForInterruptWithNoErrorCode 11
+HandlerForInterruptWithNoErrorCode 10
+HandlerForInterruptWithErrorCode   11
 HandlerForInterruptWithNoErrorCode 12
 HandlerForInterruptWithNoErrorCode 13
 HandlerForInterruptWithNoErrorCode 14
@@ -71,7 +71,7 @@ HandlerForInterruptWithNoErrorCode 1A
 HandlerForInterruptWithNoErrorCode 1B
 HandlerForInterruptWithNoErrorCode 1C
 HandlerForInterruptWithNoErrorCode 1D
-HandlerForInterruptWithNoErrorCode 1E
+HandlerForInterruptWithErrorCode   1E
 HandlerForInterruptWithNoErrorCode 1F
 
 HandlerForInterruptWithNoErrorCode 20
@@ -92,5 +92,4 @@ HandlerForInterruptWithNoErrorCode 2E
 HandlerForInterruptWithNoErrorCode 2F
 
 HandlerForInterruptWithNoErrorCode 80
-
 
