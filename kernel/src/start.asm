@@ -15,7 +15,7 @@
 ; - Clear all the interrupts (they have been disabled anyways, but still)
 ; - Set the stack pointer to 0x400000 (so 3 MB away from the start of the kernel code)
 ; - Call the Kmain function which is the entry point to the C code of the kernel
-; - Enter into a sleep loop
+; - Kmain will only return when nothing can wake up the system anymore (interrupts are disabled) and it can peacefully go to sleep forever
 ;
 ; The sleep loop is basically a halt instruction followed by a jump to the halt instruction. Why not just a halt ?
 ; Lets assume we got to the point of the sleep loop. At that point the system is in an idle state
@@ -25,15 +25,15 @@
 ; The sleep loop makes sure that does not happen 
 
 
-; We have decided that the start of the kernel is 0xC0100000
+; We have decided that the start of the kernel (in virtual memory) is 0xC0100000
 ; However, we are not going to put an ORG here unlike what we did with the boot loader
 ; This is because we are going to compile this (and other assembly files) to object files, and link them with object files produced from our C code to produce a binary
 ; The linker will take care of assigning the correct memory values
 ; We will provide the linker with a script (link.ld) to tell it exactly where we want it to put various parts of our code
-; So, we specifiy here a code section instead. The text section is where all the instructions go
-; The data section is where initialized data resides
-; The uninitialized data goes into the bss section
-; And the read-only data goes in the rodata section 
+; So, we specifiy here a 'section' for the code instead. This is called 'text' section and that's where all the instructions go
+; The 'data' section is where initialized data resides
+; The uninitialized data goes into the 'bss' section
+; And the read-only data goes in the 'rodata' section 
 
 ; We make our kernel multiboot-2 compliant
 ; It needs an appropriate multiboot header
@@ -53,7 +53,4 @@ Kstart:
 	extern Kmain
 	call Kmain
 
-	.sleeploop:
-		hlt
-		jmp .sleeploop
-
+	hlt
