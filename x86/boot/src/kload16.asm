@@ -110,7 +110,7 @@ Kload16:
 	or eax, 1
 	mov cr0, eax
 
-    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly (after our detour to the unreal mode in kload16)
+    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly
     mov ds, ax
     mov ax, SEG_ES32
     mov es, ax

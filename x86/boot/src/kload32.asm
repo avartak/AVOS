@@ -37,19 +37,6 @@ Kload32:
 
 	cli                                          ; Lets clear the interrupts. They are already cleared but lets do it anyways
 
-	mov ax, SEG_DS32                             ; Lets set up the segment registers correctly (after our detour to the unreal mode in kload16)
-	mov ds, ax
-	mov ax, SEG_ES32
-	mov es, ax
-	mov ax, SEG_FS32
-	mov fs, ax
-	mov ax, SEG_GS32
-	mov gs, ax
-	mov ax, SEG_SS32
-	mov ss, ax
-
-	mov esp, END_STACK                           ; Resetting our stack again 
-
 	mov ecx, NUM_PDTPT_ENTRIES-1                 ; There are 1024 or 0x400 entries in the page directory
 	.fillPageDirectory:
 		mov [Page_Directory+4*ecx], DWORD 0      ; Initialize all entries to the page directory to 0. Basically none of the memory pages are accessible with this

@@ -5,12 +5,15 @@
 ; - The A20 gate is enabled
 ; - The code segment (CS) is a valid protected mode code segment with an offset of 0 and limit of 0xFFFFFFFF 
 ; - Segments DS, ES, FS, GS, SS are valid protected segments with an offset of 0 and limit of 0xFFFFFFFF
-; - Kernel is mapped to 0xC0100000
-; - We do not assume the paging (PG) bit 31 of CR0 register to be set -- but we do assume the kernel to be mapped from physical memory 1 MB to virtual memory 3 GB
+; - Kernel is placed at 0x100000
+; - No assumption about paging being enabled i.e. PG bit (bit 31) in CR0 being set
+; - Interrupt flag (IF bit 9) in EFLAGS is cleared i.e. maskable interrupts are disabled
+; - Virtual 8086 mode is disabled i.e. VM bit 17 in EFLAGS has not been set by the boot loader
+; These assumptions are consistent with the multiboot requirements
 
 ; Kstart has a simple function :
 ; - Clear all the interrupts (they have been disabled anyways, but still)
-; - Set the stack pointer to 0xC0400000 (so 3 MB away from the start of the kernel code)
+; - Set the stack pointer to 0x400000 (so 3 MB away from the start of the kernel code)
 ; - Call the Kmain function which is the entry point to the C code of the kernel
 ; - Enter into a sleep loop
 ;
@@ -38,17 +41,15 @@
 
 section .multiboot
 
-	%include "kernel/src/multiboot.asm"
+%include "kernel/src/multiboot.asm"
 
 section .text
 
 global Kstart
 Kstart:
 
-	cli 
+	mov esp, 0x400000
 
-	mov esp, 0xC0400000
- 
 	extern Kmain
 	call Kmain
 

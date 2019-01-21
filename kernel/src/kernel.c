@@ -3,8 +3,6 @@
 This is where the action really starts!
 
 The first thing the kernel does is to perform low-level initialization of the system
-Some of this may have been done already by the boot loader
-But we are not going to assume anything since we would rather stay as independent of the boot loader as possible
 This low level initialization will be done by the Kinit() function 
 Since this initialization is architecture specific, the code resides in the x86 folder
 

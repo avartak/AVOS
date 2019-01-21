@@ -14,6 +14,7 @@ void InitPaging() {
 	for (size_t i = 0; i < 1024; i++) { 
     	kern_pagetable[i] = (i * 0x1000) | 3;
 	}		
+    page_directory[0]   = (((uint32_t)kern_pagetable) | 3) - LOC_KERNEL_HH_OFFSET;
     page_directory[768] = (((uint32_t)kern_pagetable) | 3) - LOC_KERNEL_HH_OFFSET;
 
     for(size_t i = 0; i < 1024; i++) {
@@ -24,4 +25,7 @@ void InitPaging() {
 	LoadPageDirectory((uint32_t)page_directory - LOC_KERNEL_HH_OFFSET);
 	EnablePGBitInCR0();
 
+	asm volatile("add $0xC0000000, %esp");
+
+	page_directory[0] = 0;
 }
