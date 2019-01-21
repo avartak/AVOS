@@ -4,7 +4,7 @@
 
 #include <stddef.h>
 
-struct IDTEntry idt[256];
+struct IDTEntry idt[0x100];
 struct IDTRecord idtr;
 
 void SetupIDTEntry(struct IDTEntry* entry, uintptr_t address, uint16_t segment, uint8_t type) {
@@ -25,59 +25,59 @@ void SetupIDT() {
 
 	uint8_t interrupt_type = (INT_ACCESS_KERNEL << 4) | INT_TYPE_INTERRUPT;
 
-    SetupIDTEntry(&(idt[0]  ), (uintptr_t)Interrupt0 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[1]  ), (uintptr_t)Interrupt1 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[2]  ), (uintptr_t)Interrupt2 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[3]  ), (uintptr_t)Interrupt3 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[4]  ), (uintptr_t)Interrupt4 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[5]  ), (uintptr_t)Interrupt5 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[6]  ), (uintptr_t)Interrupt6 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[7]  ), (uintptr_t)Interrupt7 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[8]  ), (uintptr_t)Interrupt8 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[9]  ), (uintptr_t)Interrupt9 , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[10] ), (uintptr_t)InterruptA , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[11] ), (uintptr_t)InterruptB , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[12] ), (uintptr_t)InterruptC , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[13] ), (uintptr_t)InterruptD , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[14] ), (uintptr_t)InterruptE , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[15] ), (uintptr_t)InterruptF , KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[16] ), (uintptr_t)Interrupt10, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[17] ), (uintptr_t)Interrupt11, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[18] ), (uintptr_t)Interrupt12, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[19] ), (uintptr_t)Interrupt13, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[20] ), (uintptr_t)Interrupt14, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[21] ), (uintptr_t)Interrupt15, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[22] ), (uintptr_t)Interrupt16, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[23] ), (uintptr_t)Interrupt17, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[24] ), (uintptr_t)Interrupt18, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[25] ), (uintptr_t)Interrupt19, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[26] ), (uintptr_t)Interrupt1A, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[27] ), (uintptr_t)Interrupt1B, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[28] ), (uintptr_t)Interrupt1C, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[29] ), (uintptr_t)Interrupt1D, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[30] ), (uintptr_t)Interrupt1E, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[31] ), (uintptr_t)Interrupt1F, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x00] ), (uintptr_t)Interrupt0 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x01] ), (uintptr_t)Interrupt1 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x02] ), (uintptr_t)Interrupt2 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x03] ), (uintptr_t)Interrupt3 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x04] ), (uintptr_t)Interrupt4 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x05] ), (uintptr_t)Interrupt5 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x06] ), (uintptr_t)Interrupt6 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x07] ), (uintptr_t)Interrupt7 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x08] ), (uintptr_t)Interrupt8 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x09] ), (uintptr_t)Interrupt9 , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0A] ), (uintptr_t)InterruptA , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0B] ), (uintptr_t)InterruptB , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0C] ), (uintptr_t)InterruptC , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0D] ), (uintptr_t)InterruptD , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0E] ), (uintptr_t)InterruptE , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x0F] ), (uintptr_t)InterruptF , KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x10] ), (uintptr_t)Interrupt10, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x11] ), (uintptr_t)Interrupt11, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x12] ), (uintptr_t)Interrupt12, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x13] ), (uintptr_t)Interrupt13, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x14] ), (uintptr_t)Interrupt14, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x15] ), (uintptr_t)Interrupt15, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x16] ), (uintptr_t)Interrupt16, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x17] ), (uintptr_t)Interrupt17, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x18] ), (uintptr_t)Interrupt18, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x19] ), (uintptr_t)Interrupt19, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1A] ), (uintptr_t)Interrupt1A, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1B] ), (uintptr_t)Interrupt1B, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1C] ), (uintptr_t)Interrupt1C, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1D] ), (uintptr_t)Interrupt1D, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1E] ), (uintptr_t)Interrupt1E, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x1F] ), (uintptr_t)Interrupt1F, KERNEL_CODE_SEG, interrupt_type);
 
-    SetupIDTEntry(&(idt[32] ), (uintptr_t)Interrupt20, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[33] ), (uintptr_t)Interrupt21, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[34] ), (uintptr_t)Interrupt22, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[35] ), (uintptr_t)Interrupt23, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[36] ), (uintptr_t)Interrupt24, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[37] ), (uintptr_t)Interrupt25, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[38] ), (uintptr_t)Interrupt26, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[39] ), (uintptr_t)Interrupt27, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[40] ), (uintptr_t)Interrupt28, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[41] ), (uintptr_t)Interrupt29, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[42] ), (uintptr_t)Interrupt2A, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[43] ), (uintptr_t)Interrupt2B, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[44] ), (uintptr_t)Interrupt2C, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[45] ), (uintptr_t)Interrupt2D, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[46] ), (uintptr_t)Interrupt2E, KERNEL_CODE_SEG, interrupt_type);
-    SetupIDTEntry(&(idt[47] ), (uintptr_t)Interrupt2F, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x20] ), (uintptr_t)Interrupt20, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x21] ), (uintptr_t)Interrupt21, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x22] ), (uintptr_t)Interrupt22, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x23] ), (uintptr_t)Interrupt23, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x24] ), (uintptr_t)Interrupt24, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x25] ), (uintptr_t)Interrupt25, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x26] ), (uintptr_t)Interrupt26, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x27] ), (uintptr_t)Interrupt27, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x28] ), (uintptr_t)Interrupt28, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x29] ), (uintptr_t)Interrupt29, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2A] ), (uintptr_t)Interrupt2A, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2B] ), (uintptr_t)Interrupt2B, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2C] ), (uintptr_t)Interrupt2C, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2D] ), (uintptr_t)Interrupt2D, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2E] ), (uintptr_t)Interrupt2E, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x2F] ), (uintptr_t)Interrupt2F, KERNEL_CODE_SEG, interrupt_type);
 
-    SetupIDTEntry(&(idt[128]), (uintptr_t)Interrupt80, KERNEL_CODE_SEG, interrupt_type);
+    SetupIDTEntry(&(idt[0x80] ), (uintptr_t)Interrupt80, KERNEL_CODE_SEG, interrupt_type);
 
-    idtr.limit = (sizeof(struct IDTEntry))*256 - 1;
+    idtr.limit = (sizeof(struct IDTEntry))*0x100 - 1;
     idtr.base  = (uintptr_t)idt;
    
     LoadIDT(&idtr);

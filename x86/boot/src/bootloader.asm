@@ -104,7 +104,7 @@ Boot:
 	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
 	cmp al, SIZE_BOOT2_DISK
 	je .launchstage2
-	hlt                                       ; If we did not read what we wanted to we halt 
+	hlt                                       ; If we did not read what we wanted to we halt -- can something more sophisticated be done here ?
 
 	.launchstage2:
 	mov sp, bp                                ; Putting back the stack pointer to its origin location -- not really necessary but I do it

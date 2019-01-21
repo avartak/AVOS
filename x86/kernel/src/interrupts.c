@@ -18,13 +18,13 @@ void HandleInterrupt(uint32_t interrupt, struct StackStateAtInterrupt stack, str
     }
 
     if (interrupt == 0x21) {
-		IRQTest("Keyboard interrupt received", 0x0A);
+		IRQTest("Keyboard interrupt received", 0x0F);
 		ReadKeyboardScanCode();
 	}
 
     if (interrupt >= 0x20 && interrupt < 0x30) {
         PIC_SendEOI(interrupt - 0x20);
-		IRQTest("EOI command sent to the PIC", 0x0A);
+		IRQTest("EOI command sent to the PIC", 0x0F);
     }
 
     if (interrupt == 0x80) {

@@ -5,11 +5,6 @@
 
 /*
 
-First come terminology :
-IRQ --> Interrupt request. There are 8 IRQ lines on a PIC
-ICW --> Initialization command word 
-OCW --> Operation      command word
-
 This is the interface to the 8259(A) PIC
 We assume the standard PIC configuration :
 - 8086 configuration (All x86 systems would be using this)
@@ -17,6 +12,11 @@ We assume the standard PIC configuration :
 - One  slave PIC (IRQs 8 - 15)
 - Slave connected to IRQ 2 of the master
 - EOI to be acknowledged by the interrupt service provider
+
+Some terminology :
+IRQ --> Interrupt request. There are 8 IRQ lines on a PIC
+ICW --> Initialization command word 
+OCW --> Operation      command word
 
 */
 

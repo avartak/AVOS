@@ -1,3 +1,18 @@
+/*
+
+Kinit done all the low level initialization of the system to set it up for OS business.
+Here is what is done :
+- Set up the GDT. The boot loader guarantees that we are in protected mode with some well defined segments in place. However, that's just temporary. We need to set up the GDT for ourselves
+- Set up paging. We will map the kernel to higher half (3 GB)
+- Set up the IDT. We will set up the framework for interrupt handling.
+- Set up the PIC so that we can start accepting interrupts from external devices (however, for starters we will keep them disabled)
+- Enable interrupts. However, not much will be in place for handling them. 
+- Show a nice welcome message to be sure that everything is going according to plan
+- Start enabling the external interrupts one by one. For now, we just enable the keyboad
+
+*/
+
+
 #include <x86/kernel/include/gdt.h>
 #include <x86/kernel/include/paging.h>
 #include <x86/kernel/include/idt.h>
@@ -11,7 +26,7 @@ void Kinit() {
 	// Setup the GDT (again)
 	SetupGDT();
 
-	// Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
+	// Kernel mapped to higher half (3 GB) of virtual memory. Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
 	InitPaging();
 
 	// Setup the IDT : First 32 interrupts for the CPU, the next 16 interrupts for the PIC, and interrupt 0x80 for syscalls -- none of these are implemented, just allocated

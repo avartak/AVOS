@@ -32,8 +32,6 @@ Kload16:
 	; 7) Enter back into 32-bit protected mode
 	; Launch the 3rd stage of the boot loader
 
-	mov bp, sp
-
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
@@ -58,10 +56,8 @@ Kload16:
 	mov cr0, eax
 	
 	mov ax, 0                                 ; Set the DS, ES segment address to 0x0
-	mov ds, ax
+	mov ds, ax                                ; We can now access the full 4 GB memory space in the (un)real mode through DS:REG or ES:REG
 	mov es, ax
-
-	sti                                       ; Enable interrupts so that we can use the BIOS routines
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,6 +66,8 @@ Kload16:
 	; We do not have a file system yet, so this is how it will have to be 
 	; But when we do get around to having a file system, this is the part of the code should be updated  
 	; Basically we will need it to read the two files and place the kernel in high memory	
+
+	sti                                       ; Enable interrupts so that we can use the BIOS routines
 
 	push FLOPPY_ID                            ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
@@ -97,17 +95,15 @@ Kload16:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
 
+	cli                                       ; Clear all interrupts as we are done with BIOS help
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	
 	; Entering back into the protected mode 
 	
-	mov sp, bp
-
-	cli                                       ; Clear all interrupts as we now enter the protected mode for good           
-
 	mov eax, cr0                              ; Enter protected mode
-	or eax, 1
+	or  eax, 1
 	mov cr0, eax
 
     mov ax, SEG_DS32                          ; Lets set up the segment registers correctly

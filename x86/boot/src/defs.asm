@@ -61,7 +61,7 @@ SIZE_IDT          equ 0x800                              ; The interrupt descrip
 SIZE_GDT          equ 0x40                               ; The global descriptor table has a size of 64 bytes (7 segment each 8 bytes long, 6 bytes for the GDT descriptor and 2 additional bytes to make the size round)
 
 START_PDT         equ 0x10000                            ; Starting point of the page directory table
-START_KPT         equ 0x11000                            ; Starting point of the page table for the first 4 MB of physical memory containing the kernel
+START_PGT         equ 0x11000                            ; Starting point of the page table for the first 4 MB of physical memory containing the kernel
 SIZE_PAGE         equ 0x1000                             ; Every page has a size of 4 KB
 NUM_PDTPT_ENTRIES equ 0x400                              ; There are 0x400 or 1024 entries in a page directory table or a page table
 

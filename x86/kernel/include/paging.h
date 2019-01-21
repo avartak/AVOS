@@ -3,7 +3,12 @@
 
 #include <stdint.h>
 
+#ifdef  BINARY_IMAGE
 #define LOC_KERNEL_HH_OFFSET  0xC0000000
+#else
+#define LOC_KERNEL_HH_OFFSET  0
+#endif
+
 #define LOC_PAGEMAP_PM        0x400000
 
 #define asm __asm__
@@ -12,9 +17,7 @@
 static inline void EnablePGBitInCR0();
 static inline void LoadPageDirectory(uintptr_t pdt);
 
-extern uint32_t page_directory[]__attribute__((aligned(4096)));
-extern uint32_t kern_pagetable[]__attribute__((aligned(4096)));
-extern uint32_t pmap_pagetable[]__attribute__((aligned(4096)));
+extern uint32_t page_directory[]__attribute__((aligned(0x1000)));
 
 inline void EnablePGBitInCR0() {
 
@@ -44,6 +47,9 @@ inline void LoadPageDirectory(uintptr_t pdt) {
     );
 
 }
+
+extern void AddPageTableToDirectory     (uintptr_t pt, uint32_t  entry, uint16_t attr);
+extern void MapPageTableTo4MBMemoryChunk(uintptr_t pt, uintptr_t addr , uint16_t attr);
 
 extern void InitPaging();
 
