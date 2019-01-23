@@ -73,13 +73,13 @@ Kload16:
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
 	push START_BOOT3
-	push SIZE_BOOT3_DISK                      ; Copy 8 KB of data (16 sectors)
+	push SIZE_BOOT3/SECTOR_SIZE               ; Copy 8 KB of data (16 sectors)
 	push START_BOOT3_DISK                     ; Copy data starting from 12 KB logical address of the disk
 	push FLOPPY_ID
 	call ReadSectorsFromDrive                 ; Copy the 3rd stage of the bootloader
 
 	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
-	cmp al, SIZE_BOOT2_DISK
+	cmp al, SIZE_BOOT2/SECTOR_SIZE
 	je .readkernel
 	hlt                                       ; If we did not read what we wanted to we halt 
 

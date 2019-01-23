@@ -20,10 +20,10 @@ OCW --> Operation      command word
 
 */
 
-#define IOPORT_PIC1_COMD       0x20    /* Command port    for master PIC */
-#define IOPORT_PIC1_DATA       0x21    /* Data    port    for master PIC */
-#define IOPORT_PIC2_COMD       0xA0    /* Command port    for  slave PIC */
-#define IOPORT_PIC2_DATA       0xA1    /* Data    port    for  slave PIC */
+#define PIC_IOPORT_COMD1       0x20    /* Command port    for master PIC */
+#define PIC_IOPORT_DATA1       0x21    /* Data    port    for master PIC */
+#define PIC_IOPORT_COMD2       0xA0    /* Command port    for  slave PIC */
+#define PIC_IOPORT_DATA2       0xA1    /* Data    port    for  slave PIC */
 
 #define PIC_EOI                0x20    /* End-of-interrupt command code */
  
@@ -42,10 +42,10 @@ OCW --> Operation      command word
 #define PIC_READ_IRR           0x0A    /* After sending this OCW3 command word to the PIC command port we can read the 8-bit IRR value from the command port */
 #define PIC_READ_ISR           0x0B    /* After sending this OCW3 command word to the PIC command port we can read the 8-bit ISR value from the command port */ 
 
-#define PIC1_REMAP_START       0x20    /* Start interrupt vector for the remapped IRQs of the master PIC */
-#define PIC2_REMAP_START       0x28    /* Start interrupt vector for the remapped IRQs of the  slave PIC */
+#define PIC_REMAP1_START       0x20    /* Start interrupt vector for the remapped IRQs of the master PIC */
+#define PIC_REMAP2_START       0x28    /* Start interrupt vector for the remapped IRQs of the  slave PIC */
 
-extern void      PIC_Init(uint8_t offset1, uint8_t offset2);
+extern void      PIC_Initialize(uint8_t offset1, uint8_t offset2);
 
 extern void      PIC_SendEOI(uint8_t irqline);
 

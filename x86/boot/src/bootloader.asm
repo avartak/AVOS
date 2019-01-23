@@ -67,7 +67,7 @@ Boot:
 	; There is some scratch space of 4 KB
 	; 0x00E000 - 0x00F000
 
-	; There is 4 KB space for the GDT and IDT
+	; There is 4 KB space for the system tables (GDT, IDT)
 	; 0x00F000 - 0x010000
 
 	; Finally, we will need some space (8 KB to be precise) to put the paging tables required to set up the higher half kernel
@@ -82,7 +82,6 @@ Boot:
 	mov ax, SEG_SS16
 	mov ss, ax
 	mov sp, SIZE_STACK
-	mov bp, sp
 
 	; This is the code that reads the 2nd (16-bit) stage of the boot loader
 	; As of now, it reads a certain number of sectors starting from a given location on a floppy disk
@@ -96,7 +95,7 @@ Boot:
 	call ReadDriveParameters
 
 	push START_BOOT2                          ; Where to put the 2nd stage of the boot loader in memory ?
-	push SIZE_BOOT2_DISK                      ; How many sectors of the disk do we want to read ?
+	push SIZE_BOOT2/SECTOR_SIZE               ; How many sectors of the disk do we want to read ?
 	push START_BOOT2_DISK                     ; Start sector from where we start the read on the disk
 	push FLOPPY_ID                            ; The Drive ID parameter 
 	call ReadSectorsFromDrive
@@ -107,7 +106,6 @@ Boot:
 	hlt                                       ; If we did not read what we wanted to we halt -- can something more sophisticated be done here ?
 
 	.launchstage2:
-	mov sp, bp                                ; Putting back the stack pointer to its origin location -- not really necessary but I do it
 	jmp 0x0:START_BOOT2 
 
 

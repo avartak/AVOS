@@ -6,12 +6,7 @@
 
 int screenpos = 2;
 
-void HandleInterrupt(uint32_t interrupt, struct StackStateAtInterrupt stack, struct CPUStateAtInterrupt cpu) {
-
-    int syscallid = 0;
-
-    if (stack.error_code != 0) {
-    }
+void Interrupt_Handler(uint32_t interrupt) {
 
     if (interrupt >= 0x00 && interrupt < 0x20) {
 		IRQTest("CPU has raised an exception", 0x04);
@@ -29,7 +24,6 @@ void HandleInterrupt(uint32_t interrupt, struct StackStateAtInterrupt stack, str
 
     if (interrupt == 0x80) {
 		IRQTest("System call received", 0x0A);
-        syscallid = cpu.eax;
     }
 
 	if (interrupt >= 0x30 && interrupt != 0x80) {

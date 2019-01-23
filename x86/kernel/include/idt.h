@@ -3,21 +3,19 @@
 
 #include <stdint.h>
 
-#define INT_TYPE_INTERRUPT  0xE
-#define INT_TYPE_TRAP       0xF
-#define INT_TYPE_TASK       0x5
+#define IDT_INT_TYPE_INTERRUPT  0xE
+#define IDT_INT_TYPE_TRAP       0xF
+#define IDT_INT_TYPE_TASK       0x5
 
-#define INT_ACCESS_KERNEL   0x8
-#define INT_ACCESS_USER1    0xA
-#define INT_ACCESS_USER2    0xC
-#define INT_ACCESS_USER3    0xE
+#define IDT_INT_ACCESS_KERN     0x8
+#define IDT_INT_ACCESS_USER     0xE
 
-#define KERNEL_CODE_SEG     0x08
+#define IDT_KERN_CODE_SEG       0x08
 
 #define asm __asm__
 #define volatile __volatile__
 
-struct IDTEntry{
+struct IDT_Entry{
 	uint16_t addr_low;
 	uint16_t segment;
 	uint8_t  zero;
@@ -25,21 +23,21 @@ struct IDTEntry{
 	uint16_t addr_high;
 }__attribute__((packed));
  
-struct IDTRecord {
+struct IDT_Descriptor {
     uint16_t  limit;
     uintptr_t base;
 }__attribute__((packed));
 
-extern struct IDTEntry idt[];
-extern struct IDTRecord idtr;
+extern struct IDT_Entry      IDT_entries[];
+extern struct IDT_Descriptor IDT_desc;
 
-extern void SetupIDTEntry(struct IDTEntry* entry, uintptr_t address, uint16_t segment, uint8_t type);
-extern void SetupIDT();
+extern void IDT_SetupEntry(struct IDT_Entry* entry, uintptr_t address, uint16_t segment, uint8_t type);
+extern void IDT_Initialize();
 
-static inline void LoadIDT(struct IDTRecord* gdtr);
+static inline void IDT_Load(struct IDT_Descriptor* gdtr);
 
-inline void LoadIDT(struct IDTRecord* idtr) {
-    asm volatile("lidt %0" : : "m"(*idtr));
+inline void IDT_Load(struct IDT_Descriptor* desc) {
+    asm volatile("lidt %0" : : "m"(*desc));
 }
 
 #endif

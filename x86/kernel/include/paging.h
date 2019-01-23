@@ -3,23 +3,18 @@
 
 #include <stdint.h>
 
-#ifdef  BINARY_IMAGE
-#define LOC_KERNEL_HH_OFFSET  0xC0000000
-#else
-#define LOC_KERNEL_HH_OFFSET  0
-#endif
-
-#define LOC_PAGEMAP_PM        0x400000
+#define LOC_PAGEMAP_PM 0x400000
 
 #define asm __asm__
 #define volatile __volatile__
 
-static inline void EnablePGBitInCR0();
-static inline void LoadPageDirectory(uintptr_t pdt);
 
-extern uint32_t page_directory[]__attribute__((aligned(0x1000)));
+extern uint32_t Paging_directory[]__attribute__((aligned(0x1000)));
 
-inline void EnablePGBitInCR0() {
+static inline void Paging_EnablePGBitInCR0();
+static inline void Paging_LoadDirectory(uintptr_t pd);
+
+inline void Paging_EnablePGBitInCR0() {
 
     asm volatile (
         " \
@@ -34,7 +29,7 @@ inline void EnablePGBitInCR0() {
 
 }
 
-inline void LoadPageDirectory(uintptr_t pdt) {
+inline void Paging_LoadDirectory(uintptr_t pd) {
 
     asm volatile (
         " \
@@ -42,15 +37,16 @@ inline void LoadPageDirectory(uintptr_t pdt) {
         movl %%eax, %%cr3; \
         "
         :
-        : "m"(pdt)
+        : "m"(pd)
         : "%eax"
     );
 
 }
 
-extern void AddPageTableToDirectory     (uintptr_t pt, uint32_t  entry, uint16_t attr);
-extern void MapPageTableTo4MBMemoryChunk(uintptr_t pt, uintptr_t addr , uint16_t attr);
+extern void Paging_MapTableInDirectory  (uintptr_t pd, uintptr_t pt, uint32_t entry, uint16_t attr);
+extern void Paging_MapPageInTable       (uintptr_t pt, uintptr_t pg, uint32_t entry, uint16_t attr);
+extern void Paging_MapMemoryBlockInTable(              uintptr_t pt, uintptr_t addr, uint16_t attr);
 
-extern void InitPaging();
+extern void Paging_Initialize();
 
 #endif

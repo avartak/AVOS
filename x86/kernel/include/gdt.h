@@ -3,22 +3,30 @@
 
 #include <stdint.h>
 
-#define KERNEL_CODE_SEG_ACCESS  0x9A
-#define KERNEL_DATA_SEG_ACCESS  0x92
-#define KERNEL_STACK_SEG_ACCESS 0x96
+#define GDT_KERN_CODE_SEG_ACCESS  0x9A
+#define GDT_KERN_DATA_SEG_ACCESS  0x92
 
-#define USER_CODE_SEG_ACCESS    0xFA
-#define USER_DATA_SEG_ACCESS    0xF2
-#define USER_STACK_SEG_ACCESS   0xF6
+#define GDT_USER_CODE_SEG_ACCESS  0xFA
+#define GDT_USER_DATA_SEG_ACCESS  0xF2
 
-#define SEG_GRANULARITY         0x0C
+#define GDT_TSS_SEG_TYPE_ACCESS   0x89
 
+#define GDT_SEG_GRANULARITY       0x0C
+#define GDT_TSS_GRANULARITY       0x00
+
+#define GDT_KERN_CODE_SEG         0x08
+#define GDT_KERN_DATA_SEG         0x10
+
+#define GDT_USER_CODE_SEG         0x18
+#define GDT_USER_DATA_SEG         0x20
+
+#define GDT_KERN_TSS_SEG          0x28
 
 #define asm __asm__
 #define volatile __volatile__
 
 
-struct GDTEntry {
+struct GDT_Entry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t  base_middle;
@@ -27,25 +35,23 @@ struct GDTEntry {
     uint8_t  base_high;
 }__attribute__((packed));
 
-struct GDTRecord {
+struct GDT_Descriptor {
     uint16_t  limit;
     uintptr_t base;
 }__attribute__((packed));
 
-extern struct GDTEntry gdt[];
-extern struct GDTRecord gdtr;
+extern struct GDT_Entry      GDT_entries[];
+extern struct GDT_Descriptor GDT_desc;
 
-extern void SetupGDTEntry(struct GDTEntry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
-extern void SetupGDT();
+extern void GDT_SetupEntry(struct GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+extern void GDT_Initialize();
 
-static inline void LoadGDT(struct GDTRecord* gdtr);
+static inline void GDT_Load(struct GDT_Descriptor* desc);
 
-inline void LoadGDT(struct GDTRecord* gdtr) {
-    asm volatile ("lgdt %0" : : "m"(*gdtr));
+inline void GDT_Load(struct GDT_Descriptor* desc) {
+    asm volatile ("lgdt %0" : : "m"(*desc));
 }
 
-extern void LoadKernelSegments();
-extern void LoadUserSegments();
-
+extern void GDT_LoadKernelSegments();
 
 #endif

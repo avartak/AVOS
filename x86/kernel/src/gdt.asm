@@ -1,30 +1,19 @@
+GDT_KERN_CODE_SEG  equ 0x08
+GDT_KERN_DATA_SEG  equ 0x10
+
 section .text
 
-global LoadKernelSegments
-LoadKernelSegments:
-	jmp 0x08:.reloadCS
+global GDT_LoadKernelSegments
+GDT_LoadKernelSegments:
+	jmp GDT_KERN_CODE_SEG:.reloadCS
 
 	.reloadCS:
-	mov eax, 0x10
-	mov  ds, eax
-	mov  es, eax
-	mov  fs, eax
-	mov  gs, eax
-	mov  ss, eax
+	mov  ax, GDT_KERN_DATA_SEG
+	mov  ds, ax
+	mov  es, ax
+	mov  fs, ax
+	mov  gs, ax
+	mov  ss, ax
 
 	ret
-
-global LoadUserSegments
-LoadUserSegments:
-    jmp 0x18:.reloadCS
-
-    .reloadCS:
-    mov eax, 0x20
-    mov  ds, eax
-    mov  es, eax
-    mov  fs, eax
-    mov  gs, eax
-    mov  ss, eax
-
-    ret
 

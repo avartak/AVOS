@@ -14,6 +14,7 @@ Here is what is done :
 
 
 #include <x86/kernel/include/gdt.h>
+#include <x86/kernel/include/tss.h>
 #include <x86/kernel/include/paging.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/interrupts.h>
@@ -24,17 +25,20 @@ Here is what is done :
 void Kinit() {
 
 	// Setup the GDT (again)
-	SetupGDT();
+	GDT_Initialize();
+
+	// Setup the TSS 
+	TSS_Initialize();
 
 	// Kernel mapped to higher half (3 GB) of virtual memory. Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
-	InitPaging();
+	Paging_Initialize();
 
 	// Setup the IDT : First 32 interrupts for the CPU, the next 16 interrupts for the PIC, and interrupt 0x80 for syscalls -- none of these are implemented, just allocated
-	SetupIDT();
+	IDT_Initialize();
 
 	// Initialize the PIC -- remap the master and slave IRQs to interrupt vectors 0x20-0x27 and 0x28-0x30 respectively ; Mask all interrupts
 	PIC_DisableAllInterrupts();
-	PIC_Init(PIC1_REMAP_START, PIC2_REMAP_START);
+	PIC_Initialize(PIC_REMAP1_START, PIC_REMAP2_START);
 
 	// Enable interrupts -- note the interrupts in the PIC are all still masked ; The CPU is now willing to listen but PIC will not be sending anything right now
 	EnableInterrupts();

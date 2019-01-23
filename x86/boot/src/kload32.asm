@@ -33,7 +33,7 @@ BITS 32
 ; The 3rd stage kernel loader will for now create the page directory and the page table for the kernel at the following locations
 
 Page_Directory equ START_PDT
-Page_Tables    equ START_PGT
+Page_Tables    equ START_PDT + NUM_PDTPT_ENTRIES*4
 
 Kload32: 
 
@@ -42,7 +42,7 @@ Kload32:
 		mov [Page_Directory+4*ecx], DWORD 0      ; Initialize all entries to the page directory to 0. Basically none of the memory pages are accessible with this
 		loop .fillPageDirectory                  ; Loop
 
-    mov ecx, 2*NUM_PDTPT_ENTRIES-1               ; We will be copying two pages tables mapping physical memory from 0 to 8 MB. There are 1024 or 0x400 entries in each page table
+    mov ecx, 2*NUM_PDTPT_ENTRIES-1               ; We will be copying three pages tables mapping physical memory from 0 to 8 MB. There are 1024 or 0x400 entries in each page table
     .fillPageTables:
 		mov eax, ecx
 		mov ebx, SIZE_PAGE                       ; We will set entry i in the page table to (i * 0x1000) | 3 ; every entry in the page table corresponds to a 4 KB page table
@@ -58,7 +58,6 @@ Kload32:
 	add eax, 0x1000		
 	mov [Page_Directory+0x001*4], eax            ; Identity map physical memory 4 MB - 8 MB 
 	mov [Page_Directory+0x301*4], eax            ; Also map this memory to higher half (3 GB offset)
-	
 
 	mov eax, Page_Directory                      ; Put the address of the page directory in CR3
 	mov cr3, eax       
