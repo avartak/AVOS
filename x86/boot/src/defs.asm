@@ -62,4 +62,3 @@ START_PDT         equ 0x10000                                     ; Starting poi
 SIZE_PAGE         equ 0x1000                                      ; Every page has a size of 4 KB
 
 KERNL_HH          equ 0xC0100000                                  ; This is where we will map the kernel in high memory
-LOC_MBOOT_SIZE    equ 0x8                                         ; Location in the multiboot header of the 32-bit double word containing the header size 

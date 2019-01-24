@@ -35,14 +35,6 @@
 ; The uninitialized data goes into the 'bss' section
 ; And the read-only data goes in the 'rodata' section 
 
-; We make our kernel multiboot-2 compliant
-; It needs an appropriate multiboot header
-; This is included from multiboot.asm -- check the file for details on multiboot-2 header specifications
-
-section .multiboot
-
-%include "kernel/src/multiboot.asm"
-
 section .text
 
 global Kstart

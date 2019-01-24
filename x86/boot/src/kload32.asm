@@ -63,9 +63,7 @@ Kload32:
 	or  eax, 0x80000000
 	mov cr0, eax
 
-	mov eax, KERNL_HH                            ; Jump to the start of the kernel -- we have the multiboot header at the start of the higher half location of the kernel
-	add eax, [KERNL_HH+LOC_MBOOT_SIZE]           ; The size of the multiboot header is stored in a double word at location LOC_MBOOT_SIZE of the header
-	jmp eax                                      
+	jmp KERNL_HH                                      
                                                  
 
 

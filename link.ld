@@ -16,7 +16,6 @@ SECTIONS
 	/* Multiboot header and code */	 
 	.text BLOCK(4K) : ALIGN(4K)
 	{
-		*(.multiboot)
 		*(.text)
 	}
  
