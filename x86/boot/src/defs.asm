@@ -57,9 +57,6 @@ START_KERNL_DISK  equ START_BOOT3_DISK + SIZE_BOOT3_DISK          ; Starting sec
 SECTRS_PER_ITER   equ 0x80                                        ; We will copy the kernel 0x80 or 128 sectors at a time
 KERNL_COPY_ITER   equ SIZE_KERNL/(SECTRS_PER_ITER*SECTOR_SIZE)    ; We need 16 iterations to load the 1 MB kernel
 
-SIZE_IDT          equ 0x800                                       ; The interrupt descriptor table has a size of 256 x 8 = 2048 bytes or 0x800
-SIZE_GDT          equ 0x40                                        ; The global descriptor table has a size of 64 bytes (7 segment each 8 bytes long, 6 bytes for the GDT descriptor and 2 additional bytes to make the size round)
-
 NUM_PDTPT_ENTRIES equ 0x400                                       ; There are 0x400 or 1024 entries in a page directory table or a page table
 START_PDT         equ 0x10000                                     ; Starting point of the page directory table
 SIZE_PAGE         equ 0x1000                                      ; Every page has a size of 4 KB

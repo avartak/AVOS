@@ -67,7 +67,7 @@ Boot:
 	; There is some scratch space of 4 KB
 	; 0x00E000 - 0x00F000
 
-	; There is 4 KB space for the system tables (GDT, IDT)
+	; There is 4 KB space for the system tables (GDT)
 	; 0x00F000 - 0x010000
 
 	; Finally, we will need some space (8 KB to be precise) to put the paging tables required to set up the higher half kernel

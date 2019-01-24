@@ -1,5 +1,5 @@
 %macro Interrupt_HandlerForNoErrorCode 1
-    global Interrupt_%1
+    global Interrupt_%1 
     Interrupt_%1:
         push dword 0
 		Interrupt_DoCommonHandling %1
@@ -13,14 +13,13 @@
 
 %macro Interrupt_DoCommonHandling 1
 
-    .poststack:
     push dword 0x%1
 
     extern Interrupt_Handler
     call   Interrupt_Handler
 
-    add  esp, 4
-    add  esp, 4
+	add esp, 8
+
 	iret
 %endmacro
 

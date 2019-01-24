@@ -7,7 +7,7 @@ struct TSS_Segment TSS_seg;
 void TSS_Initialize() {
 
 	TSS_seg.ss0 = TSS_KERN_DATA_SEG;
-	TSS_seg.esp = 0x400000;
+	TSS_seg.esp = 0xC0400000;
 
 	for (size_t i = 0; i < 0x2000; i++) TSS_seg.ioport_map[i] = 0xFF;
 

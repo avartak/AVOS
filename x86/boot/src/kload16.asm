@@ -36,7 +36,7 @@ Kload16:
 
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 
-	call CreateTables                         ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
+	call CreateGDT                            ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
  
 	lgdt [GDT_Desc]                           ; Load the GDT -- Note that GDT_Desc is defined in tables.asm
 
@@ -129,7 +129,7 @@ Kload16:
 %include "x86/boot/src/a20.asm"
 
 ; Load the tables at designated locations in memory
-%include "x86/boot/src/tables.asm"
+%include "x86/boot/src/gdt.asm"
 
 ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 %include "x86/boot/src/biosio.asm"
