@@ -58,7 +58,7 @@ void Paging_Initialize() {
 	Paging_MapTableInDirectory  (pd, pt,   0, 3);
 	Paging_MapTableInDirectory  (pd, pt, 768, 3);
 
-	Paging_LoadDirectory(pd > 0xC0000000 ? pd - 0xC0000000 : pd);
+	Paging_LoadDirectory(pd);
 	Paging_EnablePGBitInCR0();
 
 	asm volatile("add $0xC0000000, %esp");
