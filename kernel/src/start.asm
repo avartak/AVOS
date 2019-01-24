@@ -6,10 +6,12 @@
 ; - The code segment (CS) is a valid protected mode code segment with an offset of 0 and limit of 0xFFFFFFFF 
 ; - Segments DS, ES, FS, GS, SS are valid protected segments with an offset of 0 and limit of 0xFFFFFFFF
 ; - Kernel is placed at 0x100000
-; - No assumption about paging being enabled i.e. PG bit (bit 31) in CR0 being set
 ; - Interrupt flag (IF bit 9) in EFLAGS is cleared i.e. maskable interrupts are disabled
 ; - Virtual 8086 mode is disabled i.e. VM bit 17 in EFLAGS has not been set by the boot loader
 ; These assumptions are consistent with the multiboot requirements
+; But we assume paging to be enabled which breaks the multiboot compliance
+; May be at a later stage we will get back to it
+; For now, this kernel is not multiboot compliant
 
 ; Kstart has a simple function :
 ; - Clear all the interrupts (they have been disabled anyways, but still)
