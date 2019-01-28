@@ -48,11 +48,13 @@ extern bool Paging_UnmapVirtualPage(uintptr_t virtual_address) {
 }
 
 void Paging_Initialize() {
+	/*
     for (size_t i = 0; i < 1024; i++) Paging_kernel_directory[i] = 0;   
 	Paging_MapMemoryBlockInTable(Paging_kernel_selftable, 0, PAGING_KERN_PAGE_FLAGS);
 
 	Paging_MapTableInDirectory(Paging_kernel_directory, Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_selftable), Paging_GetDirectoryEntry(0xC0000000), PAGING_KERN_TABLE_FLAGS);
 	Paging_MapTableInDirectory(Paging_kernel_directory, Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory), Paging_GetDirectoryEntry(0xFFFFF000), PAGING_KERN_TABLE_FLAGS);
+	*/
 
 	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory));
 	Paging_EnablePGBitInCR0();

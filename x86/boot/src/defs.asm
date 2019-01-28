@@ -42,6 +42,7 @@ SEG_GS32          equ 0x10                                        ; 32-bit GS se
 SEG_SS32          equ 0x10                                        ; 32-bit stack segment
 
 FLOPPY_ID         equ 0                                           ; Floppy ID used by the BIOS
+HDD_ID            equ 0x80                                        ; Floppy ID used by the BIOS
 SECTOR_SIZE       equ 0x200                                       ; Size of a sector on the disk : 512 bytes
 
 SIZE_BOOT1_DISK   equ SIZE_BOOT1/SECTOR_SIZE
@@ -57,8 +58,5 @@ START_KERNL_DISK  equ START_BOOT3_DISK + SIZE_BOOT3_DISK          ; Starting sec
 SECTRS_PER_ITER   equ 0x80                                        ; We will copy the kernel 0x80 or 128 sectors at a time
 KERNL_COPY_ITER   equ SIZE_KERNL/(SECTRS_PER_ITER*SECTOR_SIZE)    ; We need 16 iterations to load the 1 MB kernel
 
-NUM_PDTPT_ENTRIES equ 0x400                                       ; There are 0x400 or 1024 entries in a page directory table or a page table
-START_PDT         equ 0x10000                                     ; Starting point of the page directory table
-SIZE_PAGE         equ 0x1000                                      ; Every page has a size of 4 KB
-
-KERNL_HH          equ 0xC0100000                                  ; This is where we will map the kernel in high memory
+KERNEL_START      equ 0x100000                                    ; Physical location of the start of the kernel
+MBOOT_SIZE_PTR    equ KERNEL_START+0x8                            ; Location where the size of the multiboot header is stored

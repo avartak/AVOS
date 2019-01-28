@@ -1,10 +1,9 @@
 #!/bin/bash
 
 nasm -f bin   -o bootloader.bin    x86/boot/src/bootloader.asm
-nasm -f bin   -o kload16.bin       x86/boot/src/kload16.asm 
-nasm -f bin   -o kload32.bin       x86/boot/src/kload32.asm 
+nasm -f bin   -o avosloader.bin    x86/boot/src/avosloader.asm 
 
-nasm -f elf32 -o start.o           kernel/src/start.asm
+nasm -f elf32 -o start.o           x86/kernel/src/start.asm
 nasm -f elf32 -o gdt_asm.o         x86/kernel/src/gdt.asm
 nasm -f elf32 -o interrupts_asm.o  x86/kernel/src/interrupts.asm
 
@@ -23,8 +22,7 @@ gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-prote
 i386-elf-ld -m elf_i386 -T link.ld  -o kernel.bin  start.o kernel.o kinit.o gdt.o gdt_asm.o tss.o paging.o idt.o interrupts_asm.o interrupts.o pic.o welcome.o keyboard.o string.o
 
 dd conv=notrunc if=kernel.bin     of=avos.flp seek=40
-dd conv=notrunc if=kload32.bin    of=avos.flp seek=24
-dd conv=notrunc if=kload16.bin    of=avos.flp seek=8
+dd conv=notrunc if=avosloader.bin of=avos.flp seek=8
 dd conv=notrunc if=bootloader.bin of=avos.flp
 
 rm *.bin *.o

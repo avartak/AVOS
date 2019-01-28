@@ -28,9 +28,9 @@ Kload16:
 	; 3) Create a GDT and load it
 	; 4) Enter protected mode
 	; 5) Enter unreal mode
-	; 6) Copy the stage-3 boot loader and then the kernel to memory
+	; 6) Copy the kernel into memory
 	; 7) Enter back into 32-bit protected mode
-	; Launch the 3rd stage of the boot loader
+	; 8) Launch the kernel
 
 	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
 
@@ -65,25 +65,13 @@ Kload16:
 	; It very crudely reads certain number of sectors from certain locations of the disk
 	; We do not have a file system yet, so this is how it will have to be 
 	; But when we do get around to having a file system, this is the part of the code should be updated  
-	; Basically we will need it to read the two files and place the kernel in high memory	
+	; Basically we will need it to read the kernel image file and put it in memory	
 
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
 
 	push FLOPPY_ID                            ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
-	push START_BOOT3
-	push SIZE_BOOT3/SECTOR_SIZE               ; Copy 8 KB of data (16 sectors)
-	push START_BOOT3_DISK                     ; Copy data starting from 12 KB logical address of the disk
-	push FLOPPY_ID
-	call ReadSectorsFromDrive                 ; Copy the 3rd stage of the bootloader
-
-	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
-	cmp al, SIZE_BOOT2/SECTOR_SIZE
-	je .readkernel
-	hlt                                       ; If we did not read what we wanted to we halt 
-
-	.readkernel:
 	push DWORD START_KERNL                    ; Starting point of the kernel in high memory (1 MB)
 	push START_SCRCH                          ; Temporary pool to hold each sector before copying it to the high memory
 	push SECTRS_PER_ITER                      ; Copy 64 KB of data (128 sectors) from the disk in every interation
@@ -106,20 +94,7 @@ Kload16:
 	or  eax, 1
 	mov cr0, eax
 
-    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly
-    mov ds, ax
-    mov ax, SEG_ES32
-    mov es, ax
-    mov ax, SEG_FS32
-    mov fs, ax
-    mov ax, SEG_GS32
-    mov gs, ax
-    mov ax, SEG_SS32
-    mov ss, ax
-
-    mov esp, END_STACK                        ; Resetting our stack again 
-
-	jmp SEG_CS32:START_BOOT3                  ; Make a far jump this time to update the code segment to 32-bit, and launch into the 3rd stage of the boot loader 
+	jmp SEG_CS32:In32bitMode                  ; Make a far jump this time to update the code segment to 32-bit
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,5 +109,33 @@ Kload16:
 ; ReadDriveParameters and ReadSectorsFromDrive are define in this file
 %include "x86/boot/src/biosio.asm"
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This is now firmly 32-bit protected mode territory
+
+BITS 32
+
+In32bitMode:
+
+    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly
+    mov ds, ax
+    mov ax, SEG_ES32
+    mov es, ax
+    mov ax, SEG_FS32
+    mov fs, ax
+    mov ax, SEG_GS32
+    mov gs, ax
+    mov ax, SEG_SS32
+    mov ss, ax
+
+    mov esp, END_STACK                        ; Resetting our stack again 
+
+	mov eax, [MBOOT_SIZE_PTR]
+	add eax, KERNEL_START
+	jmp eax                                   ; Launch into the kernel
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
