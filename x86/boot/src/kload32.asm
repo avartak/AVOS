@@ -55,6 +55,9 @@ Kload32:
 	or  eax, 3                                   ; Here again we want to set the page table to have supervisor-only read/write access and be present
 	mov [Page_Directory]        , eax            ; Identity map the first 4 MB -- w/o this the code will crash after after paging is enables
 	mov [Page_Directory+0x300*4], eax            ; Map the kernel to 3 GB memory
+	mov eax, Page_Directory                      ; Recursively page the page directory as the last entry to itself
+	or  eax, 3                                   ; Here again we want to set the page table to have supervisor-only read/write access and be present
+	mov [Page_Directory+0x3FF*4], eax            ; Map the kernel to 3 GB memory
 
 	mov eax, Page_Directory                      ; Put the address of the page directory in CR3
 	mov cr3, eax       
@@ -62,6 +65,11 @@ Kload32:
 	mov eax, cr0                                 ; Enable paging in CR0 by turning on the 32nd bit 
 	or  eax, 0x80000000
 	mov cr0, eax
+
+	mov eax, 0                                   ; Remove the identity mapping -- we no longer need it 
+	mov [Page_Directory], eax
+
+	mov esp, 0xC0400000                          ; Set the stack pointer to 4 MB physical memory address
 
 	jmp KERNL_HH                                      
                                                  

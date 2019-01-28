@@ -9,23 +9,13 @@
 ; - Interrupt flag (IF bit 9) in EFLAGS is cleared i.e. maskable interrupts are disabled
 ; - Virtual 8086 mode is disabled i.e. VM bit 17 in EFLAGS has not been set by the boot loader
 ; These assumptions are consistent with the multiboot requirements
-; But we assume paging to be enabled which breaks the multiboot compliance
-; May be at a later stage we will get back to it
-; For now, this kernel is not multiboot compliant
+; But we additionally assume
+; - Paging is enabled which breaks the multiboot compliance
+; - We also assume that the boot loader has found a reasonable place for the stack pointer (at least 3 MB away from the start of the kernel)
 
 ; Kstart has a simple function :
-; - Clear all the interrupts (they have been disabled anyways, but still)
-; - Set the stack pointer to 0x400000 (so 3 MB away from the start of the kernel code)
-; - Call the Kmain function which is the entry point to the C code of the kernel
-; - Kmain will only return when nothing can wake up the system anymore (interrupts are disabled) and it can peacefully go to sleep forever
-;
-; The sleep loop is basically a halt instruction followed by a jump to the halt instruction. Why not just a halt ?
-; Lets assume we got to the point of the sleep loop. At that point the system is in an idle state
-; The only thing that will wake it up is an interrupt -- for example, lets say you press a key
-; Now, the interrupt will do what it needs to do and then return to the next instruction after the point where it injected itself
-; If the system is sitting at its very last instruction, there is no next instruction and it will go crazy 
-; The sleep loop makes sure that does not happen 
-
+; - Call the Kmain function which is the entry point to the kernel
+; - Kmain will only return when nothing can wake up the system anymore (interrupts are disabled) and the system can peacefully go to sleep forever
 
 ; We have decided that the start of the kernel (in virtual memory) is 0xC0100000
 ; However, we are not going to put an ORG here unlike what we did with the boot loader
@@ -41,8 +31,6 @@ section .text
 
 global Kstart
 Kstart:
-
-	mov esp, 0x400000
 
 	extern Kmain
 	call Kmain
