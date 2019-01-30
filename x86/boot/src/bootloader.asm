@@ -37,15 +37,9 @@ Boot:
 
 	; Now, this is how the 'bootstrap' will happen
 	; The 512 B available here are too few to do much in terms of loading an OS
-	; Instead the code in the boot sector will simply load 8 KB from the floppy drive (specifically, logical address of 4 KB - 12 KB on the floppy drive) to the memory location 0x8000
-	; This is meant to be the 2nd stage of the boot process. It's a loader that will set up the 32-bit system (protected mode) and load the 3rd stage 
-	; The 3rd stage is an 8 KB, 32-bit code that will set up paging, load the kernel at 1 MB physical address, and map it to 3 GB virtual address, and then launch the kernel
-	; The third stage is copied from logical address 12 KB - 20 KB of the floppy drive to memory location 0xA000
-	; The kernel is assumed to be 1 MB of code starting at 20 KB logical address on the floppy
-
-	; For now the three stages of the bootstrap will only perform the minimal tasks highlighted above and launch the kernel
-	; There remains a lot of room for running a more sophisticated boot in the 16-bit and 32-bit environments if needed -- assuming 8 KB is sufficient for that purpose
-	; Take note of the mapping of the first MB of the physical memory in the PC architecture. 
+	; The code in the boot sector will simply load the 2nd stage from the floppy drive (specifically, logical address of 4 KB - 20 KB, so 16 KB, on the floppy drive) to the memory location 0x8000
+	; This is meant to be the 2nd stage of the boot process. It will set up the 32-bit system (protected mode) and load the kernel
+	; Lets take note of the mapping of the first MB of the physical memory in the PC architecture. 
 
 	; 0x000000 - 0x000400 : Interrupt Vector Table  
 	; 0x000400 - 0x000500 : BIOS data area          
@@ -56,57 +50,136 @@ Boot:
 	; 0x0A0000 - 0x0C0000 : Video memory            
 	; 0x0C0000 - 0x100000 : BIOS            
 
-	; As mentioned above our three stages of bootstrap will reside in :
+	; We set the top of the stack at 0x7000; it can go down to 0x500 allowing for 26 KB (plenty)
+	; 0x000500 - 0x007000
+
+	; We a assume 1 KB buffer from 0x7000 to 0x7400; it can extend till 0x7C00 (3 KB) if needed
+	; 0x007000 - 0x007C00
+
+	; The first stage of our boot loader will (rather has to) reside at :
 	; 0x007C00 - 0x007E00
-	; 0x008000 - 0x00A000
-	; 0x00A000 - 0x00C000
 
-	; There is an 8 KB stack set up at :
-	; 0x00C000 - 0x00E000
+	; We use the next 512 bytes to set up a GDT (and if we really want to, a TSS entry although there is no reason for having it in the boot stage)
+	; 0x007E00 - 0x008000
 
-	; There is some scratch space of 4 KB
-	; 0x00E000 - 0x00F000
+	; We will put the second stage of our boot loader next at 0x8000 and allow it a space of 32 KB :
+	; 0x008000 - 0x010000
 
-	; There is 4 KB space for the system tables (GDT)
-	; 0x00F000 - 0x010000
+	; And then any other tables will start from 0x10000
 
-	; Finally, we will need some space (8 KB to be precise) to put the paging tables required to set up the higher half kernel
-	; 0x10000  - 0x12000
+	; Note that there is free space from 0x500 to 0x7C00 as well in case it is needed 
+	; We use 16 KB of scratch space as follows
+	; 0x001000 - 0x005000 
 
-	; So, lets set up the segment registers -- DS, ES at 0, and SS at 0xC00, and the stack pointer (SP) at 0x2000
+	; Alright, lets get started. We don't want any interrupts right now. First lets set up our segments and stack, and then we reenable the interrupts
 
-	mov ax, SEG_DS16
+	cli
+
+	; We set all the segment registers to 0
+	; First CS
+
+	jmp 0x0000:Start
+
+Start:
+
+	; Then, lets set DS, ES and SS to 0, and the stack pointer (SP) at 0x7000
+
+	xor ax, ax
 	mov ds, ax
-	mov ax, SEG_ES16
 	mov es, ax
-	mov ax, SEG_SS16
 	mov ss, ax
-	mov sp, SIZE_STACK
+	mov sp, TOP_STACK 
 
-	; This is the code that reads the 2nd (16-bit) stage of the boot loader
-	; As of now, it reads a certain number of sectors starting from a given location on a floppy disk
-	; In principle it should work for hard disk drives as well if we set the drive ID appropriately, although that has not been tested
-	; The drive ID is passed as a parameter in register DL (0 for floppy disk, 0x80 for HDD -- not tried)
-	; Next, we obtain the parameters of the drive that we want to read from
-	; We then read N sectors starting from sector S
-	; For this we will invoke the ReadSectorsFromDrive function
+	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
+	; So we need to set up some code that does the reading from disk
 
-	push FLOPPY_ID                            ; Pass the Drive ID parameter 
+	; Next we save some information (called the disk address packet) that INT 0x13, AH=0x41 will need to read from disk
+	; INT 0x13, AH=0x41 is our preferred function to read from disk
+	; If we can use it, we will not have to bother with the disk geometry (cylinders, heads, sectors and what not) but simply use the logical block address (LBA) which is a simple, linear sequence of sectors
+
+	jmp ReadStage2
+
+    Disk_Address_Packet:
+    DAP_Size             db 0x10
+    DAP_Unused           db 0
+    DAP_Sectors_Count    dw SIZE_BOOT2/SECTOR_SIZE
+    DAP_Start_Offset     dw START_BOOT2
+    DAP_Start_Segment    dw 0
+    DAP_Start_Sector     dq 1
+
+
+ReadStage2:
+
+	; We can reenable the interrupts now
+	
+	sti
+
+	; We move the drive ID of the boot drive to the register DL from where INT 0x13 reads it, and also store it in a persistent location
+	; BIOS is expected to put the ID of the boot drive in DL, but not sure how reliable that is
+	; We assume to know where this code will be booting from
+	
+	mov [Drive], BYTE HDD_ID
+
+	; First we need to test if BIOS supports the AH=0x41 extension; not all of them do
+	; For that we need to call INT 0x13, AH=0x41
+	; It's input parameters are as follows
+	; AH = 0x41 (Duh!)
+	; DL = Drive index
+	; BX = 0x55AA
+	; The output parameters are as follows
+	; CF = Set on not present, clear if present
+	; AH = Error code or major version
+	; BX = 0xAA55
+	; CX = Bit 1 : Device Access using the packet structure ; Bit 2 : Drive Locking and Ejecting ; Bit 3 : Enhanced Disk Drive Support (EDD) ; We are only concerned with the first bit being set 
+
+	mov ah, 0x41
+	mov bx, 0x55AA
+	int 0x13
+	jc  .readusingchs
+	cmp bx, 0xAA55
+	jne .readusingchs
+	test cx, 1
+	jz  .readusingchs
+
+	.readusinglba:
+	mov ah, 0x42
+	mov dl, [Drive]
+	mov si, Disk_Address_Packet
+
+	int 0x13
+	jc .readusingchs
+	jmp LaunchStage2
+
+
+	; Sigh, we don't have the BIOS extension need to read from the disk using the LBA
+	; So have to read the disk using INT 0x13, AH=0x02
+	; This BIOS service needs the disk geometry
+	; So we will first call a service -- INT 0x13, AH=0x08 to read the disk geometry and save it (ReadDriveParameters)
+	; We will them call the ReadDriveParameters function to read from the disk
+	; These functions are defined in biosio.asm
+ 
+	.readusingchs:
 	call ReadDriveParameters
 
 	push START_BOOT2                          ; Where to put the 2nd stage of the boot loader in memory ?
 	push SIZE_BOOT2/SECTOR_SIZE               ; How many sectors of the disk do we want to read ?
 	push START_BOOT2_DISK                     ; Start sector from where we start the read on the disk
-	push FLOPPY_ID                            ; The Drive ID parameter 
 	call ReadSectorsFromDrive
 
 	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
 	cmp al, SIZE_BOOT2_DISK
-	je .launchstage2
-	hlt                                       ; If we did not read what we wanted to we halt -- can something more sophisticated be done here ?
+	je  LaunchStage2
+	jmp HaltSystem
 
-	.launchstage2:
+
+
+
+LaunchStage2:
 	jmp 0x0:START_BOOT2 
+
+HaltSystem:
+	cli
+	hlt                                       ; If we did not read what we wanted to we halt
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

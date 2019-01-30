@@ -25,12 +25,112 @@ section .text
 extern Paging_kernel_directory
 extern Paging_kernel_selftable
 
-Directory equ Paging_kernel_directory - HIGHER_HALF_OFFSET
-Table     equ Paging_kernel_selftable - HIGHER_HALF_OFFSET
+Directory  equ Paging_kernel_directory - HIGHER_HALF_OFFSET
+Table      equ Paging_kernel_selftable - HIGHER_HALF_OFFSET
+
+E820_Table equ 0x10000
 
 global Kstart
 Kstart:
 
+
+CheckMemoryForKernelInit:
+
+	mov ecx, DWORD [E820_Table]
+	mov esi, E820_Table-0x14
+	cmp ecx, 0
+	je .mapcheckfail
+	.checkfullmapping:
+	add esi, 0x18
+	mov eax, DWORD [esi+0x14]
+	test eax, 1
+	jz  .loop_on_checkfullmapping
+	mov eax, DWORD [esi+0x10]
+	cmp eax, 1
+	jne .loop_on_checkfullmapping
+	
+	mov eax, DWORD [esi]
+	mov ebx, DWORD [esi+8]
+	add ebx, eax
+	
+	cmp eax, DWORD [Kernel_Start - HIGHER_HALF_OFFSET]
+	jg .loop_on_checkfullmapping
+	
+	.checkendforfullmapping:
+	cmp ebx, DWORD [Kernel_End - HIGHER_HALF_OFFSET]
+	jge .mapchecksuccess
+
+	.loop_on_checkfullmapping:
+	loop .checkfullmapping
+
+
+
+	mov ecx, DWORD [E820_Table]
+	mov esi, E820_Table-0x14
+	.checkpartialmapping:
+	add esi, 0x18
+    mov eax, [esi+0x14]
+    test eax, 1
+    jz  .loop_on_checkpartialmapping
+    mov eax, [esi+0x10]
+    cmp eax, 1
+    jne .loop_on_checkpartialmapping
+	mov eax, DWORD [esi]
+	mov ebx, DWORD [esi+8]
+	add ebx, eax
+
+	mov dl, 0
+	cmp eax, DWORD [Kernel_Start - HIGHER_HALF_OFFSET]
+	jg .checkendforpartialmapping
+	or  dl, 1
+
+	.checkendforpartialmapping:
+	cmp ebx, DWORD [Kernel_End - HIGHER_HALF_OFFSET]
+	jl .checkbounds
+	or  dl, 2
+
+	.checkbounds:
+	cmp dl, 0
+	je  .loop_on_checkpartialmapping
+	jmp .updatebounds	
+	
+	.loop_on_checkpartialmapping:
+	loop .checkpartialmapping
+	jmp .mapcheckfail
+
+	.updatebounds:
+	cmp dl, 3
+	je .mapchecksuccess
+
+	test dl, 1
+	jnz .checkhighbound
+	mov [Kernel_Start - HIGHER_HALF_OFFSET], eax
+
+	.checkhighbound:
+	test dl, 2
+	jnz .do_checkpartialmapping_again
+	mov [Kernel_End - HIGHER_HALF_OFFSET], ebx
+
+	.do_checkpartialmapping_again:
+	mov ecx, DWORD [E820_Table]
+	mov esi, E820_Table-0x14
+	loop .checkpartialmapping
+
+	.mapchecksuccess:
+	mov eax, 1
+	jmp .endmapcheck
+
+	.mapcheckfail:
+	mov eax, 0
+
+	.endmapcheck:
+	test eax, 1
+	jnz SetupPaging
+	cli
+	hlt
+
+
+SetupPaging:
 	mov ecx, NUM_PDTPT_ENTRIES-1                 ; There are 1024 or 0x400 entries in the page directory
 	.fillPageDirectory:
 		mov [Directory+4*ecx], DWORD 0           ; Initialize all entries to the page directory to 0. Basically none of the memory pages are accessible with this
@@ -72,4 +172,10 @@ HigherHalf:
     extern Kmain
     jmp Kmain
 
+
+
+Kernel_Start_Memory:
+
+Kernel_Start dd 0x100000
+Kernel_End   dd 0x800000
 

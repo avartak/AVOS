@@ -8,7 +8,7 @@ CreateGDT:
     ; It should be moved to a more permanent place by the kernel
     ; For now we just use this for setting up the protected mode
 
-    GDT_Start  equ START_DESCR
+    GDT_Start  equ START_GDT
     GDT_Null   equ GDT_Start
     GDT_KCode  equ GDT_Null   + 8
     GDT_KData  equ GDT_KCode  + 8

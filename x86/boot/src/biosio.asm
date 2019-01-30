@@ -12,7 +12,7 @@ ReadDriveParameters:
 	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
 	push es
 
-	mov dx, [bp+4]                            ; Drive ID
+	mov dl, [Drive]                           ; Drive ID
 
 	mov ax, 0
 	mov es, ax
@@ -63,14 +63,11 @@ ReadSectorsFromDrive:
 
 	pusha                                     ; Push all the general-purpose registers onto the stack
 
-    mov  dx, [bp+0x4]                         ; The Drive ID parameter 
-    mov  ax, [bp+0x6]                         ; Starting sector
-    mov  bx, [bp+0x8]                         ; Number of sectors to copy
-    mov  si, [bp+0xA]                         ; Where to load the sectors in memory
+    mov  ax, [bp+0x4]                         ; Starting sector
+    mov  bx, [bp+0x6]                         ; Number of sectors to copy
+    mov  si, [bp+0x8]                         ; Where to load the sectors in memory
 
 	                                          ; We are moving 1 MB of data from the disk as kernel
-	mov [Drive], dl                           ; Store the Drive ID (to free up DL)
-
 	mov dx, 0                                 ; 
 	div word [Sectors_Per_Cylinder]           ; Division by a word --> dividend is DX (MSB) : AX (LSB)
 	                                          ; Result : Quotient --> AX ; Remainder --> DX						
@@ -86,7 +83,7 @@ ReadSectorsFromDrive:
 
 	mov dh, al                                ; Head
 
-	mov dl, [Drive]                           ; Restore the Drive ID into DL
+	mov dl, [Drive]                           ; Store the Drive ID into DL
 	
 	mov al, bl                                ; AL contains the numbers of sectors to be read out (stored in BL)
 	mov bx, si                                ; INT 0x13 will load the data from the disk at ES:BX
@@ -119,11 +116,10 @@ ReadAndMove:
 	push cx
 	push dx
 
-    mov  dx, [bp+0x4]                         ; The Drive ID parameter 
-    mov  ax, [bp+0x6]                         ; Starting sector
-    mov  bx, [bp+0x8]                         ; Number of sectors to copy
-    mov  si, [bp+0xA]                         ; Temporary location to copy sectors before moving them to high memory
-    mov edi, [bp+0xC]                         ; High memory destination
+    mov  ax, [bp+0x4]                         ; Starting sector
+    mov  bx, [bp+0x6]                         ; Number of sectors to copy
+    mov  si, [bp+0x8]                         ; Temporary location to copy sectors before moving them to high memory
+    mov edi, [bp+0xA]                         ; High memory destination
 
 	mov bh, bl
 	mov bl, 1
@@ -135,7 +131,6 @@ ReadAndMove:
 		push si
 		push bx
 		push ax
-		push dx	
 	
 		call ReadSectorsFromDrive
 		mov cx, [Sectors_Read_Last]           ; Check if a sector was actually read and only then copy ES:SI to ES:EDI
@@ -152,7 +147,7 @@ ReadAndMove:
 			loop .rnmloop
 		pop si
 
-		add sp, 0x8
+		add sp, 0x6
         dec bh
 		jmp .rnm
 
@@ -166,7 +161,7 @@ ReadAndMove:
 
     ret                                       ; Note that EDI is incremented by the number of bytes moved
 
-Drive                db 0
+Drive                db 0x80
 Heads                db 2
 Sectors_Per_Track    dw 18
 Sectors_Per_Cylinder dw 18

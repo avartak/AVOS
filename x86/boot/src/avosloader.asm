@@ -22,6 +22,11 @@ BITS 16
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Kload16:
 
+	call StoreMemoryMap
+	;mov  ax, 0
+	;mov  ds, ax 
+	;mov  es, ax 
+
 	; To enable the protected mode we will :
 	; 1) Clear all interrupts
 	; 2) Switch on the A20 line 
@@ -69,14 +74,12 @@ Kload16:
 
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
 
-	push FLOPPY_ID                            ; We are reading from a floppy disk 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
 	push DWORD START_KERNL                    ; Starting point of the kernel in high memory (1 MB)
 	push START_SCRCH                          ; Temporary pool to hold each sector before copying it to the high memory
 	push SECTRS_PER_ITER                      ; Copy 64 KB of data (128 sectors) from the disk in every interation
 	push START_KERNL_DISK                     ; Copy kernel starting from 20 KB logical address of the disk
-	push FLOPPY_ID                            ; Floppy drive ID
 
 	mov  cx, KERNL_COPY_ITER                  ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
 	.iterateReadAndMove:
@@ -99,6 +102,9 @@ Kload16:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+; Code to make the memory map 
+%include "x86/boot/src/memorymap.asm"
 
 ; Code to enable the A20 line
 %include "x86/boot/src/a20.asm"
@@ -129,8 +135,6 @@ In32bitMode:
     mov gs, ax
     mov ax, SEG_SS32
     mov ss, ax
-
-    mov esp, END_STACK                        ; Resetting our stack again 
 
 	mov eax, [MBOOT_SIZE_PTR]
 	add eax, KERNEL_START

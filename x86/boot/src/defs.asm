@@ -1,34 +1,30 @@
 BOOTSECT_MAGIC    equ 0xAA55                                      ; The magic number needed at the end of the boot sector
 
 SIZE_BOOT1        equ 0x0200                                      ; Boot sector is 512 bytes long
-SIZE_BOOT2        equ 0x2000                                      ; Stage of the boot loader (16-bit) is assumed to be 8 KB
-SIZE_BOOT3        equ 0x2000                                      ; Stage of the boot loader (32-bit) is assumed to be 8 KB
-SIZE_STACK        equ 0x2000                                      ; Stack is assigned a size of 8 KB
-SIZE_SCRCH        equ 0x1000                                      ; A 4 KB scratch area is put aside
-SIZE_DESCR        equ 0x1000                                      ; 4 KB area allotted to the GDT and IDT
+SIZE_BOOT2        equ 0x8000                                      ; We allow 32 KB for the 2nd stage of the boot loader - it is unlikely we will ever need this much space
+SIZE_SCRCH        equ 0x0400                                      ; 1 KB scratch area
+SIZE_GDT          equ 0x0200                                      ; 512 bytes allotted to the GDT
 SIZE_KERNL        equ 0x100000                                    ; Size of the kernel is assumed to be 1 MB
 
+START_SCRCH       equ 0x7000                                      ; Starting point of the scratch area 
+END_SCRCH         equ START_SCRCH + SIZE_SCRCH                    ; It's size is 1 KB, so it ends at 0x7400 but we can with it spilling over till 0x7C00
+
+TOP_STACK         equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BDA (0x400-0x500) and then the IVT (0-0x400)
+                                                                  ; That's 26 KB, more than the stack should ever need
 
 START_BOOT1       equ 0x7C00                                      ; This is where BIOS will load the boot sector
 END_BOOT1         equ START_BOOT1 + SIZE_BOOT1                    
 
+START_GDT         equ 0x7E00                                      ; Starting point of the area reserved for the protected mode descriptors (0xF000)
+END_GDT           equ START_GDT + SIZE_GDT
+
 START_BOOT2       equ 0x8000                                      ; This is where we load the 2nd stage of the boot loader
 END_BOOT2         equ START_BOOT2 + SIZE_BOOT2
 
-START_BOOT3       equ END_BOOT2                                   ; This is where we load the 3rd stage of the boot loader (0xA000)
-END_BOOT3         equ START_BOOT3 + SIZE_BOOT3
-
-START_STACK       equ END_BOOT3                                   ; Starting point of the stack segment (0xC000)
-END_STACK         equ START_STACK + SIZE_STACK
-
-START_SCRCH       equ END_STACK                                   ; Starting point of the scratch area (0xE000)
-END_SCRCH         equ START_SCRCH + SIZE_SCRCH
-
-START_DESCR       equ END_SCRCH                                   ; Starting point of the area reserved for the protected mode descriptors (0xF000)
-END_DESCR         equ START_DESCR + SIZE_DESCR
-
 START_KERNL       equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
 END_KERNL         equ START_KERNL + SIZE_KERNL
+
+START_MEM_MAP     equ 0x8000                                      ; Location of the start of the memory map read out by INT 0x15, AH=0xE820	
 
 SEG_DS16          equ 0x0                                         ; 16-bit data segment
 SEG_ES16          equ 0x0                                         ; 16-bit extra segment
@@ -47,13 +43,11 @@ SECTOR_SIZE       equ 0x200                                       ; Size of a se
 
 SIZE_BOOT1_DISK   equ SIZE_BOOT1/SECTOR_SIZE
 SIZE_BOOT2_DISK   equ SIZE_BOOT2/SECTOR_SIZE
-SIZE_BOOT3_DISK   equ SIZE_BOOT3/SECTOR_SIZE
 SIZE_KERNL_DISK   equ SIZE_KERNL/SECTOR_SIZE
 
 START_BOOT1_DISK  equ 0x00                                        ; Boot sector (1st sector)
-START_BOOT2_DISK  equ 0x08                                        ; Starting sector of the 2nd stage of the boot loader
-START_BOOT3_DISK  equ START_BOOT2_DISK + SIZE_BOOT2_DISK          ; Starting sector of the 3rd stage of the boot loader
-START_KERNL_DISK  equ START_BOOT3_DISK + SIZE_BOOT3_DISK          ; Starting sector of the kernel
+START_BOOT2_DISK  equ 0x01                                        ; Starting sector of the 2nd stage of the boot loader
+START_KERNL_DISK  equ 0x40                                        ; Starting sector of the kernel
 
 SECTRS_PER_ITER   equ 0x80                                        ; We will copy the kernel 0x80 or 128 sectors at a time
 KERNL_COPY_ITER   equ SIZE_KERNL/(SECTRS_PER_ITER*SECTOR_SIZE)    ; We need 16 iterations to load the 1 MB kernel
