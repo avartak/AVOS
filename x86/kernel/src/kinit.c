@@ -16,6 +16,7 @@ Here is what is done :
 #include <x86/kernel/include/gdt.h>
 #include <x86/kernel/include/tss.h>
 #include <x86/kernel/include/paging.h>
+#include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/interrupts.h>
 #include <x86/kernel/include/pic.h>
@@ -30,8 +31,11 @@ void Kinit() {
 	// Setup the TSS 
 	TSS_Initialize();
 
-	// Kernel mapped to higher half (3 GB) of virtual memory. Identity map disabled, 4 MB - 8 MB physical memory also mapped to higher half for page tables
+	// This is an empty function right now
 	Paging_Initialize();
+
+	// Prepare the physical memory map and setup the low level page allocation function of the kernel
+	Physical_Memory_Initialize();
 
 	// Setup the IDT : First 32 interrupts for the CPU, the next 16 interrupts for the PIC, and interrupt 0x80 for syscalls -- none of these are implemented, just allocated
 	IDT_Initialize();

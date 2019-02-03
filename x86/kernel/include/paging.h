@@ -17,6 +17,7 @@
 
 extern uint32_t Paging_kernel_directory[]__attribute__((aligned(0x1000)));
 extern uint32_t Paging_kernel_selftable[]__attribute__((aligned(0x1000)));
+extern uint32_t Paging_kernel_heaptable[]__attribute__((aligned(0x1000)));
 
 static inline void     Paging_EnablePGBitInCR0();
 static inline void     Paging_LoadDirectory           (uintptr_t pd);
@@ -27,6 +28,8 @@ static inline uint32_t Paging_GetDirectoryEntry       (uintptr_t virtual_address
 static inline uint32_t Paging_GetTableEntry           (uintptr_t virtual_address);
 
 extern uintptr_t       Paging_GetPhysicalAddress      (uintptr_t virtual_address);
+extern bool            Paging_TableExists             (uintptr_t virtual_address);
+extern bool            Paging_ClearTable              (uintptr_t virtual_address);
 extern bool            Paging_UnmapVirtualPage        (uintptr_t virtual_address);
 extern bool            Paging_MapVirtualToPhysicalPage(uintptr_t virtual_address, uintptr_t phys_address, uint16_t attr);
 extern void            Paging_Initialize();

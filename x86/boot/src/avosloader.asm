@@ -23,9 +23,6 @@ BITS 16
 Kload16:
 
 	call StoreMemoryMap
-	;mov  ax, 0
-	;mov  ds, ax 
-	;mov  es, ax 
 
 	; To enable the protected mode we will :
 	; 1) Clear all interrupts
