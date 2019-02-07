@@ -22,7 +22,24 @@ BITS 16
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Kload16:
 
+	mov  ax, START_MBI_SEGMENT
+	mov  es, ax 
+	mov  [es:START_MBI_OFFSET]  , DWORD 8
+	mov  [es:START_MBI_OFFSET+4], DWORD 0
+
+	push 0x8000
+	push 0x8008
+	push 0x0800
 	call StoreMemoryMap
+	add sp, 6 
+
+	mov bx, START_MBI_OFFSET
+	add bx, [es:START_MBI_OFFSET]
+	add [es:bx]  , DWORD 0                ; Terminating tag 
+	mov [es:bx+4], DWORD 8
+
+	mov ax, 0
+	mov es, ax
 
 	; To enable the protected mode we will :
 	; 1) Clear all interrupts
@@ -133,9 +150,10 @@ In32bitMode:
     mov ax, SEG_SS32
     mov ss, ax
 
-	mov eax, [MBOOT_SIZE_PTR]
-	add eax, KERNEL_START
-	jmp eax                                   ; Launch into the kernel
+	mov eax, MULTIBOOT2_MAGIC
+	mov ebx, MULTIBOOT2_MBI
+
+	jmp KERNEL_START                          ; Launch into the kernel
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

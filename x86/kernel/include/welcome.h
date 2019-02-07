@@ -10,6 +10,8 @@ Tells us things are working well
 
 */
 
+extern uint32_t screen_line;
+
 extern void Welcome();
 
 extern void PrintNum(uint32_t num, uint8_t line, uint8_t column);

@@ -1,11 +1,17 @@
 #include <x86/kernel/include/welcome.h>
+#include <x86/kernel/include/e820.h>
 
 #include <stdint.h>
 #include <stddef.h>
 
+uint32_t screen_line;
+
+extern uint32_t E820_Table_size;
+extern struct   E820_Table_Entry* E820_Table;
+
 void Welcome() {
 
-    // Video buffer -- now at 0xC00B8000
+    // Video buffer
     char* screen = (char*)0xC00B8000;
 
     size_t i = 0;
@@ -36,28 +42,25 @@ void Welcome() {
         i++;
     }
 
-	uint32_t* memory_map = (uint32_t*)0xC0010000;
-	uint32_t  map_size   = memory_map[0];
-	memory_map++;
-
-	uint8_t line = 0;
+	screen_line = 0;
 	uint8_t col  = 0;
 	uint8_t map_pos = 0;
-	for (size_t i = 0; i < map_size; i++) {
-		line++;
+	for (size_t i = 0; i < E820_Table_size; i++) {
+		screen_line++;
 		col = 0;
-		PrintNum(memory_map[map_pos], line, col);
+		PrintNum(E820_Table[i].base , screen_line, col);
 		col += 0x10;
 		map_pos += 2;
-		PrintNum(memory_map[map_pos], line, col);
+		PrintNum(E820_Table[i].size , screen_line, col);
 		col += 0x10;
 		map_pos += 2;
-		PrintNum(memory_map[map_pos], line, col);
+		PrintNum(E820_Table[i].type , screen_line, col);
 		col += 0x10;
 		map_pos += 1;
-		PrintNum(memory_map[map_pos], line, col);
+		PrintNum(E820_Table[i].acpi3, screen_line, col);
 		map_pos += 1;
 	}
+	screen_line += 2;
 
     return;
 

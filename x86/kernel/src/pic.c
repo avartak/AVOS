@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 
-void PIC_Initialize(uint8_t offset1, uint8_t offset2) {
+void PIC_Initialize() {
+
+	PIC_DisableAllInterrupts();
+
 	uint8_t a1, a2;
 	
 	a1 = Inb(PIC_IOPORT_DATA1);                                     // save masks
@@ -12,8 +15,8 @@ void PIC_Initialize(uint8_t offset1, uint8_t offset2) {
 	Outb(PIC_IOPORT_COMD1, PIC_ICW1_INIT | PIC_ICW1_NEED_ICW4);     // starts the initialization sequence (in cascade mode)
 	Outb(PIC_IOPORT_COMD2, PIC_ICW1_INIT | PIC_ICW1_NEED_ICW4);     // ICW1_ICW4 bit says that there will be a ICW4 command word coming
 
-	Outb(PIC_IOPORT_DATA1, offset1);                                // ICW2: Master PIC vector offset
-	Outb(PIC_IOPORT_DATA2, offset2);                                // ICW2: Slave PIC vector offset
+	Outb(PIC_IOPORT_DATA1, PIC_REMAP1_START);                       // ICW2: Master PIC vector offset
+	Outb(PIC_IOPORT_DATA2, PIC_REMAP2_START);                       // ICW2: Slave  PIC vector offset
 
 	Outb(PIC_IOPORT_DATA1, 4);                                      // ICW3: tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
 	Outb(PIC_IOPORT_DATA2, 2);                                      // ICW3: tell Slave PIC its cascade identity (0000 0010)

@@ -24,7 +24,8 @@ END_BOOT2         equ START_BOOT2 + SIZE_BOOT2
 START_KERNL       equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
 END_KERNL         equ START_KERNL + SIZE_KERNL
 
-START_MEM_MAP     equ 0x8000                                      ; Location of the start of the memory map read out by INT 0x15, AH=0xE820	
+START_MBI_OFFSET  equ 0x8000                                      ; Location of the start of the boot information structures 
+START_MBI_SEGMENT equ 0x0800
 
 SEG_DS16          equ 0x0                                         ; 16-bit data segment
 SEG_ES16          equ 0x0                                         ; 16-bit extra segment
@@ -52,5 +53,6 @@ START_KERNL_DISK  equ 0x40                                        ; Starting sec
 SECTRS_PER_ITER   equ 0x80                                        ; We will copy the kernel 0x80 or 128 sectors at a time
 KERNL_COPY_ITER   equ SIZE_KERNL/(SECTRS_PER_ITER*SECTOR_SIZE)    ; We need 16 iterations to load the 1 MB kernel
 
-KERNEL_START      equ 0x100000                                    ; Physical location of the start of the kernel
-MBOOT_SIZE_PTR    equ KERNEL_START+0x8                            ; Location where the size of the multiboot header is stored
+KERNEL_START      equ 0x101000                                    ; Physical location of the start of the kernel
+MULTIBOOT2_MAGIC  equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
+MULTIBOOT2_MBI    equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)

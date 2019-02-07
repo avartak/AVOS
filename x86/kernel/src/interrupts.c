@@ -3,8 +3,9 @@
 #include <x86/drivers/include/keyboard.h>
 
 #include <stddef.h>
+#include <stdint.h>
 
-int screenpos = 2;
+extern uint32_t screen_line;
 
 void Interrupt_Handler(uint32_t interrupt) {
 
@@ -42,11 +43,11 @@ void IRQTest(const char* str, uint8_t color) {
 	
 	size_t i = 0;
 	while (str[i] != 0) {
-	    screen[screenpos*160 + 2*i]   = str[i];
-	    screen[screenpos*160 + 2*i+1] = color;
+	    screen[screen_line*160 + 2*i]   = str[i];
+	    screen[screen_line*160 + 2*i+1] = color;
 	    i++;
 	}
 	
-	screenpos++;
+	screen_line++;
 
 }

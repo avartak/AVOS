@@ -45,7 +45,7 @@ OCW --> Operation      command word
 #define PIC_REMAP1_START       0x20    /* Start interrupt vector for the remapped IRQs of the master PIC */
 #define PIC_REMAP2_START       0x28    /* Start interrupt vector for the remapped IRQs of the  slave PIC */
 
-extern void      PIC_Initialize(uint8_t offset1, uint8_t offset2);
+extern void      PIC_Initialize();
 
 extern void      PIC_SendEOI(uint8_t irqline);
 

@@ -19,12 +19,9 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 
 */
 
-#include <x86/kernel/include/kinit.h>
 #include <x86/kernel/include/misc.h>
 
 void Kmain() {
-
-	Kinit();
 
 	while (1) {
 		HaltSystem();
@@ -32,5 +29,6 @@ void Kmain() {
 	
 	DisableInterrupts();
     return;
+
 }
 
