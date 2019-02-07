@@ -277,3 +277,36 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t no
 
     return pop_node;
 }
+
+struct Memory_Node* Memory_Stack_Get(struct Memory_Stack* stack, uintptr_t node_ptr) {
+    if (stack == MEMORY_NULL_PTR || stack->start == MEMORY_NULL_PTR || node_ptr == (uintptr_t)MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+	struct Memory_Node* return_node = MEMORY_NULL_PTR;
+    if (stack->start->pointer == node_ptr) {
+        return_node  = stack->start;
+        stack->start = stack->start->next;
+        return_node->next = MEMORY_NULL_PTR;
+
+        (stack->size) -= Memory_Node_GetBaseSize(stack->attrib) * return_node->size;
+        return return_node;
+    }
+
+    struct Memory_Node* current = stack->start;
+    while (current->next != MEMORY_NULL_PTR) {
+        if (current->next->pointer != node_ptr) {
+            current = current->next;
+            continue;
+        }
+        else {
+			return_node = current->next;
+			current->next = return_node->next;
+			return_node->next = MEMORY_NULL_PTR;
+
+            (stack->size) -= Memory_Node_GetBaseSize(stack->attrib) * return_node->size;
+            return return_node;
+        }
+    }
+
+    return return_node;
+}
+

@@ -14,7 +14,8 @@
 
 extern struct    Memory_Stack Physical_Memory_free;
 extern struct    Memory_Stack Physical_Memory_dma;
-extern struct    Memory_Stack Virtual_Memory_chunk;
+extern struct    Memory_Stack Virtual_Memory_free;
+extern struct    Memory_Stack Virtual_Memory_inuse;
 
 extern void      Memory_Initialize(uint32_t* mbi);
 extern bool      Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, uint32_t size);

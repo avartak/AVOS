@@ -1,24 +1,33 @@
 #include <kernel/include/chunk.h>
 
 uintptr_t Chunk_AllocatePage() {
-	struct Memory_Node* node = Memory_Stack_Pop(&Virtual_Memory_chunk);
+	struct Memory_Node* node = Memory_Stack_Pop(&Virtual_Memory_free);
 	if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
 
-	if (Physical_Memory_AllocatePage(node->pointer)) return node->pointer;
-	else return (uintptr_t)MEMORY_NULL_PTR;
-	
+	if (Physical_Memory_AllocatePage(node->pointer) == false) {
+		Memory_Stack_Push(&Virtual_Memory_free, node);
+		return (uintptr_t)MEMORY_NULL_PTR;
+	}
+
+	if (Memory_Stack_Push(&Virtual_Memory_inuse, node) == false) {
+		Physical_Memory_FreePage(node->pointer);
+		Memory_Stack_Push(&Virtual_Memory_free, node);
+		return (uintptr_t)MEMORY_NULL_PTR;
+	}
+
+	return node->pointer;
 }
 
 bool Chunk_FreePage(uintptr_t pointer) {
-	if (Physical_Memory_FreePage(pointer)) {
-    	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Virtual_Memory_chunk.node_dispenser);
-    	if (((uintptr_t)node & 0xFFFFF000) == (pointer & 0xFFFFF000)) return false;
-    	node->pointer = pointer;
-    	node->size    = 1;
-    	node->attrib  = Virtual_Memory_chunk.attrib;
-    	node->next    = MEMORY_NULL_PTR;
+	struct Memory_Node* node = Memory_Stack_Get(&Virtual_Memory_inuse, pointer);
+	if (node == MEMORY_NULL_PTR) return false;
 
-    	return Memory_Stack_Push(&Virtual_Memory_chunk, node);		
+	if (((uintptr_t)node & 0xFFFFF000) == (pointer & 0xFFFFF000) || Physical_Memory_FreePage(pointer) == false) {
+		Memory_Stack_Push(&Virtual_Memory_inuse, node);
+		return false;
 	}
-	else return false;
+	
+	node->attrib  = Virtual_Memory_free.attrib;
+	node->next    = MEMORY_NULL_PTR;
+	return Memory_Stack_Push(&Virtual_Memory_free, node);		
 }

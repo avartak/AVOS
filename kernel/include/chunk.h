@@ -16,7 +16,8 @@ Bits  8-15  : Node size
 #include <stdint.h>
 #include <stdbool.h>
 
-extern struct    Memory_Stack Virtual_Memory_chunk;
+extern struct    Memory_Stack Virtual_Memory_free;
+extern struct    Memory_Stack Virtual_Memory_inuse;
 
 extern uintptr_t Chunk_AllocatePage();
 extern bool      Chunk_FreePage(uintptr_t pointer);

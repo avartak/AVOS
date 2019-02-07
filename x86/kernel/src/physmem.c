@@ -11,7 +11,8 @@ struct   E820_Table_Entry* E820_Table;
 
 struct   Memory_Stack Physical_Memory_free;
 struct   Memory_Stack Physical_Memory_dma;
-struct   Memory_Stack Virtual_Memory_chunk;
+struct   Memory_Stack Virtual_Memory_free;
+struct   Memory_Stack Virtual_Memory_inuse;
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_free);
@@ -142,17 +143,29 @@ void Memory_Initialize(uint32_t* mbi) {
 
 	struct Memory_Node* free_node;
 
-	// Here we initialize the virtual memory map for the heap
+	// Here we initialize the (free) virtual memory map
 	free_node = Memory_NodeDispenser_Dispense(dispenser);
-	Virtual_Memory_chunk.start  = free_node;
-	Virtual_Memory_chunk.size   = (VIRTUAL_MEMORY_END_CHUNK - VIRTUAL_MEMORY_START_CHUNK)/MEMORY_SIZE_PAGE - 1;
-	Virtual_Memory_chunk.attrib = 0x10 << 8;
-    Virtual_Memory_chunk.node_dispenser = dispenser;
+	Virtual_Memory_free.start  = free_node;
+	Virtual_Memory_free.size   = (VIRTUAL_MEMORY_END_CHUNK - VIRTUAL_MEMORY_START_CHUNK)/MEMORY_SIZE_PAGE - 1;
+	Virtual_Memory_free.attrib = 0x10 << 8;
+    Virtual_Memory_free.node_dispenser = dispenser;
 	
-	free_node->attrib  = Virtual_Memory_chunk.attrib;
+	free_node->attrib  = Virtual_Memory_free.attrib;
 	free_node->pointer = VIRTUAL_MEMORY_START_CHUNK + MEMORY_SIZE_PAGE;
-	free_node->size    = Virtual_Memory_chunk.size;
+	free_node->size    = Virtual_Memory_free.size;
 	free_node->next    = MEMORY_NULL_PTR; 
+
+    // Here we initialize the (in use) virtual memory map
+    free_node = Memory_NodeDispenser_Dispense(dispenser);
+    Virtual_Memory_inuse.start  = free_node;
+    Virtual_Memory_inuse.size   = 1;
+    Virtual_Memory_inuse.attrib = 0x10 << 8;
+    Virtual_Memory_inuse.node_dispenser = dispenser;
+    
+    free_node->attrib  = Virtual_Memory_inuse.attrib;
+    free_node->pointer = VIRTUAL_MEMORY_START_CHUNK;
+    free_node->size    = Virtual_Memory_inuse.size;
+    free_node->next    = MEMORY_NULL_PTR; 
 
 	// Here we set up the map for the free high memory
 	free_node = Memory_NodeDispenser_Dispense(dispenser);
