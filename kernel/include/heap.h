@@ -16,16 +16,8 @@ Bits  8-15  : Node size
 #include <stdint.h>
 #include <stdbool.h>
 
-extern struct    Memory_Stack Virtual_Memory_free;
-extern struct    Memory_Stack Virtual_Memory_inuse;
-
-extern uintptr_t Heap_AllocatePage();
 extern uintptr_t Heap_Allocate(uint32_t nbytes);
-extern bool      Heap_FreePage(uintptr_t pointer);
 extern bool      Heap_Free(uintptr_t pointer);
-
-extern bool      Physical_Memory_AllocatePage(uintptr_t virtual_address);
-extern bool      Physical_Memory_FreePage(uintptr_t virtual_address);
 
 
 #endif

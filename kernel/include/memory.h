@@ -51,6 +51,8 @@ struct Memory_Stack {
 
 extern uint32_t            Memory_Node_GetBaseSize(uint32_t attrib);
 
+extern uintptr_t           Memory_NodeDispenser_New();
+extern bool                Memory_NodeDispenser_Delete   (uintptr_t pointer);
 extern bool                Memory_NodeDispenser_Return   (struct Memory_Node* node);
 extern struct Memory_Node* Memory_NodeDispenser_Dispense (struct Memory_NodeDispenser* dispenser);
 extern bool                Memory_NodeDispenser_Refill   (struct Memory_NodeDispenser* dispenser);
@@ -66,7 +68,5 @@ extern struct Memory_Node* Memory_Stack_Pop     (struct Memory_Stack* stack);
 extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, uint32_t  node_size, uint32_t boundary);
 extern struct Memory_Node* Memory_Stack_Get     (struct Memory_Stack* stack, uintptr_t node_ptr); 
 
-extern uintptr_t           Memory_AllocatePage();
-extern bool                Memory_FreePage(uintptr_t pointer);
 
 #endif

@@ -1,7 +1,12 @@
 #include <kernel/include/memory.h>
-#include <kernel/include/heap.h>
 
 #include <stddef.h>
+
+extern struct Memory_Stack Virtual_Memory_free;
+extern struct Memory_Stack Virtual_Memory_inuse;
+
+extern bool   Physical_Memory_AllocatePage(uintptr_t virtual_address);
+extern bool   Physical_Memory_FreePage(uintptr_t virtual_address);
 
 uint32_t Memory_Node_GetBaseSize(uint32_t attrib) {
 	uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -14,12 +19,41 @@ uint32_t Memory_Node_GetBaseSize(uint32_t attrib) {
 	else return 0;
 }
 
-uintptr_t Memory_AllocatePage() {
-	return Heap_AllocatePage();
+uintptr_t Memory_NodeDispenser_New() {
+    struct Memory_Node* node = Memory_Stack_Extract(&Virtual_Memory_free, MEMORY_SIZE_PAGE, MEMORY_SIZE_PAGE);
+    if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
+
+    if (Physical_Memory_AllocatePage(node->pointer) == false) {
+        Memory_Stack_Insert(&Virtual_Memory_free, node, true);
+        return (uintptr_t)MEMORY_NULL_PTR;
+    }
+
+    if (Memory_Stack_Insert(&Virtual_Memory_inuse, node, false) == false) {
+        Physical_Memory_FreePage(node->pointer);
+        Memory_Stack_Insert(&Virtual_Memory_free, node, true);
+        return (uintptr_t)MEMORY_NULL_PTR;
+    }
+
+    return node->pointer;
 }
 
-bool Memory_FreePage(uintptr_t pointer) {
-	return Heap_FreePage(pointer);
+bool Memory_NodeDispenser_Delete(uintptr_t pointer) {
+    struct Memory_Node* node = Memory_Stack_Get(&Virtual_Memory_inuse, pointer);
+    if (node == MEMORY_NULL_PTR) return false;
+
+    if (((uintptr_t)node & (~0xFFF)) == (pointer & (~0xFFF)) || Physical_Memory_FreePage(pointer) == false) {
+        Memory_Stack_Insert(&Virtual_Memory_inuse, node, false);
+        return false;
+    }
+
+    node->attrib = Virtual_Memory_free.attrib;
+    node->next   = MEMORY_NULL_PTR;
+    bool ret_val =  Memory_Stack_Insert(&Virtual_Memory_free, node, true);
+    if (!ret_val) {
+        node->attrib = Virtual_Memory_inuse.attrib;
+        Memory_Stack_Insert(&Virtual_Memory_inuse, node, false);
+    }
+    return ret_val;
 }
 
 uint32_t Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser) {
@@ -54,7 +88,7 @@ bool Memory_NodeDispenser_Return(struct Memory_Node* node) {
 
 bool Memory_NodeDispenser_Refill(struct Memory_NodeDispenser* dispenser) {
 	if (dispenser == MEMORY_NULL_PTR) return false;
-	struct Memory_NodeDispenser* new_dispenser = (struct Memory_NodeDispenser*)Memory_AllocatePage();
+	struct Memory_NodeDispenser* new_dispenser = (struct Memory_NodeDispenser*)Memory_NodeDispenser_New();
 	if (new_dispenser == MEMORY_NULL_PTR) return false;
 
 	struct Memory_NodeDispenser* current_dispenser = dispenser;
@@ -83,7 +117,7 @@ void Memory_NodeDispenser_Retire(struct Memory_NodeDispenser* dispenser) {
                     struct Memory_NodeDispenser* disp = dispenser;
                     while (disp->next != current_dispenser) disp = disp->next;
 					struct Memory_NodeDispenser* next = current_dispenser->next;
-                    bool freed = Memory_FreePage((uintptr_t)current_dispenser);
+                    bool freed = Memory_NodeDispenser_Delete((uintptr_t)current_dispenser);
 					if (freed) {
 						disp->next = next;
                     	current_dispenser = next;
