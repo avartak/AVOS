@@ -11,10 +11,10 @@ uintptr_t Heap_Allocate(uint32_t nbytes) {
     struct Memory_Node* node = Memory_Stack_Extract(&Virtual_Memory_free, nbytes);
     if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
 
-	uintptr_t start_page  = (node->pointer) & (~0xFFF);
+	uintptr_t start_page  = (node->pointer) & PAGE_MASK;
 	uintptr_t start_alloc = start_page + MEMORY_SIZE_PAGE;
 	if (start_page == node->pointer) start_alloc = start_page;
-	uintptr_t end_alloc = (node->pointer + nbytes - 1) & (~0xFFF);
+	uintptr_t end_alloc = (node->pointer + nbytes - 1) & PAGE_MASK;
 
 	bool check_alloc = true;
 	uintptr_t unalloc = start_alloc;
@@ -40,8 +40,8 @@ bool Heap_Free(uintptr_t pointer) {
     struct Memory_Node* node = Memory_Stack_Get(&Virtual_Memory_inuse, pointer);
 	if (node == MEMORY_NULL_PTR) return false;
 
-	uintptr_t start_page = pointer & (~0xFFF);
-	uintptr_t end_page   = (node->pointer + node->size * Memory_Node_GetBaseSize(node->attrib) - 1) & (~0xFFF);
+	uintptr_t start_page = pointer & PAGE_MASK;
+	uintptr_t end_page   = (node->pointer + node->size * Memory_Node_GetBaseSize(node->attrib) - 1) & PAGE_MASK;
 	
 	node->attrib = Virtual_Memory_free.attrib;
 	node->next   = MEMORY_NULL_PTR;

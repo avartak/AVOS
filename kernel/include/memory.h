@@ -20,6 +20,8 @@ Bits  8-15  : Node size
 #define VIRTUAL_MEMORY_START_DISP 0xD0000000
 #define VIRTUAL_MEMORY_END_DISP   0xD0100000
 
+#define PAGE_MASK                 (~0xFFF)
+
 #define MEMORY_1B                 0x01
 #define MEMORY_4B                 0x02
 #define MEMORY_16B                0x04

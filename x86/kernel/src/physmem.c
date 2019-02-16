@@ -41,7 +41,7 @@ bool Physical_Memory_FreePage(uintptr_t virtual_address) {
 	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Physical_Memory_high.node_dispenser);
 	uintptr_t physical_address = Paging_GetPhysicalAddress(virtual_address);
 
-	if (((uintptr_t)node & 0xFFFFF000) == (virtual_address & 0xFFFFF000) || !(Paging_UnmapVirtualPage(virtual_address))) {
+	if (((uintptr_t)node & PAGE_MASK) == (virtual_address & PAGE_MASK) || !(Paging_UnmapVirtualPage(virtual_address))) {
 		Memory_NodeDispenser_Return(node);
 		return false;
 	}
