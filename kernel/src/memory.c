@@ -1,5 +1,5 @@
 #include <kernel/include/memory.h>
-#include <kernel/include/chunk.h>
+#include <kernel/include/heap.h>
 
 #include <stddef.h>
 
@@ -15,11 +15,11 @@ uint32_t Memory_Node_GetBaseSize(uint32_t attrib) {
 }
 
 uintptr_t Memory_AllocatePage() {
-	return Chunk_AllocatePage();
+	return Heap_AllocatePage();
 }
 
 bool Memory_FreePage(uintptr_t pointer) {
-	return Chunk_FreePage(pointer);
+	return Heap_FreePage(pointer);
 }
 
 uint32_t Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser) {

@@ -1,6 +1,6 @@
-#include <kernel/include/chunk.h>
+#include <kernel/include/heap.h>
 
-uintptr_t Chunk_AllocatePage() {
+uintptr_t Heap_AllocatePage() {
 	struct Memory_Node* node = Memory_Stack_Pop(&Virtual_Memory_free);
 	if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
 
@@ -18,7 +18,7 @@ uintptr_t Chunk_AllocatePage() {
 	return node->pointer;
 }
 
-bool Chunk_FreePage(uintptr_t pointer) {
+bool Heap_FreePage(uintptr_t pointer) {
 	struct Memory_Node* node = Memory_Stack_Get(&Virtual_Memory_inuse, pointer);
 	if (node == MEMORY_NULL_PTR) return false;
 
