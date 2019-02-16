@@ -2,7 +2,6 @@
 #define X86_KERNEL_KINIT_H
 
 #include <x86/kernel/include/e820.h>
-#include <kernel/include/multiboot.h>
 
 #include <stdint.h>
 #include <stdbool.h>

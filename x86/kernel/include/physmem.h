@@ -4,13 +4,12 @@
 #include <kernel/include/memory.h>
 #include <x86/kernel/include/e820.h>
 
-#define VIRTUAL_MEMORY_E820_TABLE_PTR  0xC0010000
-#define VIRTUAL_MEMORY_START_CHUNK     0xD0000000
-#define VIRTUAL_MEMORY_END_CHUNK       0xD0400000
+#define VIRTUAL_MEMORY_START_HEAP      0xD0000000
+#define VIRTUAL_MEMORY_END_HEAP        0xD0400000
 
-#define PHYSICAL_MEMORY_START_DMA      0x00800000
+#define PHYSICAL_MEMORY_START_DMA      0x00400000
 #define PHYSICAL_MEMORY_START_HIGHMEM  0x01000000
-#define PHYSICAL_MEMORY_START_CHUNK    0x00400000
+#define PHYSICAL_MEMORY_START_HEAP     0x01000000
 
 extern struct    Memory_Stack Physical_Memory_free;
 extern struct    Memory_Stack Physical_Memory_dma;

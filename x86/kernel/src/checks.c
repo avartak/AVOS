@@ -1,4 +1,5 @@
 #include <x86/kernel/include/checks.h>
+#include <kernel/include/multiboot.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -17,7 +18,11 @@ bool Initial_Checks(uint32_t* mbi) {
 	}
 
 	if (size_e820 == 0) return false;
-	return IsMemoryAvailable(CHECK_MEMORY_START, CHECK_MEMORY_END, table_e820, size_e820);	
+
+	bool check_kernel_code_memory = IsMemoryAvailable( 0x100000,  0x400000, table_e820, size_e820);	
+	bool check_kernel_heap_memory = IsMemoryAvailable(0x1000000, 0x1400000, table_e820, size_e820);
+
+	return (check_kernel_code_memory && check_kernel_heap_memory);
 }
 
 bool IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, uint32_t size) {

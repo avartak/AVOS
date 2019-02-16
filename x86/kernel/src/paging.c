@@ -75,14 +75,14 @@ void Paging_Initialize() {
 	uint32_t* pd = (uint32_t*)ipd;
 	uint32_t* pt = (uint32_t*)ipt;
 
-	for (size_t i = 0; i < 1024; i++) pd[i] = 0;	
-	for (size_t i = 0; i < 1024; i++) pt[i] = 0;	
+	for (size_t i = 0; i < 0x400; i++) pd[i] = 0;	
+	for (size_t i = 0; i < 0x400; i++) pt[i] = 0;	
 
-	Paging_MapMemoryBlockInTable(pt, 0, 3);
+	Paging_MapMemoryBlockInTable(pt, 0, PAGING_KERN_PAGE_FLAGS);
 
-	Paging_MapTableInDirectory(pd, ipt,    0, 3);
-	Paging_MapTableInDirectory(pd, ipt,  768, 3);
-	Paging_MapTableInDirectory(pd, ipd, 1023, 3);
+	Paging_MapTableInDirectory(pd, ipt,    0, PAGING_KERN_PAGE_FLAGS);
+	Paging_MapTableInDirectory(pd, ipt,  768, PAGING_KERN_PAGE_FLAGS);
+	Paging_MapTableInDirectory(pd, ipd, 1023, PAGING_KERN_PAGE_FLAGS);
 
 	Paging_LoadDirectory(ipd);
 	Paging_EnablePGBitInCR0();

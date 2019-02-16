@@ -14,24 +14,12 @@ void Interrupt_Handler(uint32_t interrupt) {
     }
 
     if (interrupt == 0x21) {
-		IRQTest("Keyboard interrupt received", 0x0F);
 		ReadKeyboardScanCode();
 	}
 
     if (interrupt >= 0x20 && interrupt < 0x30) {
         PIC_SendEOI(interrupt - 0x20);
-		IRQTest("EOI command sent to the PIC", 0x0F);
     }
-
-    if (interrupt == 0x80) {
-		IRQTest("System call received", 0x0A);
-    }
-
-	if (interrupt >= 0x30 && interrupt != 0x80) {
-		IRQTest("Unrecognized interrupt received", 0x04);
-	}
-
-	IRQTest("", 0x00);
 
     return;
 

@@ -4,13 +4,13 @@
 #include <stddef.h>
 
 uint32_t Memory_Node_GetBaseSize(uint32_t attrib) {
-	uint8_t  base_size_attrib =  (uint8_t)(attrib & 0xFF00 >> 8);
-	if      (base_size_attrib == 0x1 ) return 1;
-	else if (base_size_attrib == 0x2 ) return 4;
-	else if (base_size_attrib == 0x4 ) return 0x10;
-	else if (base_size_attrib == 0x8 ) return 0x200;
-	else if (base_size_attrib == 0x10) return 0x1000;
-	else if (base_size_attrib == 0x20) return 0x400000;
+	uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
+	if      (base_size_attrib == MEMORY_1B  ) return 1;
+	else if (base_size_attrib == MEMORY_4B  ) return 4;
+	else if (base_size_attrib == MEMORY_16B ) return 0x10;
+	else if (base_size_attrib == MEMORY_512B) return 0x200;
+	else if (base_size_attrib == MEMORY_4KB ) return 0x1000;
+	else if (base_size_attrib == MEMORY_4MB ) return 0x400000;
 	else return 0;
 }
 
@@ -190,6 +190,7 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node) {
 			struct Memory_Node* next = current_node->next->next;
 			Memory_NodeDispenser_Return(node);
 			Memory_NodeDispenser_Return(current_node->next);
+        	Memory_NodeDispenser_Retire(stack->node_dispenser);
 			current_node->next = next;
 			stack->size += node->size;
 			return true;
@@ -245,6 +246,20 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t no
     	(stack->size) -= node_size;
     	return pop_node;
 	}
+	else if (stack->start->size > node_size) {
+		pop_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
+		if (pop_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+		pop_node->pointer = stack->start->pointer;
+		pop_node->size = node_size;
+		pop_node->attrib = stack->attrib;
+		pop_node->next = MEMORY_NULL_PTR;
+		
+		stack->start->pointer += node_size * base_size;
+		(stack->start->size)  -= node_size;
+		
+		(stack->size) -= node_size;
+		return pop_node;
+	}
 
 	while (current->next != MEMORY_NULL_PTR) {
 		if (current->next->size < node_size) {
@@ -268,7 +283,7 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t no
 		    pop_node->next = MEMORY_NULL_PTR;
 		
 		    current->pointer += node_size * base_size;
-		    (current->size) -= node_size;
+		    (current->size)  -= node_size;
 
 			(stack->size) -= node_size;
 			return pop_node;
