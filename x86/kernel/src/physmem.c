@@ -1,7 +1,6 @@
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/paging.h>
 #include <kernel/include/multiboot.h>
-#include <kernel/include/heap.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -10,19 +9,19 @@
 uint32_t E820_Table_size;
 struct   E820_Table_Entry* E820_Table;
 
-struct   Memory_Stack Physical_Memory_free;
+struct   Memory_Stack Physical_Memory_high;
 struct   Memory_Stack Physical_Memory_dma;
-struct   Memory_Stack Virtual_Memory_free;
-struct   Memory_Stack Virtual_Memory_inuse;
+
+uint8_t  Kernel_Virtual_Memory[0x100];
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
-	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_free);
+	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_high);
 	if (mem_node == MEMORY_NULL_PTR) return false;
 
 	if (!Paging_TableExists(virtual_address)) {
-		struct Memory_Node* table_node = Memory_Stack_Pop(&Physical_Memory_free);
+		struct Memory_Node* table_node = Memory_Stack_Pop(&Physical_Memory_high);
 		if (table_node == MEMORY_NULL_PTR) {
-			Memory_Stack_Push(&Physical_Memory_free, mem_node, true);
+			Memory_Stack_Push(&Physical_Memory_high, mem_node, true);
 			return false;
 		}
 		Paging_MapTableInDirectory(Paging_kernel_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
@@ -31,7 +30,7 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	}
 	
 	if (!(Paging_MapVirtualToPhysicalPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
-		Memory_Stack_Push(&Physical_Memory_free, mem_node, true);
+		Memory_Stack_Push(&Physical_Memory_high, mem_node, true);
 		return false;
 	}
 
@@ -39,7 +38,7 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 }
 
 bool Physical_Memory_FreePage(uintptr_t virtual_address) {
-	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Physical_Memory_free.node_dispenser);
+	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Physical_Memory_high.node_dispenser);
 	uintptr_t physical_address = Paging_GetPhysicalAddress(virtual_address);
 
 	if (((uintptr_t)node & 0xFFFFF000) == (virtual_address & 0xFFFFF000) || !(Paging_UnmapVirtualPage(virtual_address))) {
@@ -49,10 +48,10 @@ bool Physical_Memory_FreePage(uintptr_t virtual_address) {
 
 	node->pointer = physical_address;
 	node->size    = 1;
-	node->attrib  = Physical_Memory_free.attrib;
+	node->attrib  = Physical_Memory_high.attrib;
 	node->next    = MEMORY_NULL_PTR;
 	
-	return Memory_Stack_Push(&Physical_Memory_free, node, true);
+	return Memory_Stack_Push(&Physical_Memory_high, node, true);
 }
 
 uint32_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, uint32_t size) {
@@ -140,59 +139,37 @@ void Memory_Initialize(uint32_t* mbi) {
     }
 
 	// Lets create the virtual space for the heap
-	Paging_MapTableInDirectory(Paging_kernel_directory, Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_heaptable), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_HEAP), PAGING_KERN_TABLE_FLAGS);
-	Paging_ClearTable(VIRTUAL_MEMORY_START_HEAP);
-	Paging_MapVirtualToPhysicalPage(VIRTUAL_MEMORY_START_HEAP, PHYSICAL_MEMORY_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
+	Paging_MapTableInDirectory(Paging_kernel_directory, Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_heaptable), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
+	Paging_ClearTable(VIRTUAL_MEMORY_START_DISP);
+	Paging_MapVirtualToPhysicalPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_DISP, PAGING_KERN_PAGE_FLAGS);
 	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory));
 
 	// Lets setup the node dispenser at the very start of the heap
-	struct Memory_NodeDispenser* dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_HEAP;	
+	struct Memory_NodeDispenser* dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
     dispenser->freenode = (uintptr_t)dispenser + sizeof(struct Memory_NodeDispenser);
-    dispenser->size = (MEMORY_SIZE_PAGE - sizeof(struct Memory_NodeDispenser)) / sizeof(struct Memory_Node);
+    dispenser->size = FULL_DISPENSER_SIZE;
     dispenser->attrib = 0;
     dispenser->next = MEMORY_NULL_PTR;
     struct Memory_Node* nodes = (struct Memory_Node*)((uintptr_t)dispenser + sizeof(struct Memory_NodeDispenser));
-    for (size_t i = 0; i < dispenser->size; i++) nodes[i].attrib = Physical_Memory_free.attrib | 0x000000FF;
+    for (size_t i = 0; i < dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0x000000FF;
 
-	struct Memory_Node* free_node;
-
-	// Here we initialize the (free) virtual memory map
-	free_node = Memory_NodeDispenser_Dispense(dispenser);
-	Virtual_Memory_free.start  = free_node;
-	Virtual_Memory_free.size   = VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP - MEMORY_SIZE_PAGE;
-	Virtual_Memory_free.attrib = 0x01 << 8;
-    Virtual_Memory_free.node_dispenser = dispenser;
-	
-	free_node->attrib  = Virtual_Memory_free.attrib;
-	free_node->pointer = VIRTUAL_MEMORY_START_HEAP + MEMORY_SIZE_PAGE;
-	free_node->size    = Virtual_Memory_free.size;
-	free_node->next    = MEMORY_NULL_PTR; 
-
-    // Here we initialize the (in use) virtual memory map
-    free_node = Memory_NodeDispenser_Dispense(dispenser);
-    Virtual_Memory_inuse.start  = free_node;
-    Virtual_Memory_inuse.size   = 0x1000;
-    Virtual_Memory_inuse.attrib = 0x01 << 8;
-    Virtual_Memory_inuse.node_dispenser = dispenser;
-    
-    free_node->attrib  = Virtual_Memory_inuse.attrib;
-    free_node->pointer = VIRTUAL_MEMORY_START_HEAP;
-    free_node->size    = Virtual_Memory_inuse.size;
-    free_node->next    = MEMORY_NULL_PTR; 
+	// Here we initialize the bitmap
+	for (size_t i = 0; i < 0x100; i++) Kernel_Virtual_Memory[i] = 0;
+	Kernel_Virtual_Memory[0] = 1;
 
 	// Here we set up the map for the free high memory
-	free_node = Memory_NodeDispenser_Dispense(dispenser);
-	Physical_Memory_free.start  = free_node;
-	Physical_Memory_free.size   = 0x400000/MEMORY_SIZE_PAGE - 1;
-	Physical_Memory_free.attrib = 0x10 << 8;
-    Physical_Memory_free.node_dispenser = dispenser;
+	struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(dispenser);
+	Physical_Memory_high.start  = free_node;
+	Physical_Memory_high.size   = 0x400000/MEMORY_SIZE_PAGE - 1;
+	Physical_Memory_high.attrib = 0x10 << 8;
+    Physical_Memory_high.node_dispenser = dispenser;
 
-	free_node->attrib  = Physical_Memory_free.attrib;
+	free_node->attrib  = Physical_Memory_high.attrib;
 	free_node->pointer = PHYSICAL_MEMORY_START_HIGHMEM + MEMORY_SIZE_PAGE;
-	free_node->size    = Physical_Memory_free.size;
+	free_node->size    = Physical_Memory_high.size;
 	free_node->next    = MEMORY_NULL_PTR; 
 
-	Physical_Memory_MakeMap(&Physical_Memory_free, PHYSICAL_MEMORY_START_HIGHMEM + 0x400000, Physical_Memory_MaxFreeMemoryAddress(E820_Table, E820_Table_size), E820_Table, E820_Table_size);
+	Physical_Memory_MakeMap(&Physical_Memory_high, PHYSICAL_MEMORY_START_HIGHMEM + 0x400000, Physical_Memory_MaxFreeMemoryAddress(E820_Table, E820_Table_size), E820_Table, E820_Table_size);
 
 	// Here we set up the map for the free low memory
     Physical_Memory_dma.start  = MEMORY_NULL_PTR;

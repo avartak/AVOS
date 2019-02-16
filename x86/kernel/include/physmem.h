@@ -4,17 +4,15 @@
 #include <kernel/include/memory.h>
 #include <x86/kernel/include/e820.h>
 
-#define VIRTUAL_MEMORY_START_HEAP      0xD0000000
-#define VIRTUAL_MEMORY_END_HEAP        0xD0400000
-
 #define PHYSICAL_MEMORY_START_DMA      0x00400000
 #define PHYSICAL_MEMORY_START_HIGHMEM  0x01000000
-#define PHYSICAL_MEMORY_START_HEAP     0x01000000
+#define PHYSICAL_MEMORY_START_DISP     0x01000000
+#define PHYSICAL_MEMORY_START_HEAP     0x01100000
 
-extern struct    Memory_Stack Physical_Memory_free;
+extern struct    Memory_Stack Physical_Memory_high;
 extern struct    Memory_Stack Physical_Memory_dma;
-extern struct    Memory_Stack Virtual_Memory_free;
-extern struct    Memory_Stack Virtual_Memory_inuse;
+
+extern uint8_t   Kernel_Virtual_Memory[];
 
 extern void      Memory_Initialize(uint32_t* mbi);
 extern bool      Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, uint32_t size);

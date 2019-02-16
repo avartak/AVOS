@@ -5,6 +5,7 @@
 #include <x86/kernel/include/pic.h>
 #include <x86/kernel/include/irqs.h>
 #include <x86/kernel/include/welcome.h>
+#include <kernel/include/heap.h>
 
 void Kinit(uint32_t* boot_info) {
 
@@ -15,6 +16,8 @@ void Kinit(uint32_t* boot_info) {
     IDT_Initialize();
 
     Memory_Initialize(boot_info);
+
+    Heap_Initialize();
 
     PIC_Initialize();
    

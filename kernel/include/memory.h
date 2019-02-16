@@ -17,6 +17,9 @@ Bits  8-15  : Node size
 #define MEMORY_NULL_PTR           ((void*)0xFFFFFFFF)
 #define MEMORY_SIZE_PAGE          0x1000
 
+#define VIRTUAL_MEMORY_START_DISP 0xD0000000
+#define VIRTUAL_MEMORY_END_DISP   0xD0100000
+
 #define MEMORY_1B                 0x01
 #define MEMORY_4B                 0x02
 #define MEMORY_16B                0x04
@@ -65,7 +68,7 @@ extern bool                Memory_Stack_Push    (struct Memory_Stack* stack, str
 extern bool                Memory_Stack_Append  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
 extern bool                Memory_Stack_Insert  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
 extern struct Memory_Node* Memory_Stack_Pop     (struct Memory_Stack* stack);
-extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, uint32_t  node_size, uint32_t boundary);
+extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, uint32_t  node_size);
 extern struct Memory_Node* Memory_Stack_Get     (struct Memory_Stack* stack, uintptr_t node_ptr); 
 
 
