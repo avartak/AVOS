@@ -6,24 +6,16 @@
 
 uint32_t screen_line;
 
-extern uint32_t E820_Table_size;
-extern struct   E820_Table_Entry* E820_Table;
-
 void Welcome() {
 
     // Video buffer
     char* screen = (char*)0xC00B8000;
 
-    size_t i = 0;
-
     // Clear screen
-    while (i < 80*25*2) {
-        screen[i] = 0;
-        i++;
-    }
+	ClearScreen();
 
     // Green stripe
-	i = 0;		
+	size_t i = 0;		
     while (i < 80) {
         screen[2*i  ] = 0x00;
         screen[2*i+1] = 0x20;
@@ -42,30 +34,20 @@ void Welcome() {
         i++;
     }
 
-	screen_line = 0;
-	uint8_t col  = 0;
-	uint8_t map_pos = 0;
-	for (size_t i = 0; i < E820_Table_size; i++) {
-		screen_line++;
-		col = 0;
-		PrintNum(E820_Table[i].base , screen_line, col);
-		col += 0x10;
-		map_pos += 2;
-		PrintNum(E820_Table[i].size , screen_line, col);
-		col += 0x10;
-		map_pos += 2;
-		PrintNum(E820_Table[i].type , screen_line, col);
-		col += 0x10;
-		map_pos += 1;
-		PrintNum(E820_Table[i].acpi3, screen_line, col);
-		map_pos += 1;
-	}
-	screen_line += 2;
-
     return;
 
 }
 
+
+void ClearScreen() {
+    char* screen = (char*)0xC00B8000;
+
+    size_t i = 0;
+    while (i < 80*25*2) {
+        screen[i] = 0;
+        i++;
+    }
+}
 
 void PrintNum(uint32_t num, uint8_t line, uint8_t column) {
 

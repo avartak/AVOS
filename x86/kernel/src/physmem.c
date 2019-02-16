@@ -1,6 +1,7 @@
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/paging.h>
 #include <kernel/include/multiboot.h>
+#include <kernel/include/heap.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -21,7 +22,7 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	if (!Paging_TableExists(virtual_address)) {
 		struct Memory_Node* table_node = Memory_Stack_Pop(&Physical_Memory_free);
 		if (table_node == MEMORY_NULL_PTR) {
-			Memory_Stack_Push(&Physical_Memory_free, mem_node);
+			Memory_Stack_Push(&Physical_Memory_free, mem_node, true);
 			return false;
 		}
 		Paging_MapTableInDirectory(Paging_kernel_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
@@ -30,7 +31,7 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	}
 	
 	if (!(Paging_MapVirtualToPhysicalPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
-		Memory_Stack_Push(&Physical_Memory_free, mem_node);
+		Memory_Stack_Push(&Physical_Memory_free, mem_node, true);
 		return false;
 	}
 
@@ -51,7 +52,7 @@ bool Physical_Memory_FreePage(uintptr_t virtual_address) {
 	node->attrib  = Physical_Memory_free.attrib;
 	node->next    = MEMORY_NULL_PTR;
 	
-	return Memory_Stack_Push(&Physical_Memory_free, node);
+	return Memory_Stack_Push(&Physical_Memory_free, node, true);
 }
 
 uint32_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, uint32_t size) {
@@ -107,7 +108,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
             node->size = 0x400;
             node->attrib = mem_map->attrib;
             node->next = MEMORY_NULL_PTR;
-            Memory_Stack_Append(mem_map, node);
+            Memory_Stack_Append(mem_map, node, true);
             scan_point += scan_step0;
         }
         else {
@@ -119,7 +120,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
                     node->size = 1;
                     node->attrib = mem_map->attrib;
                     node->next = MEMORY_NULL_PTR;
-                    Memory_Stack_Append(mem_map, node);
+                    Memory_Stack_Append(mem_map, node, true);
                 }
                 scan_point += scan_step1;
             }
@@ -158,8 +159,8 @@ void Memory_Initialize(uint32_t* mbi) {
 	// Here we initialize the (free) virtual memory map
 	free_node = Memory_NodeDispenser_Dispense(dispenser);
 	Virtual_Memory_free.start  = free_node;
-	Virtual_Memory_free.size   = (VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP)/MEMORY_SIZE_PAGE - 1;
-	Virtual_Memory_free.attrib = 0x10 << 8;
+	Virtual_Memory_free.size   = VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP - MEMORY_SIZE_PAGE;
+	Virtual_Memory_free.attrib = 0x01 << 8;
     Virtual_Memory_free.node_dispenser = dispenser;
 	
 	free_node->attrib  = Virtual_Memory_free.attrib;
@@ -170,8 +171,8 @@ void Memory_Initialize(uint32_t* mbi) {
     // Here we initialize the (in use) virtual memory map
     free_node = Memory_NodeDispenser_Dispense(dispenser);
     Virtual_Memory_inuse.start  = free_node;
-    Virtual_Memory_inuse.size   = 1;
-    Virtual_Memory_inuse.attrib = 0x10 << 8;
+    Virtual_Memory_inuse.size   = 0x1000;
+    Virtual_Memory_inuse.attrib = 0x01 << 8;
     Virtual_Memory_inuse.node_dispenser = dispenser;
     
     free_node->attrib  = Virtual_Memory_inuse.attrib;

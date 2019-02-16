@@ -118,7 +118,22 @@ struct Memory_Node* Memory_NodeDispenser_Dispense(struct Memory_NodeDispenser* d
 	}
 }
 
-bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node) {
+
+
+bool Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintptr_t ptr_max) {
+    if (stack == MEMORY_NULL_PTR) return false;
+
+	struct Memory_Node* current = stack->start;
+	while (current != MEMORY_NULL_PTR) {
+		if (ptr_min >= current->pointer && ptr_max <= current->pointer + current->size * Memory_Node_GetBaseSize(stack->attrib)) return true;
+		current = current->next;
+	}
+
+	return false;
+}
+
+
+bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -126,7 +141,7 @@ bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node) {
     uint32_t node_end = node->pointer + node->size * node_base_size;
     if (node_end <= node->pointer) return false;
 
-    if (stack->start == MEMORY_NULL_PTR || node_end != stack->start->pointer) {
+    if (stack->start == MEMORY_NULL_PTR || node_end != stack->start->pointer || !merge) {
         node->next = stack->start;
         stack->start = node;
     }
@@ -141,7 +156,7 @@ bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node) {
     return true;
 }
 
-bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node) {
+bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -150,10 +165,10 @@ bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node) {
     if (node_end <= node->pointer) return false;
 
 	struct Memory_Node* last_node = stack->start;
-	if (last_node == MEMORY_NULL_PTR) return Memory_Stack_Push(stack, node);
+	if (last_node == MEMORY_NULL_PTR) return Memory_Stack_Push(stack, node, merge);
 	while (last_node->next != MEMORY_NULL_PTR) last_node = last_node->next;
 
-    if (last_node->pointer + last_node->size * node_base_size != node->pointer) {
+    if (last_node->pointer + last_node->size * node_base_size != node->pointer || !merge) {
         last_node->next = node;
     }
     else {
@@ -166,7 +181,7 @@ bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node) {
     return true;
 }
 
-bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node) {
+bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -174,30 +189,45 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node) {
     uint32_t node_end = node->pointer + node->size * node_base_size;
     if (node_end <= node->pointer) return false;
 
-	if (stack->start == MEMORY_NULL_PTR || node_end <= stack->start->pointer) return Memory_Stack_Push(stack, node);
+	if (stack->start == MEMORY_NULL_PTR || node_end <= stack->start->pointer) return Memory_Stack_Push(stack, node, merge);
 
 	struct Memory_Node* current_node = stack->start;
 	while (current_node->next != MEMORY_NULL_PTR) {
-		if (current_node->pointer + current_node->size * node_base_size < node->pointer && current_node->next->pointer > node_end) {
+		if ((current_node->pointer + current_node->size * node_base_size < node->pointer && current_node->next->pointer > node_end) || !merge) {
 			struct Memory_Node* next = current_node->next;
 			current_node->next = node;
 			node->next = next;
 			stack->size += node->size;
 			return true;
 		}
-		else if (current_node->pointer + current_node->size * node_base_size == node->pointer && current_node->next->pointer == node_end) {
+		else if (current_node->pointer + current_node->size * node_base_size == node->pointer && current_node->next->pointer == node_end && merge) {
 			current_node->size += current_node->next->size + node->size;
 			struct Memory_Node* next = current_node->next->next;
+			current_node->next = next;
+			stack->size += node->size;
 			Memory_NodeDispenser_Return(node);
 			Memory_NodeDispenser_Return(current_node->next);
         	Memory_NodeDispenser_Retire(stack->node_dispenser);
-			current_node->next = next;
-			stack->size += node->size;
 			return true;
 		}
+		else if (current_node->pointer + current_node->size * node_base_size == node->pointer && current_node->next->pointer > node_end && merge) {
+			current_node->size += node->size;
+			stack->size += node->size;
+			Memory_NodeDispenser_Return(node);
+			Memory_NodeDispenser_Retire(stack->node_dispenser);
+			return true;
+		}
+		else if (current_node->pointer + current_node->size * node_base_size < node->pointer && current_node->next->pointer == node_end && merge) {
+			current_node->next->pointer = node->pointer;
+			current_node->next->size += node->size;
+			stack->size += node->size;
+			Memory_NodeDispenser_Return(node);
+			Memory_NodeDispenser_Retire(stack->node_dispenser);
+		}
+		current_node = current_node->next;
 	}
 
-	if (current_node->next == MEMORY_NULL_PTR && current_node->pointer + current_node->size * node_base_size <= node->pointer) return Memory_Stack_Append(stack, node);
+	if (current_node->next == MEMORY_NULL_PTR && current_node->pointer + current_node->size * node_base_size <= node->pointer) return Memory_Stack_Append(stack, node, merge);
 
 	return false;
 }
@@ -231,14 +261,14 @@ struct Memory_Node* Memory_Stack_Pop(struct Memory_Stack* stack) {
 	return pop_node;
 }
 
-struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t node_size) {
+struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t node_size, uint32_t boundary) {
     if (stack == MEMORY_NULL_PTR || stack->start == MEMORY_NULL_PTR || node_size == 0 || stack->size < node_size) return MEMORY_NULL_PTR;
 
     struct Memory_Node* pop_node = MEMORY_NULL_PTR;
     struct Memory_Node* current  = stack->start;
     uint32_t base_size           = Memory_Node_GetBaseSize(stack->attrib);
 
-	if (stack->start->size == node_size) {
+	if (stack->start->size == node_size && stack->start->pointer % boundary == 0) {
 		pop_node = stack->start;
 		stack->start = stack->start->next;
 		pop_node->next = MEMORY_NULL_PTR;
@@ -246,7 +276,7 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t no
     	(stack->size) -= node_size;
     	return pop_node;
 	}
-	else if (stack->start->size > node_size) {
+	else if (stack->start->size > node_size && stack->start->pointer % boundary == 0) {
 		pop_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
 		if (pop_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
 		pop_node->pointer = stack->start->pointer;
@@ -260,31 +290,84 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t no
 		(stack->size) -= node_size;
 		return pop_node;
 	}
+	else if (stack->start->pointer % boundary != 0 && stack->start->size >= node_size + (boundary - stack->start->pointer % boundary)/base_size) {
+		pop_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
+		if (pop_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+		struct Memory_Node* break_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
+		if (break_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+		pop_node->pointer = stack->start->pointer + (boundary - stack->start->pointer % boundary);
+		pop_node->size = node_size;
+		pop_node->attrib = stack->attrib;
+		pop_node->next = MEMORY_NULL_PTR;
+		
+		break_node->pointer = stack->start->pointer;
+		break_node->attrib  = stack->attrib;
+		break_node->size    = (boundary - stack->start->pointer % boundary)/base_size;
+		break_node->next    = stack->start->next;
+		if (stack->start->size > node_size + (boundary - stack->start->pointer % boundary)/base_size) {
+			stack->start->pointer += node_size * base_size + (boundary - stack->start->pointer % boundary);
+			(stack->start->size)  -= node_size + (boundary - stack->start->pointer % boundary)/base_size;
+			break_node->next = stack->start;
+		}
+		stack->start = break_node;
+	
+		(stack->size) -= node_size;
+		return pop_node;
+	}
 
 	while (current->next != MEMORY_NULL_PTR) {
 		if (current->next->size < node_size) {
 			current = current->next;
 		    continue;
 		}
-		else if (current->next->size == node_size) {
+		else if (current->next->size == node_size && current->next->pointer % boundary == 0) {
 			pop_node = current->next;
 			current->next  = current->next->next;
 			pop_node->next = MEMORY_NULL_PTR;
 
     		(stack->size) -= node_size;
     		return pop_node;
-		}	
-		else {
+		}
+        else if (current->next->size > node_size && current->next->pointer % boundary == 0) {
 		    pop_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
 		    if (pop_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
 		    pop_node->pointer = current->next->pointer;
 		    pop_node->size = node_size;
 		    pop_node->attrib = stack->attrib;
 		    pop_node->next = MEMORY_NULL_PTR;
-		
-		    current->pointer += node_size * base_size;
-		    (current->size)  -= node_size;
 
+			current->next->pointer += node_size * base_size;
+			(current->next->size)  -= node_size;
+		
+    		(stack->size) -= node_size;
+            return pop_node;
+        } 	
+		else if (current->next->pointer % boundary != 0 && current->next->size >= node_size + (boundary - current->next->pointer % boundary)/base_size) {
+		    pop_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
+		    if (pop_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+			struct Memory_Node* break_node = Memory_NodeDispenser_Dispense(stack->node_dispenser);
+			if (break_node == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+		    pop_node->pointer = current->next->pointer + (boundary - current->next->pointer % boundary);
+		    pop_node->size = node_size;
+		    pop_node->attrib = stack->attrib;
+		    pop_node->next = MEMORY_NULL_PTR;
+
+			break_node->pointer = current->next->pointer;
+			break_node->attrib  = stack->attrib;
+			break_node->size    = (boundary - current->next->pointer % boundary)/base_size;
+			break_node->next    = current->next->next;
+			if (current->next->size > node_size + (boundary - current->next->pointer % boundary)/base_size) {
+			    current->next->pointer += node_size * base_size + (boundary - current->next->pointer % boundary);
+			    (current->next->size)  -= node_size + (boundary - stack->start->pointer % boundary)/base_size;
+			    break_node->next = current->next;
+			}
+			current->next = break_node;
+		
 			(stack->size) -= node_size;
 			return pop_node;
 		}

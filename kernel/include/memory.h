@@ -58,12 +58,13 @@ extern void                Memory_NodeDispenser_Retire   (struct Memory_NodeDisp
 extern uint32_t            Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser);
 extern uint32_t            Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser);
 
-extern bool                Memory_Stack_Push   (struct Memory_Stack* stack, struct Memory_Node* node);
-extern bool                Memory_Stack_Append (struct Memory_Stack* stack, struct Memory_Node* node);
-extern bool                Memory_Stack_Insert (struct Memory_Stack* stack, struct Memory_Node* node);
-extern struct Memory_Node* Memory_Stack_Pop    (struct Memory_Stack* stack);
-extern struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, uint32_t  node_size);
-extern struct Memory_Node* Memory_Stack_Get    (struct Memory_Stack* stack, uintptr_t node_ptr); 
+extern bool                Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintptr_t ptr_max);
+extern bool                Memory_Stack_Push    (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
+extern bool                Memory_Stack_Append  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
+extern bool                Memory_Stack_Insert  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
+extern struct Memory_Node* Memory_Stack_Pop     (struct Memory_Stack* stack);
+extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, uint32_t  node_size, uint32_t boundary);
+extern struct Memory_Node* Memory_Stack_Get     (struct Memory_Stack* stack, uintptr_t node_ptr); 
 
 extern uintptr_t           Memory_AllocatePage();
 extern bool                Memory_FreePage(uintptr_t pointer);
