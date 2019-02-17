@@ -219,7 +219,7 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, b
 
 	struct Memory_Node* current_node = stack->start;
 	while (current_node->next != MEMORY_NULL_PTR) {
-		if ((current_node->pointer + current_node->size * node_base_size < node->pointer && current_node->next->pointer > node_end) || !merge) {
+		if (current_node->pointer + current_node->size * node_base_size < node->pointer && current_node->next->pointer > node_end) {
 			struct Memory_Node* next = current_node->next;
 			current_node->next = node;
 			node->next = next;
