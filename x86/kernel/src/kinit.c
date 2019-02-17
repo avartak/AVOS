@@ -15,7 +15,7 @@ void Kinit(uint32_t* boot_info) {
 
     IDT_Initialize();
 
-    Memory_Initialize(boot_info);
+    Physical_Memory_Initialize(boot_info);
 
     Heap_Initialize();
 

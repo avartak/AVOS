@@ -7,9 +7,8 @@
 
 bool Initial_Checks(uint32_t* mbi) {
 	uint32_t size_e820 = 0;
-	struct E820_Table_Entry* table_e820;
-
-	struct Multiboot_Tag* tag;
+	struct   E820_Table_Entry* table_e820;
+	struct   Multiboot_Tag* tag;
 
 	for (tag = (struct Multiboot_Tag*) (mbi + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
 		if (tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
@@ -19,7 +18,7 @@ bool Initial_Checks(uint32_t* mbi) {
 
 	if (size_e820 == 0) return false;
 
-	bool check_kernel_code_memory = IsMemoryAvailable( 0x100000,  0x400000, table_e820, size_e820);	
+	bool check_kernel_code_memory = IsMemoryAvailable(0x0100000, 0x0400000, table_e820, size_e820);	
 	bool check_kernel_heap_memory = IsMemoryAvailable(0x1000000, 0x1400000, table_e820, size_e820);
 
 	return (check_kernel_code_memory && check_kernel_heap_memory);

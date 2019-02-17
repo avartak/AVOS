@@ -1,5 +1,4 @@
 #include <x86/kernel/include/welcome.h>
-#include <x86/kernel/include/e820.h>
 
 #include <stdint.h>
 #include <stddef.h>

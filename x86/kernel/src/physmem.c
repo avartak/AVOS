@@ -6,13 +6,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-uint32_t E820_Table_size;
-struct   E820_Table_Entry* E820_Table;
+uint32_t E820_Table_size = 0;
+struct   E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 
 struct   Memory_Stack Physical_Memory_high;
 struct   Memory_Stack Physical_Memory_dma;
 
-uint8_t  Kernel_Virtual_Memory[0x100];
+uint8_t  Kernel_lowlevel_heap[SIZE_DISPENSARY];
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_high);
@@ -60,7 +60,7 @@ uint32_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, ui
 	for (size_t i = 0; i < size; i++) {
 		if (table[i].acpi3 != 1 || table[i].type != 1) continue;
 		if (table[i].base + table[i].size < mem_max) continue;
-		mem_max = table[i].base + table[i].size;
+		if (mem_max < table[i].base + table[i].size) mem_max = table[i].base + table[i].size;
 	}
 	return mem_max;
 }
@@ -112,7 +112,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
         }
         else {
             for (size_t i = 0; i < 0x400; i++) {
-                if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step1, E820_Table, E820_Table_size)) {
+                if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step1, table_e820, size_e820)) {
                     struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
                     if (node == MEMORY_NULL_PTR) return;
                     node->pointer = scan_point;
@@ -128,9 +128,8 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
 }
 
 
-void Memory_Initialize(uint32_t* mbi) {
+void Physical_Memory_Initialize(uint32_t* mbi) {
 	// We point the E820 structure to the memory map produced by the boot loader
-    E820_Table_size = 0;
     struct Multiboot_Tag* tag;
     for (tag = (struct Multiboot_Tag*) (mbi + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
         if (tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
@@ -146,22 +145,22 @@ void Memory_Initialize(uint32_t* mbi) {
 
 	// Lets setup the node dispenser at the very start of the heap
 	struct Memory_NodeDispenser* dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
-    dispenser->freenode = (uintptr_t)dispenser + sizeof(struct Memory_NodeDispenser);
+    dispenser->freenode = FIRST_NODE(dispenser);
     dispenser->size = FULL_DISPENSER_SIZE;
     dispenser->attrib = 0;
     dispenser->next = MEMORY_NULL_PTR;
-    struct Memory_Node* nodes = (struct Memory_Node*)((uintptr_t)dispenser + sizeof(struct Memory_NodeDispenser));
-    for (size_t i = 0; i < dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0x000000FF;
+    struct Memory_Node* nodes = (struct Memory_Node*)FIRST_NODE(dispenser);
+    for (size_t i = 0; i < dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0xFF;
 
 	// Here we initialize the bitmap
-	for (size_t i = 0; i < 0x100; i++) Kernel_Virtual_Memory[i] = 0;
-	Kernel_Virtual_Memory[0] = 1;
+	for (size_t i = 0; i < SIZE_DISPENSARY; i++) Kernel_lowlevel_heap[i] = 0;
+	Kernel_lowlevel_heap[0] = 1;
 
 	// Here we set up the map for the free high memory
 	struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(dispenser);
 	Physical_Memory_high.start  = free_node;
 	Physical_Memory_high.size   = 0x400000/MEMORY_SIZE_PAGE - 1;
-	Physical_Memory_high.attrib = 0x10 << 8;
+	Physical_Memory_high.attrib = MEMORY_4KB << 8;
     Physical_Memory_high.node_dispenser = dispenser;
 
 	free_node->attrib  = Physical_Memory_high.attrib;
@@ -174,7 +173,7 @@ void Memory_Initialize(uint32_t* mbi) {
 	// Here we set up the map for the free low memory
     Physical_Memory_dma.start  = MEMORY_NULL_PTR;
     Physical_Memory_dma.size   = 0;
-    Physical_Memory_dma.attrib = 0x10 << 8;
+    Physical_Memory_dma.attrib = MEMORY_4KB << 8;
     Physical_Memory_dma.node_dispenser = dispenser;
 
 	Physical_Memory_MakeMap(&Physical_Memory_dma, PHYSICAL_MEMORY_START_DMA, PHYSICAL_MEMORY_START_HIGHMEM, E820_Table, E820_Table_size);

@@ -2,11 +2,7 @@
 
 #include <stddef.h>
 
-extern struct  Memory_Stack Virtual_Memory_free;
-extern struct  Memory_Stack Virtual_Memory_inuse;
-
-extern uint8_t Kernel_Virtual_Memory[];
-
+extern uint8_t Kernel_lowlevel_heap[];
 extern bool    Physical_Memory_AllocatePage(uintptr_t virtual_address);
 extern bool    Physical_Memory_FreePage(uintptr_t virtual_address);
 
@@ -25,9 +21,9 @@ uintptr_t Memory_NodeDispenser_New() {
 	uintptr_t pointer = (uintptr_t)MEMORY_NULL_PTR;
 	uint32_t  ptridx  = 0xFFFFFFFF;
 
-	for (size_t i = 0; i < 0x100; i++) {
-		if (Kernel_Virtual_Memory[i] == 0) { 
-			Kernel_Virtual_Memory[i] = 1;
+	for (size_t i = 0; i < SIZE_DISPENSARY; i++) {
+		if (Kernel_lowlevel_heap[i] == 0) { 
+			Kernel_lowlevel_heap[i] = 1;
 			pointer = VIRTUAL_MEMORY_START_DISP + i*MEMORY_SIZE_PAGE;
 			ptridx  = i;
 		}
@@ -35,7 +31,7 @@ uintptr_t Memory_NodeDispenser_New() {
 
 	if (pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
     if (Physical_Memory_AllocatePage(pointer) == false) {
-        Kernel_Virtual_Memory[ptridx] = 0;
+        Kernel_lowlevel_heap[ptridx] = 0;
         return (uintptr_t)MEMORY_NULL_PTR;
     }
 
@@ -44,7 +40,7 @@ uintptr_t Memory_NodeDispenser_New() {
 
 bool Memory_NodeDispenser_Delete(uintptr_t pointer) {
 	if (pointer < VIRTUAL_MEMORY_START_DISP || pointer >= VIRTUAL_MEMORY_END_DISP) return false;
-	Kernel_Virtual_Memory[(pointer - VIRTUAL_MEMORY_START_DISP)/MEMORY_SIZE_PAGE] = 0;
+	Kernel_lowlevel_heap[(pointer - VIRTUAL_MEMORY_START_DISP)/MEMORY_SIZE_PAGE] = 0;
 	return true;
 }
 
@@ -86,7 +82,7 @@ bool Memory_NodeDispenser_Refill(struct Memory_NodeDispenser* dispenser) {
 	struct Memory_NodeDispenser* current_dispenser = dispenser;
 	while (current_dispenser->next != MEMORY_NULL_PTR) current_dispenser = current_dispenser->next;
 	current_dispenser->next = new_dispenser;
-	new_dispenser->freenode = ((uintptr_t)new_dispenser) + sizeof(struct Memory_NodeDispenser);
+	new_dispenser->freenode = FIRST_NODE(new_dispenser);
 	new_dispenser->size = FULL_DISPENSER_SIZE; 
 	new_dispenser->attrib = 0;
 	new_dispenser->next = MEMORY_NULL_PTR;
@@ -133,7 +129,7 @@ struct Memory_Node* Memory_NodeDispenser_Dispense(struct Memory_NodeDispenser* d
 			struct Memory_Node* return_node = (struct Memory_Node*)(current_dispenser->freenode);
 			return_node->attrib &= (~0xFF);
 			current_dispenser->freenode = (uintptr_t)current_dispenser;
-			struct Memory_Node* nodes = (struct Memory_Node*)((uintptr_t)current_dispenser + sizeof(struct Memory_NodeDispenser));
+			struct Memory_Node* nodes = (struct Memory_Node*)FIRST_NODE(current_dispenser);
 			for (size_t i = 0; i < FULL_DISPENSER_SIZE; i++) {
 				if ((nodes[i].attrib | 0xFF) == nodes[i].attrib) current_dispenser->freenode = (uintptr_t)(&(nodes[i]));
 			}

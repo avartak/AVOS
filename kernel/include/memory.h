@@ -19,6 +19,7 @@ Bits  8-15  : Node size
 
 #define VIRTUAL_MEMORY_START_DISP 0xD0000000
 #define VIRTUAL_MEMORY_END_DISP   0xD0100000
+#define SIZE_DISPENSARY           0x100
 
 #define PAGE_MASK                 (~0xFFF)
 
@@ -32,6 +33,7 @@ Bits  8-15  : Node size
 #define MIN_NODES_B4_REFILL       8
 #define FULL_DISPENSER_SIZE       (0x1000 - sizeof(struct Memory_NodeDispenser)) / sizeof(struct Memory_Node)
 #define DISPENSER_FROM_NODE(node) ((struct Memory_NodeDispenser*)((uintptr_t)node & (~0xFFF)))
+#define FIRST_NODE(disp)          ((uintptr_t)disp + sizeof(struct Memory_NodeDispenser))
 
 struct Memory_Node {
 	uintptr_t pointer;
