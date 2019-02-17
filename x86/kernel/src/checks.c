@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 bool Initial_Checks(uint32_t* mbi) {
-	uint32_t size_e820 = 0;
+	size_t   size_e820 = 0;
 	struct   E820_Table_Entry* table_e820;
 	struct   Multiboot_Tag* tag;
 
@@ -24,7 +24,7 @@ bool Initial_Checks(uint32_t* mbi) {
 	return (check_kernel_code_memory && check_kernel_heap_memory);
 }
 
-bool IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, uint32_t size) {
+bool IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, size_t size) {
     if (min >= max) return false;
     for (size_t i = 0; i < size; i++) {
         if (table[i].type != 1) continue;
