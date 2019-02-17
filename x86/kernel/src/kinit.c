@@ -17,7 +17,7 @@ void Kinit(uint32_t* boot_info) {
 
     Physical_Memory_Initialize(boot_info);
 
-    Heap_Initialize();
+    Heap_Initialize(VIRTUAL_MEMORY_START_HEAP, VIRTUAL_MEMORY_END_HEAP);
 
     PIC_Initialize();
    

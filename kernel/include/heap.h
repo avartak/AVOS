@@ -14,13 +14,11 @@ Bits  8-15  : Node size
 #include <kernel/include/memory.h>
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
-#define VIRTUAL_MEMORY_START_HEAP      0xD0100000
-#define VIRTUAL_MEMORY_END_HEAP        0xE0000000
-
-extern uintptr_t Heap_Allocate(uint32_t nbytes);
+extern uintptr_t Heap_Allocate(size_t nbytes);
 extern bool      Heap_Free(uintptr_t pointer);
-extern void      Heap_Initialize();
+extern void      Heap_Initialize(uintptr_t vm_start, uintptr_t vm_end);
 
 #endif

@@ -6,13 +6,14 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-uint32_t E820_Table_size = 0;
+size_t   E820_Table_size = 0;
 struct   E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 
 struct   Memory_Stack Physical_Memory_high;
 struct   Memory_Stack Physical_Memory_dma;
 
 uint8_t  Kernel_lowlevel_heap[SIZE_DISPENSARY];
+struct   Memory_NodeDispenser* Kernel_node_dispenser = MEMORY_NULL_PTR;
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_high);
@@ -54,8 +55,8 @@ bool Physical_Memory_FreePage(uintptr_t virtual_address) {
 	return Memory_Stack_Push(&Physical_Memory_high, node, true);
 }
 
-uint32_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, uint32_t size) {
-	uint32_t mem_max = 0;
+uintptr_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, size_t size) {
+	uintptr_t mem_max = 0;
 	if (table == MEMORY_NULL_PTR) return mem_max;
 	for (size_t i = 0; i < size; i++) {
 		if (table[i].acpi3 != 1 || table[i].type != 1) continue;
@@ -65,9 +66,9 @@ uint32_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, ui
 	return mem_max;
 }
 
-bool Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, uint32_t size) {
+bool Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, size_t size) {
 	if (min >= max) return false;
-	uint32_t max_mem = Physical_Memory_MaxFreeMemoryAddress(table, size);
+	uintptr_t max_mem = Physical_Memory_MaxFreeMemoryAddress(table, size);
     if (max_mem == 0) return false;
 	if (min >= max_mem || max > max_mem) return false;
 
@@ -94,10 +95,10 @@ bool Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table
 	return false;
 }
 
-void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, uintptr_t map_end, struct E820_Table_Entry* table_e820, uint32_t size_e820) {
-    uint32_t scan_point = map_start;
-    uint32_t scan_step0 = MEMORY_SIZE_PAGE * 0x400;
-    uint32_t scan_step1 = MEMORY_SIZE_PAGE;
+void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, uintptr_t map_end, struct E820_Table_Entry* table_e820, size_t size_e820) {
+    uintptr_t scan_point = map_start;
+    uintptr_t scan_step0 = MEMORY_SIZE_PAGE * 0x400;
+    uintptr_t scan_step1 = MEMORY_SIZE_PAGE;
 
     while (scan_point < map_end) {
         if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step0, table_e820, size_e820)) {
@@ -144,24 +145,24 @@ void Physical_Memory_Initialize(uint32_t* mbi) {
 	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory));
 
 	// Lets setup the node dispenser at the very start of the heap
-	struct Memory_NodeDispenser* dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
-    dispenser->freenode = FIRST_NODE(dispenser);
-    dispenser->size = FULL_DISPENSER_SIZE;
-    dispenser->attrib = 0;
-    dispenser->next = MEMORY_NULL_PTR;
-    struct Memory_Node* nodes = (struct Memory_Node*)FIRST_NODE(dispenser);
-    for (size_t i = 0; i < dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0xFF;
+	Kernel_node_dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
+    Kernel_node_dispenser->freenode = FIRST_NODE(Kernel_node_dispenser);
+    Kernel_node_dispenser->size = FULL_DISPENSER_SIZE;
+    Kernel_node_dispenser->attrib = 0;
+    Kernel_node_dispenser->next = MEMORY_NULL_PTR;
+    struct Memory_Node* nodes = (struct Memory_Node*)FIRST_NODE(Kernel_node_dispenser);
+    for (size_t i = 0; i < Kernel_node_dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0xFF;
 
 	// Here we initialize the bitmap
 	for (size_t i = 0; i < SIZE_DISPENSARY; i++) Kernel_lowlevel_heap[i] = 0;
 	Kernel_lowlevel_heap[0] = 1;
 
 	// Here we set up the map for the free high memory
-	struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(dispenser);
+	struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);
 	Physical_Memory_high.start  = free_node;
 	Physical_Memory_high.size   = 0x400000/MEMORY_SIZE_PAGE - 1;
 	Physical_Memory_high.attrib = MEMORY_4KB << 8;
-    Physical_Memory_high.node_dispenser = dispenser;
+    Physical_Memory_high.node_dispenser = Kernel_node_dispenser;
 
 	free_node->attrib  = Physical_Memory_high.attrib;
 	free_node->pointer = PHYSICAL_MEMORY_START_HIGHMEM + MEMORY_SIZE_PAGE;
@@ -174,7 +175,7 @@ void Physical_Memory_Initialize(uint32_t* mbi) {
     Physical_Memory_dma.start  = MEMORY_NULL_PTR;
     Physical_Memory_dma.size   = 0;
     Physical_Memory_dma.attrib = MEMORY_4KB << 8;
-    Physical_Memory_dma.node_dispenser = dispenser;
+    Physical_Memory_dma.node_dispenser = Kernel_node_dispenser;
 
 	Physical_Memory_MakeMap(&Physical_Memory_dma, PHYSICAL_MEMORY_START_DMA, PHYSICAL_MEMORY_START_HIGHMEM, E820_Table, E820_Table_size);
 }

@@ -1,13 +1,13 @@
 #include <kernel/include/heap.h>
 
-extern struct   Memory_Stack Physical_Memory_high;
 struct          Memory_Stack Virtual_Memory_free;
 struct          Memory_Stack Virtual_Memory_inuse;
 
+extern struct   Memory_NodeDispenser* Kernel_node_dispenser;
 extern bool     Physical_Memory_AllocatePage(uintptr_t virtual_address);
 extern bool     Physical_Memory_FreePage(uintptr_t virtual_address);
 
-uintptr_t Heap_Allocate(uint32_t nbytes) {
+uintptr_t Heap_Allocate(size_t nbytes) {
     struct Memory_Node* node = Memory_Stack_Extract(&Virtual_Memory_free, nbytes);
     if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
 
@@ -58,21 +58,21 @@ bool Heap_Free(uintptr_t pointer) {
 	return true;
 }
 
-void Heap_Initialize() {
-    struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Physical_Memory_high.node_dispenser);
+void Heap_Initialize(uintptr_t vm_start, uintptr_t vm_end) {
+    struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);
     Virtual_Memory_free.start  = free_node;
-    Virtual_Memory_free.size   = VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP;
+    Virtual_Memory_free.size   = vm_end - vm_start;
     Virtual_Memory_free.attrib = MEMORY_1B << 8;
-    Virtual_Memory_free.node_dispenser = Physical_Memory_high.node_dispenser;
+    Virtual_Memory_free.node_dispenser = Kernel_node_dispenser;
    
     free_node->attrib  = Virtual_Memory_free.attrib;
-    free_node->pointer = VIRTUAL_MEMORY_START_HEAP;
+    free_node->pointer = vm_start;
     free_node->size    = Virtual_Memory_free.size;
     free_node->next    = MEMORY_NULL_PTR;
 
-    free_node = Memory_NodeDispenser_Dispense(Physical_Memory_high.node_dispenser);
+    free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);
     Virtual_Memory_inuse.start  = MEMORY_NULL_PTR;
     Virtual_Memory_inuse.size   = 0;
     Virtual_Memory_inuse.attrib = MEMORY_1B << 8;
-    Virtual_Memory_inuse.node_dispenser = Physical_Memory_high.node_dispenser;
+    Virtual_Memory_inuse.node_dispenser = Kernel_node_dispenser;
 }

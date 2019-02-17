@@ -12,11 +12,14 @@ Bits  8-15  : Node size
 #define KERNEL_MEMORY_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #define MEMORY_NULL_PTR           ((void*)0xFFFFFFFF)
 #define MEMORY_SIZE_PAGE          0x1000
 
+#define VIRTUAL_MEMORY_START_HEAP 0xD0100000
+#define VIRTUAL_MEMORY_END_HEAP   0xE0000000
 #define VIRTUAL_MEMORY_START_DISP 0xD0000000
 #define VIRTUAL_MEMORY_END_DISP   0xD0100000
 #define SIZE_DISPENSARY           0x100
@@ -37,26 +40,26 @@ Bits  8-15  : Node size
 
 struct Memory_Node {
 	uintptr_t pointer;
-	uint32_t  size;
+	size_t    size;
 	uint32_t  attrib;
 	struct Memory_Node* next;
 };
 
 struct Memory_NodeDispenser {
 	uintptr_t freenode;
-	uint32_t  size;
+	size_t    size;
 	uint32_t  attrib;
 	struct Memory_NodeDispenser* next;
 };
 
 struct Memory_Stack {
 	struct Memory_Node* start;
-	uint32_t size;
+	size_t   size;
 	uint32_t attrib;
 	struct Memory_NodeDispenser* node_dispenser;
 };
 
-extern uint32_t            Memory_Node_GetBaseSize(uint32_t attrib);
+extern size_t              Memory_Node_GetBaseSize(uint32_t attrib);
 
 extern uintptr_t           Memory_NodeDispenser_New();
 extern bool                Memory_NodeDispenser_Delete   (uintptr_t pointer);
@@ -64,15 +67,15 @@ extern bool                Memory_NodeDispenser_Return   (struct Memory_Node* no
 extern struct Memory_Node* Memory_NodeDispenser_Dispense (struct Memory_NodeDispenser* dispenser);
 extern bool                Memory_NodeDispenser_Refill   (struct Memory_NodeDispenser* dispenser);
 extern void                Memory_NodeDispenser_Retire   (struct Memory_NodeDispenser* dispenser);
-extern uint32_t            Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser);
-extern uint32_t            Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser);
+extern size_t              Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser);
+extern size_t              Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser);
 
 extern bool                Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintptr_t ptr_max);
 extern bool                Memory_Stack_Push    (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
 extern bool                Memory_Stack_Append  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
 extern bool                Memory_Stack_Insert  (struct Memory_Stack* stack, struct Memory_Node* node, bool merge);
 extern struct Memory_Node* Memory_Stack_Pop     (struct Memory_Stack* stack);
-extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, uint32_t  node_size);
+extern struct Memory_Node* Memory_Stack_Extract (struct Memory_Stack* stack, size_t  node_size);
 extern struct Memory_Node* Memory_Stack_Get     (struct Memory_Stack* stack, uintptr_t node_ptr); 
 
 
