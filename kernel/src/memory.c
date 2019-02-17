@@ -249,6 +249,7 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, b
 			stack->size += node->size;
 			Memory_NodeDispenser_Return(node);
 			Memory_NodeDispenser_Retire(stack->node_dispenser);
+			return true;
 		}
 		current_node = current_node->next;
 	}
