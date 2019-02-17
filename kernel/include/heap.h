@@ -17,7 +17,7 @@ Bits  8-15  : Node size
 #include <stdbool.h>
 
 #define VIRTUAL_MEMORY_START_HEAP      0xD0100000
-#define VIRTUAL_MEMORY_END_HEAP        0xD0400000
+#define VIRTUAL_MEMORY_END_HEAP        0xE0000000
 
 extern uintptr_t Heap_Allocate(uint32_t nbytes);
 extern bool      Heap_Free(uintptr_t pointer);
