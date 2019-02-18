@@ -6,8 +6,6 @@
 
 #define PHYSICAL_MEMORY_START_DMA      0x00400000
 #define PHYSICAL_MEMORY_START_HIGHMEM  0x01000000
-#define PHYSICAL_MEMORY_START_DISP     0x01000000
-#define PHYSICAL_MEMORY_START_HEAP     0x01100000
 
 extern size_t    E820_Table_size;
 extern struct    E820_Table_Entry* E820_Table;
@@ -15,7 +13,8 @@ extern struct    E820_Table_Entry* E820_Table;
 extern struct    Memory_Stack Physical_Memory_high;
 extern struct    Memory_Stack Physical_Memory_dma;
 
-extern uint8_t   Kernel_lowlevel_heap[];
+extern uint8_t   Kernel_dispensary_map[];
+extern uint32_t  Kernel_dispensary_table[]__attribute__((aligned(0x1000)));
 extern struct    Memory_NodeDispenser* Kernel_node_dispenser;
 
 extern void      Physical_Memory_Initialize(uint32_t* mbi);

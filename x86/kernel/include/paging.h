@@ -15,9 +15,8 @@
 #define asm __asm__
 #define volatile __volatile__
 
-extern uint32_t Paging_kernel_directory[]__attribute__((aligned(0x1000)));
-extern uint32_t Paging_kernel_selftable[]__attribute__((aligned(0x1000)));
-extern uint32_t Paging_kernel_heaptable[]__attribute__((aligned(0x1000)));
+extern uint32_t Paging_directory[]__attribute__((aligned(0x1000)));
+extern uint32_t Paging_kerntable[]__attribute__((aligned(0x1000)));
 
 static inline void     Paging_EnablePGBitInCR0();
 static inline void     Paging_LoadDirectory           (uintptr_t pd);

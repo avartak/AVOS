@@ -12,7 +12,8 @@ struct   E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 struct   Memory_Stack Physical_Memory_high;
 struct   Memory_Stack Physical_Memory_dma;
 
-uint8_t  Kernel_lowlevel_heap[SIZE_DISPENSARY];
+uint8_t  Kernel_dispensary_map[SIZE_DISPENSARY];
+uint32_t Kernel_dispensary_table[0x400]__attribute__((aligned(0x1000)));
 struct   Memory_NodeDispenser* Kernel_node_dispenser = MEMORY_NULL_PTR;
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
@@ -25,9 +26,9 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 			Memory_Stack_Push(&Physical_Memory_high, mem_node, true);
 			return false;
 		}
-		Paging_MapTableInDirectory(Paging_kernel_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
+		Paging_MapTableInDirectory(Paging_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
 		Paging_ClearTable(virtual_address);
-		Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory));
+		Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
 	}
 	
 	if (!(Paging_MapVirtualToPhysicalPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
@@ -139,10 +140,10 @@ void Physical_Memory_Initialize(uint32_t* mbi) {
     }
 
 	// Lets create the virtual space for the heap
-	Paging_MapTableInDirectory(Paging_kernel_directory, Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_heaptable), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
+	Paging_MapTableInDirectory(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Kernel_dispensary_table), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
 	Paging_ClearTable(VIRTUAL_MEMORY_START_DISP);
-	Paging_MapVirtualToPhysicalPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_DISP, PAGING_KERN_PAGE_FLAGS);
-	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_kernel_directory));
+	Paging_MapVirtualToPhysicalPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
+	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
 
 	// Lets setup the node dispenser at the very start of the heap
 	Kernel_node_dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
@@ -154,8 +155,8 @@ void Physical_Memory_Initialize(uint32_t* mbi) {
     for (size_t i = 0; i < Kernel_node_dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0xFF;
 
 	// Here we initialize the bitmap
-	for (size_t i = 0; i < SIZE_DISPENSARY; i++) Kernel_lowlevel_heap[i] = 0;
-	Kernel_lowlevel_heap[0] = 1;
+	for (size_t i = 0; i < SIZE_DISPENSARY; i++) Kernel_dispensary_map[i] = 0;
+	Kernel_dispensary_map[0] = 1;
 
 	// Here we set up the map for the free high memory
 	struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);

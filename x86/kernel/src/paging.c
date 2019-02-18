@@ -4,9 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-uint32_t Paging_kernel_directory[0x400]__attribute__((aligned(0x1000)));
-uint32_t Paging_kernel_selftable[0x400]__attribute__((aligned(0x1000)));
-uint32_t Paging_kernel_heaptable[0x400]__attribute__((aligned(0x1000)));
+uint32_t Paging_directory[0x400]__attribute__((aligned(0x1000)));
+uint32_t Paging_kerntable[0x400]__attribute__((aligned(0x1000)));
 
 uintptr_t Paging_GetPhysicalAddress(uintptr_t virtual_address) {
 	uint32_t pdindex = Paging_GetDirectoryEntry(virtual_address);
@@ -66,8 +65,8 @@ extern bool Paging_UnmapVirtualPage(uintptr_t virtual_address) {
 }
 
 void Paging_Initialize() {
-	uintptr_t ipd = (uintptr_t)Paging_kernel_directory;
-	uintptr_t ipt = (uintptr_t)Paging_kernel_selftable;
+	uintptr_t ipd = (uintptr_t)Paging_directory;
+	uintptr_t ipt = (uintptr_t)Paging_kerntable;
 
 	if (ipd > 0xC0000000) ipd -= 0xC0000000;
 	if (ipt > 0xC0000000) ipt -= 0xC0000000;

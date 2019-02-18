@@ -44,8 +44,8 @@ Kstart:
 	High_Memory:
 	add esp, HIGHER_HALF_OFFSET
 
-	extern Paging_kernel_directory
-	mov   [Paging_kernel_directory], DWORD 0
+	extern Paging_directory
+	mov   [Paging_directory], DWORD 0
 
 	extern Kinit
 	call   Kinit
