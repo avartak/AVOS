@@ -10,6 +10,7 @@
 extern size_t    E820_Table_size;
 extern struct    E820_Table_Entry* E820_Table;
 
+extern struct    Memory_Stack Physical_Memory_usable;
 extern struct    Memory_Stack Physical_Memory_high;
 extern struct    Memory_Stack Physical_Memory_dma;
 

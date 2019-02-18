@@ -9,6 +9,7 @@
 size_t   E820_Table_size = 0;
 struct   E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 
+struct   Memory_Stack Physical_Memory_usable;
 struct   Memory_Stack Physical_Memory_high;
 struct   Memory_Stack Physical_Memory_dma;
 
@@ -102,18 +103,22 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
     uintptr_t scan_step1 = MEMORY_SIZE_PAGE;
 
     while (scan_point < map_end) {
-        if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step0, table_e820, size_e820)) {
+        if (scan_point + scan_step0 <= map_end && Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step0, table_e820, size_e820)) {
             struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
             if (node == MEMORY_NULL_PTR) return;
             node->pointer = scan_point;
             node->size = 0x400;
             node->attrib = mem_map->attrib;
             node->next = MEMORY_NULL_PTR;
-            Memory_Stack_Append(mem_map, node, true);
+            Memory_Stack_Insert(mem_map, node, true);
             scan_point += scan_step0;
         }
         else {
             for (size_t i = 0; i < 0x400; i++) {
+				if (scan_point + scan_step1 < scan_point || scan_point + scan_step1 > map_end) {
+					scan_point = map_end;
+					break;
+				}
                 if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step1, table_e820, size_e820)) {
                     struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
                     if (node == MEMORY_NULL_PTR) return;
@@ -121,12 +126,12 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
                     node->size = 1;
                     node->attrib = mem_map->attrib;
                     node->next = MEMORY_NULL_PTR;
-                    Memory_Stack_Append(mem_map, node, true);
+                    Memory_Stack_Insert(mem_map, node, true);
                 }
                 scan_point += scan_step1;
             }
         }
-    }
+	}
 }
 
 
@@ -179,6 +184,14 @@ void Physical_Memory_Initialize(uint32_t* mbi) {
     Physical_Memory_dma.node_dispenser = Kernel_node_dispenser;
 
 	Physical_Memory_MakeMap(&Physical_Memory_dma, PHYSICAL_MEMORY_START_DMA, PHYSICAL_MEMORY_START_HIGHMEM, E820_Table, E820_Table_size);
+
+	// Here we set up the permanent/static map of usable RAM
+    Physical_Memory_usable.start  = MEMORY_NULL_PTR;
+    Physical_Memory_usable.size   = 0;
+    Physical_Memory_usable.attrib = MEMORY_4KB << 8;
+    Physical_Memory_usable.node_dispenser = Kernel_node_dispenser;
+
+	Physical_Memory_MakeMap(&Physical_Memory_usable, 0, 0xFFFFFFFF, E820_Table, E820_Table_size);
 }
 
 
