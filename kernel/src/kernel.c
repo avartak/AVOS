@@ -19,9 +19,12 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 
 */
 
+#include <kernel/include/heap.h>
 #include <x86/kernel/include/misc.h>
 
 void Kmain() {
+
+    KHeap_Initialize(VIRTUAL_MEMORY_START_HEAP, VIRTUAL_MEMORY_END_HEAP);
 
 	while (1) {
 		HaltSystem();

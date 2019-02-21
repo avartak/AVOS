@@ -1,6 +1,7 @@
 #include <x86/kernel/include/interrupts.h>
-#include <x86/kernel/include/pic.h>
+#include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/keyboard.h>
+#include <kernel/include/clock.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -13,8 +14,13 @@ void Interrupt_Handler(uint32_t interrupt) {
 		IRQTest("CPU has raised an exception", 0x04);
     }
 
+    if (interrupt == 0x20) {
+		Clock_HandleInterrupt();
+	}
+
     if (interrupt == 0x21) {
-		ReadKeyboardScanCode();
+		IRQTest("Keyboard interrupt received", 0x0F);
+		Keyboard_HandleInterrupt();
 	}
 
     if (interrupt >= 0x20 && interrupt < 0x30) {

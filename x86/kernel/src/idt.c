@@ -1,4 +1,3 @@
-#include <x86/kernel/include/pic.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/interrupts.h>
 

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-uint32_t screen_line;
+uint32_t screen_line = 1;
 
 void Welcome() {
 

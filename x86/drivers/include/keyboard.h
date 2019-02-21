@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-extern uint8_t ReadKeyboardScanCode();
+extern void Keyboard_HandleInterrupt();
 
 #endif

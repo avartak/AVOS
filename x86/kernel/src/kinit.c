@@ -2,10 +2,10 @@
 #include <x86/kernel/include/tss.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/physmem.h>
-#include <x86/kernel/include/pic.h>
 #include <x86/kernel/include/irqs.h>
 #include <x86/kernel/include/welcome.h>
-#include <kernel/include/heap.h>
+#include <x86/drivers/include/pit.h>
+#include <x86/drivers/include/pic.h>
 
 void Kinit(uint32_t* boot_info) {
 
@@ -17,9 +17,9 @@ void Kinit(uint32_t* boot_info) {
 
     Physical_Memory_Initialize(boot_info);
 
-    KHeap_Initialize(VIRTUAL_MEMORY_START_HEAP, VIRTUAL_MEMORY_END_HEAP);
-
     PIC_Initialize();
+   
+    PIT_Initialize(PIT_TARGET_FREQUENCY);
    
     IRQ_Initialize();
    

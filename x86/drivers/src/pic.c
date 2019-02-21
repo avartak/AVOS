@@ -1,5 +1,5 @@
-#include <x86/kernel/include/io.h>
-#include <x86/kernel/include/pic.h>
+#include <x86/drivers/include/io.h>
+#include <x86/drivers/include/pic.h>
 
 #include <stdint.h>
 
