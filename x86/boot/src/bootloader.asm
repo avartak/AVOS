@@ -88,7 +88,7 @@ Start:
 	mov ds, ax
 	mov es, ax
 	mov ss, ax
-	mov sp, TOP_STACK 
+	mov sp, STACK_TOP 
 
 	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
 	; So we need to set up some code that does the reading from disk
@@ -145,7 +145,6 @@ ReadStage2:
 	mov ah, 0x42
 	mov dl, [Drive]
 	mov si, Disk_Address_Packet
-
 	int 0x13
 	jc .readusingchs
 	jmp LaunchStage2
@@ -167,7 +166,7 @@ ReadStage2:
 	call ReadSectorsFromDrive
 
 	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
-	cmp al, SIZE_BOOT2_DISK
+	cmp al, SIZE_BOOT2/SECTOR_SIZE
 	je  LaunchStage2
 	jmp HaltSystem
 
@@ -195,5 +194,5 @@ times SIZE_BOOT1-2-($-$$) db 0
 ; The last two bytes of the boot sector need to have the following boot signature 
 ; Otherwise BIOS will not recognize this as a boot sector
 
-dw BOOTSECT_MAGIC
+dw BOOTSECTOR_MAGIC
 

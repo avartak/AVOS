@@ -2,46 +2,66 @@
 #include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/keyboard.h>
 #include <kernel/include/clock.h>
+#include <kernel/include/dispensary.h>
 
 #include <stddef.h>
-#include <stdint.h>
 
-extern uint32_t screen_line;
+struct Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
 
-void Interrupt_Handler(uint32_t interrupt) {
+void Interrupt_Initialize() {
+	Interrupt_Handler_map = (struct Interrupt_Handler*)(Memory_NodeDispenser_New());
+	for (size_t i = 0; i < MEMORY_SIZE_PAGE/sizeof(struct Interrupt_Handler); i++) {
+		Interrupt_Handler_map[i].next     = MEMORY_NULL_PTR;
+		Interrupt_Handler_map[i].handler  = MEMORY_NULL_PTR;
+		Interrupt_Handler_map[i].id       = 0;
+		Interrupt_Handler_map[i].process  = 0;
+	} 
+}
 
-    if (interrupt >= 0x00 && interrupt < 0x20) {
-		IRQTest("CPU has raised an exception", 0x04);
-    }
-
-    if (interrupt == 0x20) {
-		Clock_HandleInterrupt();
+uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt) {
+	if (handler == MEMORY_NULL_PTR || handler->handler == MEMORY_NULL_PTR) return 0;
+	struct Interrupt_Handler* current_handler = &(Interrupt_Handler_map[interrupt]);
+	if (current_handler->handler == MEMORY_NULL_PTR) {
+		current_handler->handler = handler->handler;
+		return 1;
 	}
+	while (current_handler->next != MEMORY_NULL_PTR) current_handler = current_handler->next;
+	current_handler->next = handler;
+	return 2;
+}
 
-    if (interrupt == 0x21) {
-		IRQTest("Keyboard interrupt received", 0x0F);
-		Keyboard_HandleInterrupt();
+bool Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt) {
+    struct Interrupt_Handler* current_handler = &(Interrupt_Handler_map[interrupt]);
+	if (current_handler->id == id) {
+		if (current_handler->next == MEMORY_NULL_PTR) return false;
+		else {
+			current_handler = current_handler->next;
+			return true;
+		}
 	}
+    while (current_handler->next != MEMORY_NULL_PTR) {
+		if (current_handler->next->id == id) {
+			current_handler->next = current_handler->next->next;
+			return true;
+		}
+		current_handler = current_handler->next;
+	}
+	return false;
+}
 
-    if (interrupt >= 0x20 && interrupt < 0x30) {
-        PIC_SendEOI(interrupt - 0x20);
+void Interrupt_Handle(uint32_t interrupt) {
+
+	struct Interrupt_Handler* handler = &(Interrupt_Handler_map[interrupt]);
+	while (true) {
+		if (handler->handler == MEMORY_NULL_PTR || (handler->handler)() == 2 || handler->next == MEMORY_NULL_PTR) break;
+		handler = handler->next;
+	} 
+
+    if (interrupt >= PIC_IRQ_OFFSET && interrupt < PIC_IRQ_OFFSET + PIC_NUM_IRQS) {
+        PIC_SendEOI(interrupt - PIC_IRQ_OFFSET);
     }
 
     return;
 
 }
 
-void IRQTest(const char* str, uint8_t color) {
-
-	char* screen = (char*)0xC00B8000;
-	
-	size_t i = 0;
-	while (str[i] != 0) {
-	    screen[screen_line*160 + 2*i]   = str[i];
-	    screen[screen_line*160 + 2*i+1] = color;
-	    i++;
-	}
-	
-	screen_line++;
-
-}

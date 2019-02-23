@@ -27,8 +27,10 @@
 #define PIT_COUNTMODE_BIN                 0x0
 #define PIT_COUNTMODE_BCD                 0x1
 
-#define PIT_BASE_FREQUENCY                 1193182
-#define PIT_TARGET_FREQUENCY               50
+#define PIT_BASE_FREQUENCY                1193182
+#define PIT_TARGET_FREQUENCY              50
+
+#define PIT_IRQLINE                       0
 
 void     PIT_Initialize();
 void     PIT_Reset();

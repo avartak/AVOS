@@ -22,20 +22,20 @@ BITS 16
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Kload16:
 
-	mov  ax, START_MBI_SEGMENT
+	mov  ax, MULTIBOOT_INFO_SEGMENT
 	mov  es, ax 
-	mov  [es:START_MBI_OFFSET]  , DWORD 8
-	mov  [es:START_MBI_OFFSET+4], DWORD 0
+	mov  [es:MULTIBOOT_INFO_OFFSET]  , DWORD 8
+	mov  [es:MULTIBOOT_INFO_OFFSET+4], DWORD 0
 
-	push 0x8000
-	push 0x8008
-	push 0x0800
+	push MULTIBOOT_INFO_OFFSET
+	push MULTIBOOT_INFO_OFFSET+8
+	push MULTIBOOT_INFO_SEGMENT
 	call StoreMemoryMap
 	add sp, 6 
 
-	mov bx, START_MBI_OFFSET
-	add bx, [es:START_MBI_OFFSET]
-	add [es:bx]  , DWORD 0                ; Terminating tag 
+	mov bx, MULTIBOOT_INFO_OFFSET
+	add bx, [es:MULTIBOOT_INFO_OFFSET]
+	add [es:bx]  , DWORD 0                    ; Terminating tag 
 	mov [es:bx+4], DWORD 8
 
 	mov ax, 0
@@ -63,9 +63,9 @@ Kload16:
 	or  eax, 1
 	mov cr0, eax
 
-	mov bx, SEG_DS32                          ; We will update the DS and ES segment register to 32-bit mode
+	mov bx, SEG32_DATA                        ; We will update the DS and ES segment register to 32-bit mode
 	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
-	mov bx, SEG_ES32                          ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is -- (for BIOS access in the unreal mode)
+	mov bx, SEG32_DATA                        ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is -- (for BIOS access in the unreal mode)
 	mov es, bx      
 
 	; Entering the Unreal mode
@@ -90,12 +90,12 @@ Kload16:
 
 	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
 
-	push DWORD START_KERNL                    ; Starting point of the kernel in high memory (1 MB)
-	push START_SCRCH                          ; Temporary pool to hold each sector before copying it to the high memory
-	push SECTRS_PER_ITER                      ; Copy 64 KB of data (128 sectors) from the disk in every interation
-	push START_KERNL_DISK                     ; Copy kernel starting from 20 KB logical address of the disk
+	push DWORD START_KERNEL                   ; Starting point of the kernel in high memory (1 MB)
+	push START_SCRATCH                        ; Temporary pool to hold each sector before copying it to the high memory
+	push SECTORS_PER_ITER                     ; Copy 64 KB of data (128 sectors) from the disk in every interation
+	push START_KERNEL_DISK                    ; Copy kernel starting from 20 KB logical address of the disk
 
-	mov  cx, KERNL_COPY_ITER                  ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
+	mov  cx, KERNEL_COPY_ITER                 ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
 	.iterateReadAndMove:
 		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
@@ -111,7 +111,7 @@ Kload16:
 	or  eax, 1
 	mov cr0, eax
 
-	jmp SEG_CS32:In32bitMode                  ; Make a far jump this time to update the code segment to 32-bit
+	jmp SEG32_CODE:In32bitMode                ; Make a far jump this time to update the code segment to 32-bit
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,21 +139,21 @@ BITS 32
 
 In32bitMode:
 
-    mov ax, SEG_DS32                          ; Lets set up the segment registers correctly
+    mov ax, SEG32_DATA                        ; Lets set up the segment registers correctly
     mov ds, ax
-    mov ax, SEG_ES32
+    mov ax, SEG32_DATA
     mov es, ax
-    mov ax, SEG_FS32
+    mov ax, SEG32_DATA
     mov fs, ax
-    mov ax, SEG_GS32
+    mov ax, SEG32_DATA
     mov gs, ax
-    mov ax, SEG_SS32
+    mov ax, SEG32_DATA
     mov ss, ax
 
-	mov eax, MULTIBOOT2_MAGIC
-	mov ebx, MULTIBOOT2_MBI
+	mov eax, MULTIBOOT_MAGIC
+	mov ebx, MULTIBOOT_INFO_ADDRESS
 
-	jmp KERNEL_START                          ; Launch into the kernel
+	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE    ; Launch into the kernel
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

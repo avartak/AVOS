@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
-extern void Keyboard_HandleInterrupt();
+#define KEYBOARD_PS2_IRQLINE 1
+
+extern uint32_t Keyboard_HandleInterrupt();
+extern void     Keyboard_Initialize();
 
 #endif

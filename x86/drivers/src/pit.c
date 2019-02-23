@@ -1,5 +1,8 @@
 #include <x86/drivers/include/pit.h>
+#include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/io.h>
+#include <x86/kernel/include/interrupts.h>
+#include <kernel/include/clock.h>
 
 void PIT_Initialize(uint32_t tick_freq) {
 	uint32_t pit_counter = PIT_BASE_FREQUENCY/tick_freq;
@@ -8,6 +11,9 @@ void PIT_Initialize(uint32_t tick_freq) {
 	Outb(PIT_IOPORT_CHAN0, (uint8_t) (pit_counter & 0x00FF));
 	Outb(PIT_IOPORT_CHAN0, (uint8_t)((pit_counter & 0xFF00) >> 8));
 
+	PIC_DisableInterrupt(PIT_IRQLINE);
+	Interrupt_Handler_map[PIT_IRQLINE+PIC_IRQ_OFFSET].handler = &Clock_HandleInterrupt;
+	PIC_EnableInterrupt(PIT_IRQLINE);
 }
 
 void PIT_Reset() {

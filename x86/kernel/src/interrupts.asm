@@ -15,8 +15,8 @@
 
     push dword 0x%1
 
-    extern Interrupt_Handler
-    call   Interrupt_Handler
+    extern Interrupt_Handle
+    call   Interrupt_Handle
 
 	add esp, 8
 
