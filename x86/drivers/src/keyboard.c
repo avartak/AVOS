@@ -1,7 +1,7 @@
 #include <x86/drivers/include/keyboard.h>
 #include <x86/drivers/include/io.h>
 #include <x86/drivers/include/pic.h>
-#include <x86/kernel/include/interrupts.h>
+#include <kernel/include/interrupts.h>
 
 #include <stdint.h>
 #include <stddef.h>

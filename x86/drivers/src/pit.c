@@ -1,7 +1,7 @@
 #include <x86/drivers/include/pit.h>
 #include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/io.h>
-#include <x86/kernel/include/interrupts.h>
+#include <kernel/include/interrupts.h>
 #include <kernel/include/clock.h>
 
 void PIT_Initialize(uint32_t tick_freq) {

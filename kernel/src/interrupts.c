@@ -1,7 +1,5 @@
-#include <x86/kernel/include/interrupts.h>
 #include <x86/drivers/include/pic.h>
-#include <x86/drivers/include/keyboard.h>
-#include <kernel/include/clock.h>
+#include <kernel/include/interrupts.h>
 #include <kernel/include/dispensary.h>
 
 #include <stddef.h>

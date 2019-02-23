@@ -6,16 +6,17 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-size_t   E820_Table_size = 0;
-struct   E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
+size_t    E820_Table_size = 0;
+struct    E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
+uint32_t* MBI_address = MEMORY_NULL_PTR;
 
-struct   Memory_Stack Physical_Memory_usable;
-struct   Memory_Stack Physical_Memory_high;
-struct   Memory_Stack Physical_Memory_dma;
+struct    Memory_Stack Physical_Memory_usable;
+struct    Memory_Stack Physical_Memory_high;
+struct    Memory_Stack Physical_Memory_dma;
 
-uint8_t  Kernel_dispensary_map[SIZE_DISPENSARY];
-uint32_t Kernel_dispensary_table[0x400]__attribute__((aligned(0x1000)));
-struct   Memory_NodeDispenser* Kernel_node_dispenser = MEMORY_NULL_PTR;
+uint8_t   Kernel_dispensary_map[SIZE_DISPENSARY];
+uint32_t  Kernel_dispensary_table[0x400]__attribute__((aligned(0x1000)));
+struct    Memory_NodeDispenser* Kernel_node_dispenser = MEMORY_NULL_PTR;
 
 bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 	struct Memory_Node* mem_node = Memory_Stack_Pop(&Physical_Memory_high);
@@ -68,7 +69,7 @@ uintptr_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, s
 	return mem_max;
 }
 
-bool Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, size_t size) {
+bool Physical_Memory_IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, size_t size) {
 	if (min >= max) return false;
 	uintptr_t max_mem = Physical_Memory_MaxFreeMemoryAddress(table, size);
     if (max_mem == 0) return false;
@@ -87,14 +88,29 @@ bool Physical_Memory_IsRangeFree(uintptr_t min, uintptr_t max, struct E820_Table
 
         if (fit == 0) continue;
         else if (fit == 1) {
-			return Physical_Memory_IsRangeFree(table[i].base + table[i].size, max, table, size);
+			return Physical_Memory_IsMemoryAvailable(table[i].base + table[i].size, max, table, size);
 		}
         else if (fit == 2) {
-			return Physical_Memory_IsRangeFree(min, table[i].base, table, size);
+			return Physical_Memory_IsMemoryAvailable(min, table[i].base, table, size);
 		}
 		else return true;
     }
 	return false;
+}
+
+bool Physical_Memory_CheckRange(uint32_t* mbi, uintptr_t min, uintptr_t max) {
+    size_t   size_e820 = 0;
+    struct   E820_Table_Entry* table_e820;
+    struct   Multiboot_Tag* tag;
+
+    for (tag = (struct Multiboot_Tag*) (mbi + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
+        if (tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
+        size_e820  = (tag->size - 0x10) / 0x18;
+        table_e820 = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);
+    }
+
+    if (size_e820 == 0) return false;
+	return Physical_Memory_IsMemoryAvailable(min, max, table_e820, size_e820);
 }
 
 void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, uintptr_t map_end, struct E820_Table_Entry* table_e820, size_t size_e820) {
@@ -103,7 +119,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
     uintptr_t scan_step1 = MEMORY_SIZE_PAGE;
 
     while (scan_point < map_end) {
-        if (scan_point + scan_step0 <= map_end && Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step0, table_e820, size_e820)) {
+        if (scan_point + scan_step0 <= map_end && Physical_Memory_IsMemoryAvailable(scan_point, scan_point + scan_step0, table_e820, size_e820)) {
             struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
             if (node == MEMORY_NULL_PTR) return;
             node->pointer = scan_point;
@@ -119,7 +135,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
 					scan_point = map_end;
 					break;
 				}
-                if (Physical_Memory_IsRangeFree(scan_point, scan_point + scan_step1, table_e820, size_e820)) {
+                if (Physical_Memory_IsMemoryAvailable(scan_point, scan_point + scan_step1, table_e820, size_e820)) {
                     struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
                     if (node == MEMORY_NULL_PTR) return;
                     node->pointer = scan_point;
@@ -135,10 +151,10 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
 }
 
 
-void Physical_Memory_Initialize(uint32_t* mbi) {
+void Physical_Memory_Initialize() {
 	// We point the E820 structure to the memory map produced by the boot loader
     struct Multiboot_Tag* tag;
-    for (tag = (struct Multiboot_Tag*) (mbi + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
+    for (tag = (struct Multiboot_Tag*) (MBI_address + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
         if (tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
         E820_Table_size  = (tag->size - 0x10) / 0x18;
         E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);

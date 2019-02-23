@@ -1,5 +1,4 @@
 #include <x86/kernel/include/idt.h>
-#include <x86/kernel/include/interrupts.h>
 
 #include <stddef.h>
 
