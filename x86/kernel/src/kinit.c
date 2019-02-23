@@ -1,5 +1,4 @@
 #include <x86/kernel/include/gdt.h>
-#include <x86/kernel/include/tss.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/interrupts.h>
@@ -11,8 +10,6 @@
 void Kinit(uint32_t* boot_info) {
 
 	GDT_Initialize();
-	
-	TSS_Initialize();
 	
 	IDT_Initialize();
 	

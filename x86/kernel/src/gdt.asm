@@ -6,7 +6,6 @@ section .text
 global GDT_LoadKernelSegments
 GDT_LoadKernelSegments:
 	jmp GDT_KERN_CODE_SEG:.reloadCS
-
 	.reloadCS:
 	mov  ax, GDT_KERN_DATA_SEG
 	mov  ds, ax
