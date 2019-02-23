@@ -31,7 +31,7 @@ extern bool            Paging_TableExists             (uintptr_t virtual_address
 extern bool            Paging_ClearTable              (uintptr_t virtual_address);
 extern bool            Paging_UnmapVirtualPage        (uintptr_t virtual_address);
 extern bool            Paging_MapVirtualToPhysicalPage(uintptr_t virtual_address, uintptr_t phys_address, uint16_t attr);
-extern void            Paging_Initialize()__attribute__((section ("start")));
+extern void            Paging_Initialize();
 
 
 

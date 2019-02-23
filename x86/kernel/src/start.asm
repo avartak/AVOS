@@ -1,14 +1,12 @@
 BITS 32
 
-section .start
+section .text
 
 %include "kernel/src/multiboot.asm"
 
 times 0x1000-($-$$) db 0
 
 Stack_Temp:
-
-section .text
 
 MULTIBOOT2_BOOTLOADER_MAGIC equ 0x36d76289
 HIGHER_HALF_OFFSET          equ 0xC0000000
@@ -31,7 +29,7 @@ Kstart:
 
 	cli
 
-	mov esp, Stack_Temp
+	mov esp, Stack_Temp-HIGHER_HALF_OFFSET
 
 	cmp eax, MULTIBOOT2_BOOTLOADER_MAGIC
 	jne End
