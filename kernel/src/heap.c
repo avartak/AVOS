@@ -1,11 +1,10 @@
 #include <kernel/include/heap.h>
+#include <kernel/include/machine.h>
 
 struct          Memory_Stack KHeap_free;
 struct          Memory_Stack KHeap_inuse;
 
 extern struct   Memory_NodeDispenser* Kernel_node_dispenser;
-extern bool     Physical_Memory_AllocatePage(uintptr_t virtual_address);
-extern bool     Physical_Memory_FreePage(uintptr_t virtual_address);
 
 uintptr_t KHeap_Allocate(size_t nbytes) {
     struct Memory_Node* node = Memory_Stack_Extract(&KHeap_free, nbytes);
@@ -19,14 +18,14 @@ uintptr_t KHeap_Allocate(size_t nbytes) {
 	bool check_alloc = true;
 	uintptr_t unalloc = start_alloc;
 	for (uintptr_t page = start_alloc; page <= end_alloc; page += MEMORY_SIZE_PAGE) {
-		check_alloc = Physical_Memory_AllocatePage(page);
+		check_alloc = Memory_AllocateBlock(page);
 		if (!check_alloc) {
 			unalloc = page;
 			break;
 		}
 	}
 	if (!check_alloc) {
-		for (uintptr_t page = start_alloc; page <= end_alloc && page <= unalloc; page += MEMORY_SIZE_PAGE) Physical_Memory_FreePage(page);
+		for (uintptr_t page = start_alloc; page <= end_alloc && page <= unalloc; page += MEMORY_SIZE_PAGE) Memory_FreeBlock(page);
 		Memory_Stack_Insert(&KHeap_free, node, true);
 		return (uintptr_t)MEMORY_NULL_PTR;
 	}
@@ -53,7 +52,7 @@ bool KHeap_Free(uintptr_t pointer) {
 	}
 
 	for (uintptr_t page = start_page; page <= end_page; page += MEMORY_SIZE_PAGE) {
-		if (Memory_Stack_Contains(&KHeap_free, page, page + MEMORY_SIZE_PAGE - 1)) Physical_Memory_FreePage(page);
+		if (Memory_Stack_Contains(&KHeap_free, page, page + MEMORY_SIZE_PAGE - 1)) Memory_FreeBlock(page);
 	}
 	return true;
 }

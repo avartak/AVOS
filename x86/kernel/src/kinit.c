@@ -4,8 +4,6 @@
 #include <x86/kernel/include/welcome.h>
 #include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/pit.h>
-#include <x86/drivers/include/keyboard.h>
-#include <kernel/include/interrupts.h>
 
 void Kinit() {
 
@@ -15,13 +13,9 @@ void Kinit() {
 	
 	Physical_Memory_Initialize();
 	
-	Interrupt_Initialize();
-	
 	PIC_Initialize();
 	
 	PIT_Initialize(PIT_TARGET_FREQUENCY);
-	
-	Keyboard_Initialize(PIT_TARGET_FREQUENCY);
 	
 	Welcome();
 

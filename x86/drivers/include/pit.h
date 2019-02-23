@@ -32,8 +32,8 @@
 
 #define PIT_IRQLINE                       0
 
-void     PIT_Initialize();
-void     PIT_Reset();
-uint16_t PIT_Read_Clock_Counter();
+extern void     PIT_Initialize();
+extern void     PIT_Reset();
+extern uint16_t PIT_ReadCounter();
 
 #endif

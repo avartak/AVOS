@@ -20,17 +20,26 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 */
 
 #include <kernel/include/heap.h>
-#include <x86/kernel/include/misc.h>
+#include <kernel/include/interrupts.h>
+#include <kernel/include/timer.h>
+#include <kernel/include/drivers.h>
+#include <kernel/include/machine.h>
 
 void Kmain() {
 
     KHeap_Initialize(VIRTUAL_MEMORY_START_HEAP, VIRTUAL_MEMORY_END_HEAP);
 
+	Interrupt_Initialize();
+	
+	Timer_Initialize();
+
+	Drivers_Load();
+	
 	while (1) {
-		HaltSystem();
+		System_Halt();
 	} 
 	
-	DisableInterrupts();
+	Interrupt_DisableAll();
     return;
 
 }

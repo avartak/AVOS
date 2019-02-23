@@ -1,10 +1,9 @@
 #include <kernel/include/dispensary.h>
+#include <kernel/include/machine.h>
 
 #include <stddef.h>
 
 extern uint8_t Kernel_dispensary_map[];
-extern bool    Physical_Memory_AllocatePage(uintptr_t virtual_address);
-extern bool    Physical_Memory_FreePage(uintptr_t virtual_address);
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {
 	uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -30,7 +29,7 @@ uintptr_t Memory_NodeDispenser_New() {
 	}
 
 	if (pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
-    if (Physical_Memory_AllocatePage(pointer) == false) {
+    if (Memory_AllocateBlock(pointer) == false) {
         Kernel_dispensary_map[ptridx] = 0;
         return (uintptr_t)MEMORY_NULL_PTR;
     }
@@ -40,7 +39,7 @@ uintptr_t Memory_NodeDispenser_New() {
 
 bool Memory_NodeDispenser_Delete(uintptr_t pointer) {
 	if (pointer < VIRTUAL_MEMORY_START_DISP || pointer >= VIRTUAL_MEMORY_END_DISP) return false;
-	if (!Physical_Memory_FreePage(pointer)) return false;
+	if (!Memory_FreeBlock(pointer)) return false;
 	Kernel_dispensary_map[(pointer - VIRTUAL_MEMORY_START_DISP)/MEMORY_SIZE_PAGE] = 0;
 	return true;
 }

@@ -1,6 +1,6 @@
-#include <x86/drivers/include/pic.h>
 #include <kernel/include/interrupts.h>
 #include <kernel/include/dispensary.h>
+#include <kernel/include/machine.h>
 
 #include <stddef.h>
 
@@ -17,15 +17,22 @@ void Interrupt_Initialize() {
 }
 
 uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt) {
-	if (handler == MEMORY_NULL_PTR || handler->handler == MEMORY_NULL_PTR) return 0;
+	uint8_t retval = 0;
+	if (handler == MEMORY_NULL_PTR || handler->handler == MEMORY_NULL_PTR) return retval;
+
+	Interrupt_Disable(interrupt);
 	struct Interrupt_Handler* current_handler = &(Interrupt_Handler_map[interrupt]);
 	if (current_handler->handler == MEMORY_NULL_PTR) {
 		current_handler->handler = handler->handler;
-		return 1;
+		retval = 1;
 	}
-	while (current_handler->next != MEMORY_NULL_PTR) current_handler = current_handler->next;
-	current_handler->next = handler;
-	return 2;
+	else {
+		while (current_handler->next != MEMORY_NULL_PTR) current_handler = current_handler->next;
+		current_handler->next = handler;
+		retval = 2;
+	}
+	Interrupt_Enable(interrupt);
+	return retval;
 }
 
 bool Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt) {
@@ -55,9 +62,7 @@ void Interrupt_Handle(uint32_t interrupt) {
 		handler = handler->next;
 	} 
 
-    if (interrupt >= PIC_IRQ_OFFSET && interrupt < PIC_IRQ_OFFSET + PIC_NUM_IRQS) {
-        PIC_SendEOI(interrupt - PIC_IRQ_OFFSET);
-    }
+	Interrupt_End(interrupt);
 
     return;
 
