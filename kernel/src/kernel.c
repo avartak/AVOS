@@ -31,16 +31,17 @@ void Kmain() {
 
 	Interrupt_Initialize();
 	
-	Timer_Initialize();
-
 	Drivers_Load();
 	
+	Timer_Initialize();
+
+	Interrupt_EnableAll();
+
 	while (1) {
 		System_Halt();
 	} 
 	
 	Interrupt_DisableAll();
-    return;
 
 }
 

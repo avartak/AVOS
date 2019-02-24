@@ -1,9 +1,13 @@
+#include <x86/kernel/include/paging.h>
 #include <x86/kernel/include/gdt.h>
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/welcome.h>
 #include <x86/drivers/include/pic.h>
 #include <x86/drivers/include/pit.h>
+#include <kernel/include/machine.h>
+
+extern void Kmain();
 
 void Kinit() {
 
@@ -13,10 +17,8 @@ void Kinit() {
 	
 	Physical_Memory_Initialize();
 	
-	PIC_Initialize();
-	
-	PIT_Initialize(PIT_TARGET_FREQUENCY);
-	
 	Welcome();
+
+	Kmain();
 
 }

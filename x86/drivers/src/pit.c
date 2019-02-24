@@ -4,8 +4,8 @@
 #include <kernel/include/interrupts.h>
 #include <kernel/include/timer.h>
 
-void PIT_Initialize(uint32_t tick_freq) {
-	uint32_t pit_counter = PIT_BASE_FREQUENCY/tick_freq;
+void PIT_Initialize() {
+	uint32_t pit_counter = PIT_BASE_FREQUENCY/PIT_TARGET_FREQUENCY;
 
 	Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_SQWAVE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
 	Outb(PIT_IOPORT_CHAN0, (uint8_t) (pit_counter & 0x00FF));

@@ -25,7 +25,6 @@ Kstart:
 	extern Paging_Initialize
 	extern Paging_directory
 	extern Kinit
-    extern Kmain
 
 	cli
 
@@ -50,6 +49,10 @@ Kstart:
 	cmp eax, 0
 	je  End
 	pop ebx
+	add esp, 8
+
+	add ebx, HIGHER_HALF_OFFSET
+	mov [MBI_address-HIGHER_HALF_OFFSET], ebx
 
 	mov  esp, STACK_TOP
 
@@ -61,12 +64,7 @@ Kstart:
 	add esp, HIGHER_HALF_OFFSET
 	mov [Paging_directory], DWORD 0
 
-	add  ebx, HIGHER_HALF_OFFSET
-	mov  [MBI_address], ebx
-
 	call Kinit
-	sti
-    jmp  Kmain
 
 	End:
 	cli
