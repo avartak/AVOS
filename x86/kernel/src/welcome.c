@@ -1,8 +1,5 @@
 #include <x86/kernel/include/welcome.h>
 
-#include <stdint.h>
-#include <stddef.h>
-
 uint32_t screen_line = 1;
 
 void Welcome() {

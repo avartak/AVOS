@@ -1,7 +1,5 @@
 #include <x86/kernel/include/idt.h>
 
-#include <stddef.h>
-
 struct IDT_Entry      IDT_entries[0x100];
 struct IDT_Descriptor IDT_desc;
 

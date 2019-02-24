@@ -1,9 +1,7 @@
 #ifndef KERNEL_TIMER_H
 #define KERNEL_TIMER_H
 
-#include <stdint.h>
-
-typedef uint32_t clock_t;
+#include <kernel/include/common.h>
 
 extern clock_t timerticks;
 

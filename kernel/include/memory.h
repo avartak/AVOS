@@ -11,10 +11,7 @@ Bits  8-15  : Node size
 #ifndef KERNEL_MEMORY_H
 #define KERNEL_MEMORY_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
+#include <kernel/include/common.h>
 #include <kernel/include/dispensary.h>
 
 struct Memory_Stack {

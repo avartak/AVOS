@@ -1,8 +1,6 @@
 #include <kernel/include/dispensary.h>
 #include <kernel/include/machine.h>
 
-#include <stddef.h>
-
 extern uint8_t Kernel_dispensary_map[];
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {

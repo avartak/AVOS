@@ -1,7 +1,5 @@
 #include <x86/kernel/include/gdt.h>
 
-#include <stddef.h>
-
 struct GDT_Entry      GDT_entries[6];
 struct GDT_Descriptor GDT_desc;
 struct TSS_Segment    TSS_seg;

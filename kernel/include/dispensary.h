@@ -7,16 +7,10 @@ Bits  8-15  : Node size
 
 */
 
+#include <kernel/include/common.h>
 
 #ifndef KERNEL_DISPENSARY_H
 #define KERNEL_DISPENSARY_H
-
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
-#define MEMORY_NULL_PTR           ((void*)0xFFFFFFFF)
-#define MEMORY_SIZE_PAGE          0x1000
 
 #define VIRTUAL_MEMORY_START_HEAP 0xD0000000
 #define VIRTUAL_MEMORY_END_HEAP   0xE0000000

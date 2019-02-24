@@ -27,7 +27,7 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 
 void Kmain() {
 
-    KHeap_Initialize(VIRTUAL_MEMORY_START_HEAP, VIRTUAL_MEMORY_END_HEAP);
+    KHeap_Initialize();
 
 	Interrupt_Initialize();
 	

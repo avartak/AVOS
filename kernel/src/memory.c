@@ -1,7 +1,5 @@
 #include <kernel/include/memory.h>
 
-#include <stddef.h>
-
 bool Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintptr_t ptr_max) {
     if (stack == MEMORY_NULL_PTR) return false;
 

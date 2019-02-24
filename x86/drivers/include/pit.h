@@ -1,7 +1,7 @@
 #ifndef X86_DRIVERS_PIT_H
 #define X86_DRIVERS_PIT_H
 
-#include <stdint.h>
+#include <kernel/include/common.h>
 
 #define PIT_IOPORT_CHAN0                 0x40
 #define PIT_IOPORT_CHAN1                 0x41

@@ -1,8 +1,7 @@
 #ifndef X86_KERNEL_INTERRUPTS_H
 #define X86_KERNEL_INTERRUPTS_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <kernel/include/common.h>
 
 struct Interrupt_Handler {
 	struct Interrupt_Handler* next;
@@ -13,9 +12,9 @@ struct Interrupt_Handler {
 
 extern struct Interrupt_Handler* Interrupt_Handler_map;
 
-extern void    Interrupt_Initialize();
-extern void    Interrupt_Handle(uint32_t interrupt);
-extern uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt);
-extern bool    Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt);
+extern    void  Interrupt_Initialize();
+extern    void  Interrupt_Handle(uint32_t interrupt);
+extern uint8_t  Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt);
+extern     bool Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt);
 
 #endif

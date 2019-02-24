@@ -11,14 +11,10 @@ Bits  8-15  : Node size
 #ifndef KERNEL_HEAP_H
 #define KERNEL_HEAP_H
 
-#include <kernel/include/memory.h>
-
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include <kernel/include/common.h>
 
 extern uintptr_t KHeap_Allocate(size_t nbytes);
 extern bool      KHeap_Free(uintptr_t pointer);
-extern void      KHeap_Initialize(uintptr_t vm_start, uintptr_t vm_end);
+extern void      KHeap_Initialize();
 
 #endif

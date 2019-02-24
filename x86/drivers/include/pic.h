@@ -1,7 +1,7 @@
 #ifndef X86_KERNEL_PIC_H
 #define X86_KERNEL_PIC_H
 
-#include <stdint.h>
+#include <kernel/include/common.h>
 
 /*
 

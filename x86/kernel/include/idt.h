@@ -1,7 +1,7 @@
 #ifndef X86_KERNEL_IDT_H
 #define X86_KERNEL_IDT_H
 
-#include <stdint.h>
+#include <kernel/include/common.h>
 
 #define IDT_INT_TYPE_INTERRUPT  0xE
 #define IDT_INT_TYPE_TRAP       0xF

@@ -1,8 +1,7 @@
 #ifndef X86_KERNEL_IO_H
 #define X86_KERNEL_IO_H
 
-#include <stdint.h>
-
+#include <kernel/include/common.h>
 
 #define asm __asm__
 #define volatile __volatile__

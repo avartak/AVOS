@@ -1,3 +1,4 @@
+#include <kernel/include/memory.h>
 #include <kernel/include/heap.h>
 #include <kernel/include/machine.h>
 
@@ -57,15 +58,15 @@ bool KHeap_Free(uintptr_t pointer) {
 	return true;
 }
 
-void KHeap_Initialize(uintptr_t vm_start, uintptr_t vm_end) {
+void KHeap_Initialize() {
     struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);
     KHeap_free.start   = free_node;
-    KHeap_free.size    = vm_end - vm_start;
+    KHeap_free.size    = VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP;
     KHeap_free.attrib  = MEMORY_1B << 8;
     KHeap_free.node_dispenser = Kernel_node_dispenser;
    
     free_node->attrib  = KHeap_free.attrib;
-    free_node->pointer = vm_start;
+    free_node->pointer = VIRTUAL_MEMORY_START_HEAP;
     free_node->size    = KHeap_free.size;
     free_node->next    = MEMORY_NULL_PTR;
 

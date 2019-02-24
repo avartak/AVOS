@@ -2,10 +2,6 @@
 #include <x86/kernel/include/paging.h>
 #include <kernel/include/multiboot.h>
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
 size_t    E820_Table_size = 0;
 struct    E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 uint32_t* MBI_address = MEMORY_NULL_PTR;

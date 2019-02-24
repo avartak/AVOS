@@ -2,8 +2,6 @@
 #include <kernel/include/dispensary.h>
 #include <kernel/include/machine.h>
 
-#include <stddef.h>
-
 struct Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
 
 void Interrupt_Initialize() {
@@ -38,7 +36,12 @@ uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrup
 bool Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt) {
     struct Interrupt_Handler* current_handler = &(Interrupt_Handler_map[interrupt]);
 	if (current_handler->id == id) {
-		if (current_handler->next == MEMORY_NULL_PTR) return false;
+		if (current_handler->next == MEMORY_NULL_PTR) {
+			current_handler->handler = MEMORY_NULL_PTR;
+			current_handler->id      = 0;
+			current_handler->process = 0;
+			return true;
+		}
 		else {
 			current_handler = current_handler->next;
 			return true;

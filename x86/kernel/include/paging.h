@@ -1,9 +1,7 @@
 #ifndef X86_KERNEL_PAGING_H
 #define X86_KERNEL_PAGING_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include <kernel/include/common.h>
 
 #define PAGING_KERN_TABLE_FLAGS 0x3
 #define PAGING_KERN_PAGE_FLAGS  0x3

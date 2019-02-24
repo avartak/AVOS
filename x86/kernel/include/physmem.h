@@ -1,6 +1,7 @@
 #ifndef X86_KERNEL_PHYSMEM_H
 #define X86_KERNEL_PHYSMEM_H
 
+#include <kernel/include/common.h>
 #include <kernel/include/memory.h>
 
 #define PHYSICAL_MEMORY_START_DMA      0x00400000
