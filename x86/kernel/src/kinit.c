@@ -11,6 +11,10 @@ extern void Kmain();
 
 void Kinit() {
 
+	Paging_Initialize();
+
+	Paging_SwitchToHigherHalf();
+
 	GDT_Initialize();
 	
 	IDT_Initialize();

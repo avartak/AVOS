@@ -10,7 +10,10 @@ struct Interrupt_Handler {
 	uint32_t process;
 };
 
+extern uint16_t                  Interrupt_active_IRQs;
 extern struct Interrupt_Handler* Interrupt_Handler_map;
+extern uintptr_t                 Interrupt_stack;
+extern int32_t                   Interrupt_kernel_reentries;
 
 extern    void  Interrupt_Initialize();
 extern    void  Interrupt_Handle(uint32_t interrupt);

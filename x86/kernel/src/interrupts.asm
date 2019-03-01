@@ -13,14 +13,72 @@
 
 %macro Interrupt_DoCommonHandling 1
 
-    push dword 0x%1
+	extern Paging_SetupDirectory
+	extern Interrupt_Handle
+	extern Interrupt_kernel_reentries
+	extern Interrupt_stack
+	extern Process_GetKernelSwitchStackLocation
+	extern Process_current
+	extern Process_next
+	extern TSS_seg
 
-    extern Interrupt_Handle
-    call   Interrupt_Handle
+	pushad
+	push ds
+	push es
+	push fs
+	push gs
+	push ss
+	mov  ebx, cr3
+	push ebx
 
-	add esp, 8
+	mov bx, ss
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+	mov gs, bx
+
+	inc DWORD [Interrupt_kernel_reentries]
+	jnz .calltohandler
+
+	mov esp, [Interrupt_stack]
+
+	.calltohandler:
+	push dword 0x%1
+	call Interrupt_Handle
+	add  esp, 4
+
+	cmp DWORD [Interrupt_kernel_reentries], 0
+	jnz .restoreandreturn	
+	
+	cmp DWORD [Process_next], 0xFFFFFFFF
+	je .loadcurprocstack
+
+	mov ebx, [Process_next]
+	mov [Process_current], ebx
+	mov [Process_next], DWORD 0xFFFFFFFF
+
+	.loadcurprocstack:
+	push Process_current
+	call Paging_SetupDirectory
+	call Process_GetKernelSwitchStackLocation
+	mov  esp, [Process_current]	
+	mov  [TSS_seg+4], eax
+
+	.restoreandreturn:
+	dec DWORD [Interrupt_kernel_reentries]
+	pop ebx
+	mov cr3, ebx
+	pop ss
+	pop gs
+	pop fs
+	pop es
+	pop ds
+	popad
+	
+	add esp, 4
 
 	iret
+
 %endmacro
 
 section .text
@@ -76,4 +134,17 @@ Interrupt_HandlerForNoErrorCode 2E
 Interrupt_HandlerForNoErrorCode 2F
 
 Interrupt_HandlerForNoErrorCode 80
+
+
+global Interrupt_IsFlagSet
+Interrupt_IsFlagSet:
+	pushfd
+	pop eax
+	test eax, 0x200
+	jz .ret0
+	mov eax, 1
+	ret
+	.ret0:
+	mov eax, 0
+	ret
 

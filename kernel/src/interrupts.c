@@ -1,7 +1,11 @@
 #include <kernel/include/interrupts.h>
+#include <kernel/include/machine.h>
 #include <kernel/include/dispensary.h>
 #include <kernel/include/machine.h>
 
+int32_t                   Interrupt_kernel_reentries = 0;
+uint16_t                  Interrupt_active_IRQs = 0xFFFF;
+uintptr_t                 Interrupt_stack;
 struct Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
 
 void Interrupt_Initialize() {
@@ -11,7 +15,8 @@ void Interrupt_Initialize() {
 		Interrupt_Handler_map[i].handler  = MEMORY_NULL_PTR;
 		Interrupt_Handler_map[i].id       = 0;
 		Interrupt_Handler_map[i].process  = 0;
-	} 
+	}
+	Interrupt_stack = Memory_NodeDispenser_New();
 }
 
 uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt) {
@@ -60,10 +65,19 @@ bool Interrupt_RemoveHandler(uint32_t id, uint8_t interrupt) {
 void Interrupt_Handle(uint32_t interrupt) {
 
 	struct Interrupt_Handler* handler = &(Interrupt_Handler_map[interrupt]);
+	bool handled_well = true;
 	while (true) {
-		if (handler->handler == MEMORY_NULL_PTR || (handler->handler)() == 2 || handler->next == MEMORY_NULL_PTR) break;
+		if (handler->handler == MEMORY_NULL_PTR) break;
+		if ((handler->handler)() == 0) {
+			handled_well = false;
+			break;
+		}
+		if (handler->next == MEMORY_NULL_PTR) break;
 		handler = handler->next;
 	} 
+
+	if (!handled_well) Interrupt_Disable(interrupt);
+	else Interrupt_Enable(interrupt);
 
 	Interrupt_End(interrupt);
 

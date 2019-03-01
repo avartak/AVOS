@@ -2,6 +2,7 @@
 #define X86_KERNEL_PAGING_H
 
 #include <kernel/include/common.h>
+#include <kernel/include/process.h>
 
 #define PAGING_KERN_TABLE_FLAGS 0x3
 #define PAGING_KERN_PAGE_FLAGS  0x3
@@ -29,7 +30,9 @@ extern bool            Paging_TableExists             (uintptr_t virtual_address
 extern bool            Paging_ClearTable              (uintptr_t virtual_address);
 extern bool            Paging_UnmapVirtualPage        (uintptr_t virtual_address);
 extern bool            Paging_MapVirtualToPhysicalPage(uintptr_t virtual_address, uintptr_t phys_address, uint16_t attr);
+extern bool            Paging_SetupDirectory          (struct Process* proc);
 extern void            Paging_Initialize();
+extern void            Paging_SwitchToHigherHalf();
 
 
 

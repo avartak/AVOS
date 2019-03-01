@@ -47,7 +47,7 @@ bool Paging_MapVirtualToPhysicalPage(uintptr_t virtual_address, uintptr_t phys_a
     return true;
 }
 
-extern bool Paging_UnmapVirtualPage(uintptr_t virtual_address) {
+bool Paging_UnmapVirtualPage(uintptr_t virtual_address) {
 	uint32_t pdindex = Paging_GetDirectoryEntry(virtual_address);
 	uint32_t ptindex = Paging_GetTableEntry(virtual_address);
 	
@@ -57,6 +57,15 @@ extern bool Paging_UnmapVirtualPage(uintptr_t virtual_address) {
 	uint32_t* pt = ((uint32_t*)0xFFC00000) + (0x400 * pdindex);
 	
 	pt[ptindex] = 0;
+	return true;
+}
+
+bool Paging_SetupDirectory(struct Process* proc) {
+	if (proc == MEMORY_NULL_PTR) return false;
+
+	struct Process_Memory_PagingEntry* pd_map = (proc->memory).paging_directory_map;
+	while (pd_map != MEMORY_NULL_PTR) Paging_directory[pd_map->entry] = (uint32_t)(pd_map->address);
+	Paging_LoadDirectory((uintptr_t)Paging_directory);
 	return true;
 }
 

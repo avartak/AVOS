@@ -20,11 +20,10 @@ DISP_MEM_MAX                equ 0x1400000
 global Kstart
 Kstart:
 
-	extern Physical_Memory_CheckRange
 	extern MBI_address
-	extern Paging_Initialize
-	extern Paging_directory
+	extern Physical_Memory_CheckRange
 	extern Kinit
+	extern PrintNum
 
 	cli
 
@@ -37,36 +36,29 @@ Kstart:
 	push KERN_MEM_MIN
 	push ebx
 	call Physical_Memory_CheckRange
-	cmp eax, 0
-	je  End
 	pop ebx
 	add esp, 8
+	cmp eax, 0
+	je  End
 
 	push DISP_MEM_MAX
 	push DISP_MEM_MIN
 	push ebx
 	call Physical_Memory_CheckRange
-	cmp eax, 0
-	je  End
 	pop ebx
 	add esp, 8
+	cmp eax, 0
+	je  End
 
 	add ebx, HIGHER_HALF_OFFSET
 	mov [MBI_address-HIGHER_HALF_OFFSET], ebx
 
-	mov  esp, STACK_TOP
-
-	call Paging_Initialize
-
-	mov eax, High_Memory
-	jmp eax
-	High_Memory:
-	add esp, HIGHER_HALF_OFFSET
-	mov [Paging_directory], DWORD 0
+	mov esp, STACK_TOP
 
 	call Kinit
 
 	End:
 	cli
 	hlt
+
 
