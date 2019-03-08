@@ -6,6 +6,7 @@ nasm -f bin   -o avosloader.bin    x86/boot/src/avosloader.asm
 nasm -f elf32 -o start.o           x86/kernel/src/start.asm
 nasm -f elf32 -o paging_asm.o      x86/kernel/src/paging.asm
 nasm -f elf32 -o gdt_asm.o         x86/kernel/src/gdt.asm
+nasm -f elf32 -o idt_asm.o         x86/kernel/src/idt.asm
 nasm -f elf32 -o interrupts_asm.o  x86/kernel/src/interrupts.asm
 
 gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c csupport/src/string.c
@@ -29,7 +30,7 @@ gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-prote
 gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c kernel/src/drivers.c
 gcc --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c kernel/src/ioports.c
 
-i386-elf-ld -m elf_i386 -T link.ld  -o kernel.bin start.o kinit.o machine.o kernel.o physmem.o dispensary.o memory.o heap.o process.o paging.o paging_asm.o gdt.o gdt_asm.o idt.o interrupts_asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o
+i386-elf-ld -m elf_i386 -T link.ld  -o kernel.bin start.o kinit.o machine.o kernel.o physmem.o dispensary.o memory.o heap.o process.o paging.o paging_asm.o gdt.o gdt_asm.o idt.o idt_asm.o interrupts_asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o
 
 dd conv=notrunc if=kernel.bin     of=avos.flp seek=64
 dd conv=notrunc if=avosloader.bin of=avos.flp seek=1

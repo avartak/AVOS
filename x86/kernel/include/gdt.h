@@ -86,19 +86,11 @@ extern struct GDT_Entry      GDT_entries[];
 extern struct GDT_Descriptor GDT_desc;
 extern struct TSS_Segment    TSS_seg;
 
+extern void GDT_Load(struct GDT_Descriptor* desc);
+extern void TSS_LoadTaskRegister(uint16_t desc);
+extern void GDT_LoadKernelSegments();
+
 extern void GDT_SetupEntry(struct GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 extern void GDT_Initialize();
-
-static inline void GDT_Load(struct GDT_Descriptor* desc);
-inline void GDT_Load(struct GDT_Descriptor* desc) {
-    asm volatile ("lgdt %0" : : "m"(*desc));
-}
-
-static inline void TSS_LoadTaskRegister(uint16_t desc);
-inline void TSS_LoadTaskRegister(uint16_t desc) {
-	asm volatile("ltr %%ax" : : "a"(desc) : );
-}
-
-extern void GDT_LoadKernelSegments();
 
 #endif

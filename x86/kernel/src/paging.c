@@ -8,10 +8,10 @@ uintptr_t Paging_GetPhysicalAddress(uintptr_t virtual_address) {
 	uint32_t ptindex = Paging_GetTableEntry(virtual_address);
 	
 	uint32_t* pd =  (uint32_t*)0xFFFFF000;
-	if (pd[pdindex] == 0) return PAGING_NULL_PTR;
+	if (pd[pdindex] == 0) return (uintptr_t)MEMORY_NULL_PTR;
 	
 	uint32_t* pt = ((uint32_t*)0xFFC00000) + (0x400 * pdindex);
-	if (pt[ptindex] == 0) return PAGING_NULL_PTR;
+	if (pt[ptindex] == 0) return (uintptr_t)MEMORY_NULL_PTR;
 	
 	return (uintptr_t)(pt[ptindex] & 0xFFFFF000) + (uintptr_t)(virtual_address & 0x00000FFF);
 }

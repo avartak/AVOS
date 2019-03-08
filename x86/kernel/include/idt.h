@@ -31,14 +31,10 @@ struct IDT_Descriptor {
 extern struct IDT_Entry      IDT_entries[];
 extern struct IDT_Descriptor IDT_desc;
 
+extern void IDT_Load(struct IDT_Descriptor* desc);
+
 extern void IDT_SetupEntry(struct IDT_Entry* entry, uintptr_t address, uint16_t segment, uint8_t type);
 extern void IDT_Initialize();
-
-static inline void IDT_Load(struct IDT_Descriptor* gdtr);
-
-inline void IDT_Load(struct IDT_Descriptor* desc) {
-    asm volatile("lidt %0" : : "m"(*desc));
-}
 
 extern void Interrupt_0 ();
 extern void Interrupt_1 ();
