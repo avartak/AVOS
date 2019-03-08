@@ -88,7 +88,7 @@ Kload16:
 
 	sti                                       ; Enable interrupts so that we can use the BIOS routines
 
-	call ReadDriveParameters                  ; Load the 3rd stage of the boot loader and the kernel
+	call BIOS_ReadDiskParameters              ; Load the 3rd stage of the boot loader and the kernel
 
 	push DWORD START_KERNEL                   ; Starting point of the kernel in high memory (1 MB)
 	push START_SCRATCH                        ; Temporary pool to hold each sector before copying it to the high memory
@@ -97,7 +97,7 @@ Kload16:
 
 	mov  cx, KERNEL_COPY_ITER                 ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
 	.iterateReadAndMove:
-		call ReadAndMove	                  ; Copy kernel from disk and move to high memory (1 MB)
+		call BIOS_ReadFromDiskToHighMemory    ; Copy kernel from disk and move to high memory (1 MB)
 		loop .iterateReadAndMove
 
 	cli                                       ; Clear all interrupts as we are done with BIOS help
@@ -126,7 +126,7 @@ Kload16:
 ; Load the tables at designated locations in memory
 %include "x86/boot/src/gdt.asm"
 
-; ReadDriveParameters and ReadSectorsFromDrive are define in this file
+; BIOS_ReadDiskParameters and BIOS_ReadFromDriveToHighMemory are define in this file
 %include "x86/boot/src/biosio.asm"
 
 

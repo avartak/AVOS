@@ -1,10 +1,9 @@
 BITS 16
 
-
-; ReadDriveParameters : Get drive parameters which we will use to read from the drive
+; BIOS_ReadDiskParameters : Get drive parameters which we will use to read from the drive
 ; Drive ID is stored in DL 
 
-ReadDriveParameters:
+BIOS_ReadDiskParameters:
 
 	push bp
 	mov bp, sp	
@@ -43,7 +42,7 @@ ReadDriveParameters:
 
 
 
-; ReadSectorsFromDrive: Read a certain number of sectors from a drive
+; BIOS_ReadFromDiskToLowMemory: Read a certain number of sectors from a drive
 ; Drive ID is stored in DL
 ; First sector to read out is stored in AX
 ; Number of sectors to read out is stored in BL
@@ -56,7 +55,7 @@ ReadDriveParameters:
 ; Head     = Temp / sectors_per_track
 ; Sector   = Temp % sectors_per_track + 1
 
-ReadSectorsFromDrive:
+BIOS_ReadFromDiskToLowMemory:
 
 	push bp
 	mov bp, sp	
@@ -106,8 +105,8 @@ ReadSectorsFromDrive:
 
 
 
-; ReadAndMove : Read a certain number of sectors from the drive and move them to a high address space (>1 MB)
-ReadAndMove:
+; BIOS_ReadFromDiskToHighMemory : Read a certain number of sectors from the drive and move them to a high address space (>1 MB)
+BIOS_ReadFromDiskToHighMemory:
 
 	push bp
 	mov bp, sp	
@@ -132,7 +131,7 @@ ReadAndMove:
 		push bx
 		push ax
 	
-		call ReadSectorsFromDrive
+		call BIOS_ReadFromDiskToLowMemory
 		mov cx, [Sectors_Read_Last]           ; Check if a sector was actually read and only then copy ES:SI to ES:EDI
 		cmp cx, 0
 		je .rnm                               ; Keep trying to read the sector if the read failed
@@ -161,6 +160,91 @@ ReadAndMove:
 
     ret                                       ; Note that EDI is incremented by the number of bytes moved
 
+
+
+; BIOS_CheckForExtensions : Check to see if BIOS supports extensions that allow disk I/O using LBA
+; In order to check if BIOS supports extensions  we need to call INT 0x13, AH=0x41
+; It's input parameters are as follows
+; AH = 0x41 (Duh!)
+; DL = Drive index
+; BX = 0x55AA
+; The output parameters are as follows
+; CF = Set on not present, clear if present
+; AH = Error code or major version
+; BX = 0xAA55
+; CX = Bit 1 : Device Access using the packet structure ; Bit 2 : Drive Locking and Ejecting ; Bit 3 : Enhanced Disk Drive Support (EDD) ; We are only concerned with the first bit being set 
+; Output is stored as a boolean (0 or 1) in AL
+
+BIOS_CheckForExtensions:
+
+	push bp
+	mov bp, sp	
+
+	mov dl, [Drive]
+
+    mov ah, 0x41
+    mov bx, 0x55AA
+    int 0x13
+    jc  .retfalse
+    cmp bx, 0xAA55
+    jne .retfalse
+    test cx, 1
+    jz  .retfalse
+
+	.rettrue:
+	mov al, 1
+	jmp .end
+
+	.retfalse:
+	mov al, 0
+
+	.end:
+	mov sp, bp
+	pop bp
+
+	ret
+
+
+; BIOS_ExtReadFromDiskToLowMemory : Read from disk using BIOS extensions
+; The routine takes two input parameters 
+; (1) --> Starting sector 
+; (2) --> Number of consecutive sectors to be read out
+; The routine itself relies on INT 0x13, AH=0x42 BIOS routine
+; The BIOS routine itself takes the following inputs
+; AH = 0x41 (Duh!)
+; DL = Drive index
+; SI = Address of the DAP (disk address packet)
+
+BIOS_ExtReadFromDisk:
+
+	push bp
+	mov bp, sp	
+
+	mov ax, [bp+0x4]
+	mov [DAP_Start_Offset], ax
+	mov ax, [bp+0x6]
+	mov [DAP_Sectors_Count], ax
+
+    mov ah, 0x42
+    mov dl, [Drive]
+    mov si, Disk_Address_Packet
+    int 0x13
+    jc .retfalse
+
+	.rettrue:
+	mov al, 1
+	jmp .end
+
+	.retfalse:
+	mov al, 0
+
+	.end:
+	mov sp, bp
+	pop bp
+
+	ret
+
+
 Drive                db 0x80
 Heads                db 2
 Sectors_Per_Track    dw 18
@@ -168,6 +252,14 @@ Sectors_Per_Cylinder dw 18
 
 Sectors_Read_Last    db 0
 Return_Code_Last     db 0
+
+Disk_Address_Packet:
+DAP_Size             db 0x10
+DAP_Unused           db 0
+DAP_Sectors_Count    dw 0
+DAP_Start_Offset     dw 0
+DAP_Start_Segment    dw 0
+DAP_Start_Sector     dq 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

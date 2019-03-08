@@ -97,18 +97,6 @@ Start:
 	; INT 0x13, AH=0x41 is our preferred function to read from disk
 	; If we can use it, we will not have to bother with the disk geometry (cylinders, heads, sectors and what not) but simply use the logical block address (LBA) which is a simple, linear sequence of sectors
 
-	jmp ReadStage2
-
-    Disk_Address_Packet:
-    DAP_Size             db 0x10
-    DAP_Unused           db 0
-    DAP_Sectors_Count    dw SIZE_BOOT2/SECTOR_SIZE
-    DAP_Start_Offset     dw START_BOOT2
-    DAP_Start_Segment    dw 0
-    DAP_Start_Sector     dq 1
-
-
-ReadStage2:
 
 	; We can reenable the interrupts now
 	
@@ -122,48 +110,39 @@ ReadStage2:
 
 	; First we need to test if BIOS supports the AH=0x41 extension; not all of them do
 	; For that we need to call INT 0x13, AH=0x41
-	; It's input parameters are as follows
-	; AH = 0x41 (Duh!)
-	; DL = Drive index
-	; BX = 0x55AA
-	; The output parameters are as follows
-	; CF = Set on not present, clear if present
-	; AH = Error code or major version
-	; BX = 0xAA55
-	; CX = Bit 1 : Device Access using the packet structure ; Bit 2 : Drive Locking and Ejecting ; Bit 3 : Enhanced Disk Drive Support (EDD) ; We are only concerned with the first bit being set 
+	; This is implemented in the BIOS_CheckForExtensions function
+	; The function returns a boolean value (0 or 1) in the AL register
 
-	mov ah, 0x41
-	mov bx, 0x55AA
-	int 0x13
-	jc  .readusingchs
-	cmp bx, 0xAA55
-	jne .readusingchs
-	test cx, 1
-	jz  .readusingchs
+	call BIOS_CheckForExtensions
+	cmp al, 0
+	je .readusingchs
 
-	.readusinglba:
-	mov ah, 0x42
-	mov dl, [Drive]
-	mov si, Disk_Address_Packet
-	int 0x13
-	jc .readusingchs
+	; If BIOS extensions are available, use them to read from disk using the LBA scheme rather than CHS
+	; The BIOS_ExtReadFromDisk reads from disk using INT 0x13, AH=0x42 BIOS extension employing the LBA scheme
+	; It takes two input parameters - the starting sector and the number of sectors to be read
+	; The function returns a boolean value (0 or 1) in the AL register
+
+	push SIZE_BOOT2/SECTOR_SIZE
+	push START_BOOT2
+	call BIOS_ExtReadFromDisk
+	cmp al, 0
+	je .readusingchs
 	jmp LaunchStage2
 
-
-	; Sigh, we don't have the BIOS extension need to read from the disk using the LBA
-	; So have to read the disk using INT 0x13, AH=0x02
-	; This BIOS service needs the disk geometry
-	; So we will first call a service -- INT 0x13, AH=0x08 to read the disk geometry and save it (ReadDriveParameters)
-	; We will them call the ReadDriveParameters function to read from the disk
-	; These functions are defined in biosio.asm
+	; Sigh -- we don't have the BIOS extension or the disk read routine using the BIOS extension did not work
+	; So we have to read the disk using INT 0x13, AH=0x02
+	; This BIOS routine needs the disk geometry
+	; So we will first call the routine -- INT 0x13, AH=0x08 to read the disk geometry and save it (BIOS_ReadDiskParameters)
+	; We will them call the BIOS_ReadFromDiskToLowMemory function to read from the disk
+	; This function is only able to read into low memory (addresses below the 1 MB mark). 
  
 	.readusingchs:
-	call ReadDriveParameters
+	call BIOS_ReadDiskParameters
 
-	push START_BOOT2                          ; Where to put the 2nd stage of the boot loader in memory ?
+	push START_BOOT2                          ; Where to put the 2nd stage of the boot loader in memory ? Note : this parameter is the offset w.r.t. the ES segment 
 	push SIZE_BOOT2/SECTOR_SIZE               ; How many sectors of the disk do we want to read ?
 	push START_BOOT2_DISK                     ; Start sector from where we start the read on the disk
-	call ReadSectorsFromDrive
+	call BIOS_ReadFromDiskToLowMemory
 
 	mov al, [Sectors_Read_Last]               ; Did we really read everything ? 
 	cmp al, SIZE_BOOT2/SECTOR_SIZE
@@ -183,7 +162,7 @@ HaltSystem:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include "x86/boot/src/biosio.asm"            ; ReadDriveParameters and ReadSectorsFromDrive are defined in this file
+%include "x86/boot/src/biosio.asm"            ; BIOS_ReadDiskParameters and BIOS_ReadFromDiskToLowMemory are defined in this file
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
