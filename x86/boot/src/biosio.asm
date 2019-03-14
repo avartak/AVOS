@@ -203,29 +203,29 @@ BIOS_ExtReadFromDisk:
 
 	push bp
 	mov bp, sp	
-
+	
 	mov ax, [bp+0x4]
 	mov [DAP_Start_Offset], ax
 	mov ax, [bp+0x6]
 	mov [DAP_Sectors_Count], ax
-
-    mov ah, 0x42
-    mov dl, [Drive]
-    mov si, Disk_Address_Packet
-    int 0x13
-    jc .retfalse
-
+	
+	mov ah, 0x42
+	mov dl, [Drive]
+	mov si, Disk_Address_Packet
+	int 0x13
+	jc .retfalse
+	
 	.rettrue:
 	mov al, 1
 	jmp .end
-
+	
 	.retfalse:
 	mov al, 0
-
+	
 	.end:
 	mov sp, bp
 	pop bp
-
+	
 	ret
 
 
