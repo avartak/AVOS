@@ -9,20 +9,20 @@ BIOS_ReadDiskParameters:
 	mov di, 0                                 ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS ; ES has already been set to 0
 	mov ah, 8                                 ; AH=8 tells the BIOS to read the drive parameters ; Drive ID is stored in DL
 	int 0x13                                  ; INT 0x13 is all about I/O from disks
-
+	
 	mov [Return_Code_Last], ah                ; Store the return code of the BIOS function
-
+	
 	add dh, 1                                 ; Number of heads is stored in DH (numbering starts at 0, hence the increment)
 	mov [Heads], dh                           ; Store this information in memory
-
+	
 	and cx, 0x3F                              ; Bits 0-5 of CX store the number of sectors per track
 	mov [Sectors_Per_Track], cx               ; Store this information in memory
-
+	
 	mov al, cl
 	mov bh, [Heads]
 	mul bh
 	mov [Sectors_Per_Cylinder], ax
-
+	
 	ret                                       ; Return control to the bootloader
 
 
@@ -99,10 +99,10 @@ BIOS_ReadFromDiskToHighMemory:
 	push cx
 	push dx
 
-    mov  ax, [bp+0x4]                         ; Starting sector
-    mov  bx, [bp+0x6]                         ; Number of sectors to copy
-    mov  si, [bp+0x8]                         ; Temporary location to copy sectors before moving them to high memory
-    mov edi, [bp+0xA]                         ; High memory destination
+	mov  ax, [bp+0x4]                         ; Starting sector
+	mov  bx, [bp+0x6]                         ; Number of sectors to copy
+	mov  si, [bp+0x8]                         ; Temporary location to copy sectors before moving them to high memory
+	mov edi, [bp+0xA]                         ; High memory destination
 
 	mov bh, bl
 	mov bl, 1
