@@ -5,50 +5,35 @@ BITS 16
 
 BIOS_ReadDiskParameters:
 
-	push bp
-	mov bp, sp	
-
-	pusha                                     ; We start by pushing all the general-purpose registers onto the stack
-	push es
-
 	mov dl, [Drive]                           ; Drive ID
-
-	mov ax, 0
-	mov es, ax
-	mov di, ax                                ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS
-
+	mov di, 0                                 ; It is recommended we set ES:DI to 0:0 to work around some buggy BIOS ; ES has already been set to 0
 	mov ah, 8                                 ; AH=8 tells the BIOS to read the drive parameters ; Drive ID is stored in DL
 	int 0x13                                  ; INT 0x13 is all about I/O from disks
 
 	mov [Return_Code_Last], ah                ; Store the return code of the BIOS function
 
 	add dh, 1                                 ; Number of heads is stored in DH (numbering starts at 0, hence the increment)
-	mov [Heads], dh                           ; Store this information in a variable
+	mov [Heads], dh                           ; Store this information in memory
 
 	and cx, 0x3F                              ; Bits 0-5 of CX store the number of sectors per track
-	mov [Sectors_Per_Track], cx               ; Store this information in a variable
-	mov ax, cx
+	mov [Sectors_Per_Track], cx               ; Store this information in memory
+
+	mov al, cl
 	mov bh, [Heads]
 	mul bh
 	mov [Sectors_Per_Cylinder], ax
-
-	pop es                                    ; Restore the ES register to its original state
-	popa                                      ; Restore the all the general-purpose registers
-
-	mov sp, bp
-	pop bp
 
 	ret                                       ; Return control to the bootloader
 
 
 
 ; BIOS_ReadFromDiskToLowMemory: Read a certain number of sectors from a drive
-; Drive ID is stored in DL
-; First sector to read out is stored in AX
-; Number of sectors to read out is stored in BL
+; Call the INT 0x13, AH=2 BIOS routine that requires : 
+; - Drive ID to be stored in DL
+; - Starting sector for read out to be stored in AX
+; - Number of sectors to read out to be stored in BL
 ; Data from the disk is copied to memory starting at ES:SI
 
-; When need to use the CHS scheme when using INT 0x13 to read from disk
 ; The following relations give the conversion from LBA to CHS
 ; Temp     = LBA % (heads_per_cylinder * sectors_per_track)
 ; Cylinder = LBA / (heads_per_cylinder * sectors_per_track)
@@ -60,7 +45,7 @@ BIOS_ReadFromDiskToLowMemory:
 	push bp
 	mov bp, sp	
 
-	pusha                                     ; Push all the general-purpose registers onto the stack
+	pusha
 
     mov  ax, [bp+0x4]                         ; Starting sector
     mov  bx, [bp+0x6]                         ; Number of sectors to copy
@@ -93,11 +78,10 @@ BIOS_ReadFromDiskToLowMemory:
 	mov [Sectors_Read_Last], al               ; Lets store the number of sectors that were actually read out
 	mov [Return_Code_Last], ah                ; Lets also store the return code of the last operation
 
-	popa                                      ; Restore the original state of the general-purpose registers
+	popa
 
 	add ax, [Sectors_Read_Last]               ; We will increment AX with the number of sectors that were read out
 	                                          ; Currently there is no exception handling if some of the sectors were not read. This is not safe
-
 	mov sp, bp
 	pop bp
 
@@ -248,7 +232,7 @@ BIOS_ExtReadFromDisk:
 Drive                db 0x80
 Heads                db 2
 Sectors_Per_Track    dw 18
-Sectors_Per_Cylinder dw 18
+Sectors_Per_Cylinder dw 36
 
 Sectors_Read_Last    db 0
 Return_Code_Last     db 0

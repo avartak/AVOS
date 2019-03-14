@@ -1,5 +1,12 @@
 BITS 16
 
+; Physical address given by reg:add combination is : [reg] x 0x10 + add
+; This allows us to address a memory range starting from 0 to 0xFFFF0+0xFFFF
+; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus can physically access
+; By default the addresses beyond the 1 MB mark get looped back to 0
+; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
+; To enable access to this >1MB address space, we need to enable the A20 line
+
 ; SwitchOnA20 : Enable the A20 line. 
 ; First the code checks if the line is already enabled
 ; If the line is enabled it returns
