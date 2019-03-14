@@ -163,31 +163,31 @@ BIOS_CheckForExtensions:
 
 	push bp
 	mov bp, sp	
-
+	
 	mov dl, [Drive]
-
-    mov ah, 0x41
-    mov bx, 0x55AA
-    int 0x13
-    jc  .retfalse
-    cmp bx, 0xAA55
-    jne .retfalse
-    test cx, 1
-    jz  .retfalse
-
+	
+	mov ah, 0x41
+	mov bx, 0x55AA
+	int 0x13
+	jc  .retfalse
+	cmp bx, 0xAA55
+	jne .retfalse
+	test cx, 1
+	jz  .retfalse
+	
 	.rettrue:
 	mov al, 1
 	jmp .end
-
+	
 	.retfalse:
 	mov al, 0
-
+	
 	.end:
 	mov sp, bp
 	pop bp
-
+	
 	ret
-
+	
 
 ; BIOS_ExtReadFromDiskToLowMemory : Read from disk using BIOS extensions
 ; The routine takes two input parameters 
