@@ -22,31 +22,30 @@ BITS 16
 ; Otherwise, it halts the computer
 
 SwitchOnA20:
-	push ax                                           ; Push all general purpose registers to the stack
 
-    Call CheckA20                                     ; Check if A20 line is enabled
-    cmp ax, 0                                         ; If AX is 0, then the A20 line is disabled
-    jne .a20enabled
+    call CheckA20                                     ; Check if A20 line is enabled
+    test al, al                                       ; If AX is 0, then the A20 line is disabled
+    jnz .end
 
-    Call EnableA20BIOS                                ; Enable the A20 line using BIOS
-    Call CheckA20                                     ; Check again and print the A20 line status
-    cmp ax, 0                                         ; Check again
-    jne .a20enabled
+    call EnableA20BIOS                                ; Enable the A20 line using BIOS
+    call CheckA20                                     ; Check again and print the A20 line status
+    test al, al                                       ; Check again
+    jnz .end
 
-    Call EnableA20Keyboard                            ; Enable the A20 line using the PS/2 (8042) controller
-    Call CheckA20                                     ; Check again and print the A20 line status
-    cmp ax, 0                                         ; Check again
-    jne .a20enabled
+    call EnableA20Keyboard                            ; Enable the A20 line using the PS/2 (8042) controller
+    call CheckA20                                     ; Check again and print the A20 line status
+    test al, al                                       ; Check again
+    jnz .end
 
-    Call EnableA20FastGate                            ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
-    Call CheckA20                                     ; Check again and print the A20 line status
-    cmp ax, 0                                         ; Check again
-    jne .a20enabled
+    call EnableA20FastGate                            ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
+    call CheckA20                                     ; Check again and print the A20 line status
+    test al, al                                       ; Check again
+    jnz .end
 
-	hlt                                               ; If the A20 is still not enabled stop here -- this should be refined
+    .retfalse:
+    mov al, 0
 
-	.a20enabled:
-	pop ax                                            ; Reload all the general purpose registers
+    .end:
 	ret
 
 
@@ -63,11 +62,8 @@ SwitchOnA20:
 
 
 CheckA20:
-    push ax                                           ; Push all general purpose registers to the stack
     push ds                                           ; Push the data segments as well
     push es
-	push di                                           ; Not sure why these 
-    push si                                           ; two pushes are needed
  
     xor ax, ax                                        ; ax = 0x0000
     mov es, ax                                        ; es = 0x0000
@@ -97,18 +93,14 @@ CheckA20:
     pop ax
     mov byte [es:di], al
  
-    mov ax, 0                                         
-    je .checka20done                                  ; If A20 line is disabled store 0 in AX, else store 1 in AX
+    mov al, 0                                         
+	je .ret                                           ; If A20 line is disabled store 0 in AX, else store 1 in AX
  
-    mov ax, 1
+    mov al, 1
  
-	.checka20done:
-	pop si
-	pop di
+	.ret:
     pop es                                            ; Reload the data segments
     pop ds
-    pop ax                                            ; Reload all general purpose registers
- 
     ret
 
 
@@ -119,12 +111,8 @@ CheckA20:
 ; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
 EnableA20BIOS:
-	push ax
-
 	mov ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
 	int 0x15
-
-	pop ax
 	ret
 
 
@@ -152,10 +140,6 @@ A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data 
 
 EnableA20Keyboard:
 
-		cli
-
-		push ax
-	
 		; Disbale PS/2 port 1
         call    WriteWaitFor8042                      
         mov     al, COMD_8042_DISABLE_PS2_PORT1      
@@ -197,10 +181,6 @@ EnableA20Keyboard:
         mov     al, COMD_8042_ENABLE_PS2_PORT2      
         out     IOPORT_8042_COMD, al
  
-		pop ax
-		
-		sti
-
         ret
  
 
@@ -225,17 +205,10 @@ WriteWaitFor8042:
 ; EnableA20FastGate : Enable the A20 line using the 'Fast A20 Gate'
 
 EnableA20FastGate:
-
-	cli
-
 	in al, 0x92
 	or al, 2
 	out 0x92, al	
 
-	sti
-
-
- 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

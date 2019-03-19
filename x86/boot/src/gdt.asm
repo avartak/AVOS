@@ -1,4 +1,4 @@
-CreateGDT:
+LoadGDT:
 
     ; Global Descriptor Table
     ; 8-byte entries for each segemnt type
@@ -8,40 +8,41 @@ CreateGDT:
     ; It should be moved to a more permanent place by the kernel
     ; For now we just use this for setting up the protected mode
 
-    GDT_Start  equ START_GDT
-    GDT_Null   equ GDT_Start
-    GDT_KCode  equ GDT_Null   + 8
-    GDT_KData  equ GDT_KCode  + 8
-    GDT_End    equ GDT_KData  + 8
-    GDT_Desc   equ GDT_End
+	push bp
+	mov  bp, sp
+	mov  bp, [bp+0x4]
 
     ; First there is a NULL segment
-    mov [GDT_Null  +0],  WORD 0x0000
-    mov [GDT_Null  +2],  WORD 0x0000
-    mov [GDT_Null  +4],  BYTE 0x00
-    mov [GDT_Null  +5],  BYTE 0x00
-    mov [GDT_Null  +6],  BYTE 0x00
-    mov [GDT_Null  +7],  BYTE 0x00
+    mov [bp+0x0],  WORD 0x0000
+    mov [bp+0x2],  WORD 0x0000
+    mov [bp+0x4],  BYTE 0x00
+    mov [bp+0x5],  BYTE 0x00
+    mov [bp+0x6],  BYTE 0x00
+    mov [bp+0x7],  BYTE 0x00
 
     ; Then we insert the kernel code segment
-    mov [GDT_KCode +0],  WORD 0xFFFF
-    mov [GDT_KCode +2],  WORD 0x0000
-    mov [GDT_KCode +4],  BYTE 0x00
-    mov [GDT_KCode +5],  BYTE 0x9A
-    mov [GDT_KCode +6],  BYTE 0xCF
-    mov [GDT_KCode +7],  BYTE 0x00
+    mov [bp+0x8] ,  WORD 0xFFFF
+    mov [bp+0xA] ,  WORD 0x0000
+    mov [bp+0xC],   BYTE 0x00
+    mov [bp+0xD],   BYTE 0x9A
+    mov [bp+0xE],   BYTE 0xCF
+    mov [bp+0xF],   BYTE 0x00
 
     ; Next we insert the kernel data segment
-    mov [GDT_KData +0],  WORD 0xFFFF
-    mov [GDT_KData +2],  WORD 0x0000
-    mov [GDT_KData +4],  BYTE 0x00
-    mov [GDT_KData +5],  BYTE 0x92
-    mov [GDT_KData +6],  BYTE 0xCF
-    mov [GDT_KData +7],  BYTE 0x00
+    mov [bp+0x10],  WORD 0xFFFF
+    mov [bp+0x12],  WORD 0x0000
+    mov [bp+0x14],  BYTE 0x00
+    mov [bp+0x15],  BYTE 0x92
+    mov [bp+0x16],  BYTE 0xCF
+    mov [bp+0x17],  BYTE 0x00
 
-    mov [GDT_Desc  +0],  WORD GDT_End - GDT_Start - 1
-    mov [GDT_Desc  +2], DWORD GDT_Start
-    mov [GDT_Desc  +6],  WORD 0
+	; GDT descriptor
+    mov [bp+0x18],  WORD 0x18 - 1
+    mov [bp+0x1A],  WORD bp
+    mov [bp+0x1C],  WORD 0
+    mov [bp+0x1E],  WORD 0
 
+	lgdt [bp+0x18]
 
+	pop  bp
 	ret

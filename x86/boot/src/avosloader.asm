@@ -20,140 +20,125 @@ BITS 16
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Kload16:
-
-	mov  ax, MULTIBOOT_INFO_SEGMENT
-	mov  es, ax 
-	mov  [es:MULTIBOOT_INFO_OFFSET]  , DWORD 8
-	mov  [es:MULTIBOOT_INFO_OFFSET+4], DWORD 0
-
-	push MULTIBOOT_INFO_OFFSET
-	push MULTIBOOT_INFO_OFFSET+8
-	push MULTIBOOT_INFO_SEGMENT
-	call StoreMemoryMap
-	add sp, 6 
-
-	mov bx, MULTIBOOT_INFO_OFFSET
-	add bx, [es:MULTIBOOT_INFO_OFFSET]
-	add [es:bx]  , DWORD 0                    ; Terminating tag 
-	mov [es:bx+4], DWORD 8
-
-	mov ax, 0
-	mov es, ax
+AVOS:
 
 	; To enable the protected mode we will :
-	; 1) Clear all interrupts
-	; 2) Switch on the A20 line 
-	; 3) Create a GDT and load it
-	; 4) Enter protected mode
-	; 5) Enter unreal mode
-	; 6) Copy the kernel into memory
-	; 7) Enter back into 32-bit protected mode
-	; 8) Launch the kernel
+	; - Clear all interrupts
+	; - Switch on the A20 line 
+	; - Store the multiboot information to be used by the kernel during initialization
+	; - Create a GDT and load it
+	; - Enter protected mode
+	; - Enter unreal mode
+	; - Check if BIOS extensions exist
+	; - Copy the kernel into memory
+	; - Enter back into 32-bit protected mode
+	; - Launch the kernel
 
-	call SwitchOnA20                          ; Check and enable A20 ; Code in a20.asm
+	cli                                                 ; Clear all interrupts so that we won't be disturbed            
 
-	cli                                       ; Clear all interrupts so that we won't be disturbed            
+	call SwitchOnA20                                    ; Check and enable A20. Code in a20.asm
+	test al, al
+	jz   HaltSystem
 
-	call CreateGDT                            ; create a blank IDT and a GDT with both kernel and user segments for code, data and stack
- 
-	lgdt [GDT_Desc]                           ; Load the GDT -- Note that GDT_Desc is defined in tables.asm
+	push MULTIBOOT_INFO_OFFSET
+	push MULTIBOOT_INFO_SEGMENT
+	call StoreMultibootInfo
+	test al, al
+	jz   HaltSystem
 
-	mov eax, cr0                              ; Enter protected mode
-	or  eax, 1
-	mov cr0, eax
-
-	mov bx, SEG32_DATA                        ; We will update the DS and ES segment register to 32-bit mode
-	mov ds, bx                                ; The MOV will also load the protected mode segment descriptor
-	mov bx, SEG32_DATA                        ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is -- (for BIOS access in the unreal mode)
-	mov es, bx      
-
-	; Entering the Unreal mode
-
-	mov eax, cr0	
-	and al,0xFE                               ; Switch back to real mode
-	mov cr0, eax
-	
-	mov ax, 0                                 ; Set the DS, ES segment address to 0x0
-	mov ds, ax                                ; We can now access the full 4 GB memory space in the (un)real mode through DS:REG or ES:REG
-	mov es, ax
-
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	push START_GDT
+	call LoadGDT
 
 	; This is the code that reads the 3rd (32-bit) stage of the boot loader and the kernel 
-	; It very crudely reads certain number of sectors from certain locations of the disk
+	; It reads certain number of sectors from certain locations of the disk
 	; We do not have a file system yet, so this is how it will have to be 
 	; But when we do get around to having a file system, this is the part of the code should be updated  
-	; Basically we will need it to read the kernel image file and put it in memory	
+	; Basically we will need it to read the kernel image file and put it in memory; for now we simply read certain sectors from disk to memory
+	; To read from disk we will use the BIOS routine INT 0x13, AH=0x42
+	; This is a BIOS extension and may not be present on old systems. We need to first check if it exists
 
-	sti                                       ; Enable interrupts so that we can use the BIOS routines
+	push ds
+	push es
+	
+	mov  eax, cr0                                       ; Enter protected mode
+	or   eax, 1
+	mov  cr0, eax
+	
+	mov  ax, SEG32_DATA                                 ; We will update the DS and ES segment register to 32-bit mode
+	mov  ds, ax                                         ; The MOV will also load the protected mode segment descriptor
+	mov  es, ax                                         ; On switching back to real mode the descriptor (and hence the register limit, size, etc.) will stay as is -- this is the unreal mode
+	
+	mov  eax, cr0	
+	and  al , 0xFE                                      ; Switch back to real mode
+	mov  cr0, eax
+	
+	pop  es
+	pop  ds
 
-	call BIOS_ReadDiskParameters              ; Load the 3rd stage of the boot loader and the kernel
+	push HDD_ID
+	call BIOS_CheckForExtensions
+	test al, al
+	jz   HaltSystem
 
-	push DWORD START_KERNEL                   ; Starting point of the kernel in high memory (1 MB)
-	push START_SCRATCH                        ; Temporary pool to hold each sector before copying it to the high memory
-	push SECTORS_PER_ITER                     ; Copy 64 KB of data (128 sectors) from the disk in every interation
-	push START_KERNEL_DISK                    ; Copy kernel starting from 20 KB logical address of the disk
-
-	mov  cx, KERNEL_COPY_ITER                 ; Number of iterations of read-and-move (each iteration as can be seen below moves 64 KB of data)
-	.iterateReadAndMove:
-		call BIOS_ReadFromDiskToHighMemory    ; Copy kernel from disk and move to high memory (1 MB)
-		loop .iterateReadAndMove
-
-	cli                                       ; Clear all interrupts as we are done with BIOS help
-
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	push HDD_ID
+	push START_SCRATCH
+	push DWORD START_KERNEL
+	push DWORD SIZE_KERNEL/SECTOR_SIZE
+	push DWORD START_KERNEL_DISK
+	call BIOS_ReadFromDiskToHighMemory
+	test al, al
+	jnz  EnterProtectedMode
 
 	
-	; Entering back into the protected mode 
-	
-	mov eax, cr0                              ; Enter protected mode
-	or  eax, 1
-	mov cr0, eax
-
-	jmp SEG32_CODE:In32bitMode                ; Make a far jump this time to update the code segment to 32-bit
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-; Code to make the memory map 
-%include "x86/boot/src/memorymap.asm"
+; Halt the system in case of trouble
+HaltSystem:
+	cli
+	hlt
+	jmp HaltSystem
 
 ; Code to enable the A20 line
 %include "x86/boot/src/a20.asm"
 
-; Load the tables at designated locations in memory
+; Code to store the memory map
+%include "x86/boot/src/multibootinfo.asm"
+
+; Code to create the GDT
 %include "x86/boot/src/gdt.asm"
 
-; BIOS_ReadDiskParameters and BIOS_ReadFromDriveToHighMemory are define in this file
+; Code to read from disk
 %include "x86/boot/src/biosio.asm"
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This is now firmly 32-bit protected mode territory
+	
+; Enter protected mode 
+	
+EnterProtectedMode:
+	
+	mov eax, cr0
+	or  eax, 1
+	mov cr0, eax
+
+	jmp SEG32_CODE:InProtectedMode                      ; Make a far jump this time to update the code segment to 32-bit
+
+
+; We are now firmly 32-bit protected mode territory
 
 BITS 32
 
-In32bitMode:
+InProtectedMode:
 
-    mov ax, SEG32_DATA                        ; Lets set up the segment registers correctly
+    mov ax, SEG32_DATA                                  ; Lets set up the segment registers correctly
     mov ds, ax
-    mov ax, SEG32_DATA
     mov es, ax
-    mov ax, SEG32_DATA
     mov fs, ax
-    mov ax, SEG32_DATA
     mov gs, ax
-    mov ax, SEG32_DATA
     mov ss, ax
 
 	mov eax, MULTIBOOT_MAGIC
 	mov ebx, MULTIBOOT_INFO_ADDRESS
 
-	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE    ; Launch into the kernel
+	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE              ; Launch into the kernel
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
