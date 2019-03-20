@@ -128,16 +128,16 @@ BITS 32
 
 InProtectedMode:
 
-    mov ax, SEG32_DATA                                  ; Lets set up the segment registers correctly
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-
+	mov ax, SEG32_DATA                                  ; Lets set up the segment registers correctly
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	
 	mov eax, MULTIBOOT_MAGIC
 	mov ebx, MULTIBOOT_INFO_ADDRESS
-
+	
 	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE              ; Launch into the kernel
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
