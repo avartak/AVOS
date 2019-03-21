@@ -79,7 +79,7 @@ AVOS:
 	or   eax, 1
 	mov  cr0, eax
 	
-	jmp SEG32_CODE:InProtectedMode
+	jmp  SEG32_CODE:InProtectedMode
 	
 ; Halt the system in case of trouble
 HaltSystem:
