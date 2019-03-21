@@ -1,5 +1,19 @@
 BITS 16
 
+; GetDiskGeometry : Reads and stores the disk geometry (number of cylinders, heads, sectors per track) to be used when accessing disk with the CHS scheme
+; It's input parameters are as follows
+; AH = 0x08
+; DL = Drive index
+; The output parameters are as follows
+; CF = Set on error, clear if successful
+; AH = Return code
+; DL = Number of hard disk drives
+; DH = Last logical index of heads = Number of heads - 1
+; CX = Lowest 6 bits --> number of sectors per track ; Highest 10 bits --> Last logical index of cylinders = Number of cylinders - 1
+; BL = Drive type (only AT/PS2 floppies) 
+; ES:DI --> pointer to drive parameter table (only for floppies) 
+; The function returns 0 or 1 in AL depending on whether there was any error
+
 GetDiskGeometry:
 
 
