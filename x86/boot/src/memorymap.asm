@@ -66,8 +66,8 @@ StoreMemoryMap:
 	mov  al, 0
 	
 	.end:
-	mov  bx, [bp+6]
-	add  bx, 8
+	mov  bx,  [bp+6]
+	add  bx,  0x8
 	add  esi, 0x10                                      ; There are 16 bytes of tag information in addition to the size
 	mov  [es:bx],     DWORD 6                           ; Tag type
 	mov  [es:bx+0x4], esi                               ; Size of the tag as a whole
