@@ -62,46 +62,46 @@ SwitchOnA20:
 
 
 CheckA20:
-    push ds                                           ; Push the data segments as well
-    push es
- 
-    xor ax, ax                                        ; ax = 0x0000
-    mov es, ax                                        ; es = 0x0000
- 
-    not ax                                            ; ax = 0xFFFF
-    mov ds, ax                                        ; ds = 0xFFFF
- 
-    mov di, 0x0500                                    ; ES:DI = 0x0000:0x0500
-    mov si, 0x0510                                    ; DS:SI = 0xFFFF:0x0510
+	push ds                                           ; Push the data segments as well
+	push es
+	
+	xor ax, ax                                        ; ax = 0x0000
+	mov es, ax                                        ; es = 0x0000
+	
+	not ax                                            ; ax = 0xFFFF
+	mov ds, ax                                        ; ds = 0xFFFF
+	
+	mov di, 0x0500                                    ; ES:DI = 0x0000:0x0500
+	mov si, 0x0510                                    ; DS:SI = 0xFFFF:0x0510
 	                                                  ; If A20 line is disabled both these addresses will point to the same physical location
- 
-    mov al, byte [es:di]                              ; Push the contents of ES:DI to stack
-    push ax
- 
-    mov al, byte [ds:si]                              ; Push the contents of ES:DI to stack
-    push ax
- 
-    mov byte [es:di], 0x00                            ; Store 0x00 at ES:DI
-    mov byte [ds:si], 0xFF                            ; Store 0xFF at DS:SI
+	
+	mov al, byte [es:di]                              ; Push the contents of ES:DI to stack
+	push ax
+	
+	mov al, byte [ds:si]                              ; Push the contents of ES:DI to stack
+	push ax
+	
+	mov byte [es:di], 0x00                            ; Store 0x00 at ES:DI
+	mov byte [ds:si], 0xFF                            ; Store 0xFF at DS:SI
 	                                                  ; If A20 line is disabled both ES:DI and DS:SI will contain 0xFF
- 
-    cmp byte [es:di], 0xFF                            ; Check if ES:DI contains 0xFF i.e. if A20 line is disabled
- 
-    pop ax                                            ; We are done, so restore the contents of ES:DI and DS:SI
-    mov byte [ds:si], al
- 
-    pop ax
-    mov byte [es:di], al
- 
-    mov al, 0                                         
+	
+	cmp byte [es:di], 0xFF                            ; Check if ES:DI contains 0xFF i.e. if A20 line is disabled
+	
+	pop ax                                            ; We are done, so restore the contents of ES:DI and DS:SI
+	mov byte [ds:si], al
+	
+	pop ax
+	mov byte [es:di], al
+	
+	mov al, 0                                         
 	je .ret                                           ; If A20 line is disabled store 0 in AX, else store 1 in AX
- 
-    mov al, 1
- 
+	
+	mov al, 1
+	
 	.ret:
-    pop es                                            ; Reload the data segments
-    pop ds
-    ret
+	pop es                                            ; Reload the data segments
+	pop ds
+	ret
 
 
 
@@ -140,65 +140,65 @@ A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data 
 
 EnableA20Keyboard:
 
-		; Disbale PS/2 port 1
-        call    WriteWaitFor8042                      
-        mov     al, COMD_8042_DISABLE_PS2_PORT1      
-        out     IOPORT_8042_COMD, al
- 
-		; Disbale PS/2 port 2
-        call    WriteWaitFor8042                      
-        mov     al, COMD_8042_DISABLE_PS2_PORT2      
-        out     IOPORT_8042_COMD, al
- 
-		; Command to read from PS/2 controller output port
-        call    WriteWaitFor8042
-        mov     al, COMD_8042_READ_CONT_OUT_PORT
-        out     IOPORT_8042_COMD, al
- 
-		; Read PS/2 controller output port
-        call    ReadWaitFor8042
-        in      al, IOPORT_8042_DATA
-        push    ax
- 
-		; Command to write to PS/2 controller output port
-        call    WriteWaitFor8042
-        mov     al, COMD_8042_WRITE_CONT_OUT_PORT
-        out     IOPORT_8042_COMD, al
- 
-		; Enable A20 bit
-        call    WriteWaitFor8042
-        pop     ax
-        or      al, A20_BIT_ENABLE
-        out     IOPORT_8042_DATA, al
- 
-		; Enable PS/2 port 1
-        call    WriteWaitFor8042
-        mov     al, COMD_8042_ENABLE_PS2_PORT1
-        out     IOPORT_8042_COMD, al
- 
-		; Enable PS/2 port 2
-        call    WriteWaitFor8042                      
-        mov     al, COMD_8042_ENABLE_PS2_PORT2      
-        out     IOPORT_8042_COMD, al
- 
-        ret
+	; Disbale PS/2 port 1
+	call    WriteWaitFor8042                      
+	mov     al, COMD_8042_DISABLE_PS2_PORT1      
+	out     IOPORT_8042_COMD, al
+	
+	; Disbale PS/2 port 2
+	call    WriteWaitFor8042                      
+	mov     al, COMD_8042_DISABLE_PS2_PORT2      
+	out     IOPORT_8042_COMD, al
+	
+	; Command to read from PS/2 controller output port
+	call    WriteWaitFor8042
+	mov     al, COMD_8042_READ_CONT_OUT_PORT
+	out     IOPORT_8042_COMD, al
+	
+	; Read PS/2 controller output port
+	call    ReadWaitFor8042
+	in      al, IOPORT_8042_DATA
+	push    ax
+	
+	; Command to write to PS/2 controller output port
+	call    WriteWaitFor8042
+	mov     al, COMD_8042_WRITE_CONT_OUT_PORT
+	out     IOPORT_8042_COMD, al
+	
+	; Enable A20 bit
+	call    WriteWaitFor8042
+	pop     ax
+	or      al, A20_BIT_ENABLE
+	out     IOPORT_8042_DATA, al
+	
+	; Enable PS/2 port 1
+	call    WriteWaitFor8042
+	mov     al, COMD_8042_ENABLE_PS2_PORT1
+	out     IOPORT_8042_COMD, al
+	
+	; Enable PS/2 port 2
+	call    WriteWaitFor8042                      
+	mov     al, COMD_8042_ENABLE_PS2_PORT2      
+	out     IOPORT_8042_COMD, al
+	
+	ret
  
 
 ; ReadWaitFor8042 : Function to poll the 8042 status register to check if we have read access to the data port 
 
 ReadWaitFor8042:
-        in      al, IOPORT_8042_COMD
-        test    al, TEST_8042_READ_ACCESS
-        jz      ReadWaitFor8042
-        ret
+	in      al, IOPORT_8042_COMD
+	test    al, TEST_8042_READ_ACCESS
+	jz      ReadWaitFor8042
+	ret
 
 ; ReadWaitFor8042 : Function to poll the 8042 status register to check if we have write access to the data and command ports 
 
 WriteWaitFor8042:
-        in      al, IOPORT_8042_COMD
-        test    al, TEST_8042_WRITE_ACCESS
-        jnz     WriteWaitFor8042
-        ret
+	in      al, IOPORT_8042_COMD
+	test    al, TEST_8042_WRITE_ACCESS
+	jnz     WriteWaitFor8042
+	ret
 
 
 
