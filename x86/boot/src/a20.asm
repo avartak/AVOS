@@ -65,42 +65,42 @@ CheckA20:
 	push ds                                           ; Push the data segments as well
 	push es
 	
-	xor ax, ax                                        ; ax = 0x0000
-	mov es, ax                                        ; es = 0x0000
+	xor  ax, ax                                       ; ax = 0x0000
+	mov  es, ax                                       ; es = 0x0000
 	
-	not ax                                            ; ax = 0xFFFF
-	mov ds, ax                                        ; ds = 0xFFFF
+	not  ax                                           ; ax = 0xFFFF
+	mov  ds, ax                                       ; ds = 0xFFFF
 	
-	mov di, 0x0500                                    ; ES:DI = 0x0000:0x0500
-	mov si, 0x0510                                    ; DS:SI = 0xFFFF:0x0510
+	mov  di, 0x0500                                   ; ES:DI = 0x0000:0x0500
+	mov  si, 0x0510                                   ; DS:SI = 0xFFFF:0x0510
 	                                                  ; If A20 line is disabled both these addresses will point to the same physical location
 	
-	mov al, byte [es:di]                              ; Push the contents of ES:DI to stack
+	mov  al, byte [es:di]                             ; Push the contents of ES:DI to stack
 	push ax
 	
-	mov al, byte [ds:si]                              ; Push the contents of ES:DI to stack
+	mov  al, byte [ds:si]                             ; Push the contents of ES:DI to stack
 	push ax
 	
-	mov byte [es:di], 0x00                            ; Store 0x00 at ES:DI
-	mov byte [ds:si], 0xFF                            ; Store 0xFF at DS:SI
+	mov  byte [es:di], 0x00                           ; Store 0x00 at ES:DI
+	mov  byte [ds:si], 0xFF                           ; Store 0xFF at DS:SI
 	                                                  ; If A20 line is disabled both ES:DI and DS:SI will contain 0xFF
 	
-	cmp byte [es:di], 0xFF                            ; Check if ES:DI contains 0xFF i.e. if A20 line is disabled
+	cmp  byte [es:di], 0xFF                           ; Check if ES:DI contains 0xFF i.e. if A20 line is disabled
 	
-	pop ax                                            ; We are done, so restore the contents of ES:DI and DS:SI
-	mov byte [ds:si], al
+	pop  ax                                           ; We are done, so restore the contents of ES:DI and DS:SI
+	mov  byte [ds:si], al
 	
-	pop ax
-	mov byte [es:di], al
+	pop  ax
+	mov  byte [es:di], al
 	
-	mov al, 0                                         
-	je .ret                                           ; If A20 line is disabled store 0 in AX, else store 1 in AX
+	mov  al, 0                                         
+	je   .ret                                         ; If A20 line is disabled store 0 in AX, else store 1 in AX
 	
-	mov al, 1
+	mov  al, 1
 	
 	.ret:
-	pop es                                            ; Reload the data segments
-	pop ds
+	pop  es                                           ; Reload the data segments
+	pop  ds
 	ret
 
 
