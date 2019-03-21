@@ -21,7 +21,7 @@ GetDiskGeometry:
 	mov  bp, sp	
 	
 	mov  di, 0
-	mov  dl, BYTE [bp+0x4]
+	mov  dl, [bp+0x4]
 	mov  ah, 0x08
 	int  0x13
 	jc   .retfalse
@@ -61,14 +61,14 @@ GetDiskGeometry:
 ; AH = Error code or major version
 ; BX = 0xAA55
 ; CX = Bit 1 : Device Access using the packet structure ; Bit 2 : Drive Locking and Ejecting ; Bit 3 : Enhanced Disk Drive Support (EDD) ; We are only concerned with the first bit being set 
-; Output is stored as a boolean (0 or 1) in AL
+; The function returns 0 or 1 in AL depending on whether there was any error
 
 CheckForBIOSExtensions:
 
 	push bp
 	mov  bp, sp
 	
-	mov  dl, BYTE [bp+0x4]
+	mov  dl, [bp+0x4]
 	
 	mov  ah, 0x41
 	mov  bx, 0x55AA
@@ -93,17 +93,18 @@ CheckForBIOSExtensions:
 	
 
 ; ReadFromDisk : Read from disk using BIOS extensions that use the LBA scheme (preferably) or with the 'old' BIOS routine that exploys the CHS scheme
-; The routine takes five input parameters 
+; The function takes five input parameters 
 ; (1) --> Starting sector (32-bit) 
 ; (2) --> Number of consecutive sectors to be read out (32-bit)
 ; (3) --> Destination memory address
 ; (4) --> Area in low memory where disk data will be copied sector-by-sector before moving it to upper memory (16-bit)
 ; (5) --> Drive ID (8-bit)
-; The routine itself relies on INT 0x13, AH=0x42 BIOS routine
-; The BIOS routine itself takes the following inputs
-; AH = 0x41 (Duh!)
-; DL = Drive index
-; SI = Address of the DAP (disk address packet)
+; The function itself relies on BIOS routines to read from disk
+; If BIOS extensions exists then INT 0x13, AH=0x42 BIOS routine is used, otherwise INT 0x13, AH=0x02 BIOS routine is employed
+; Check bootloader.asm to understand how these routines are used
+; Note that BIOS routines cannot access upper memory (>1 MB). Therefore, we need to read from disk to some temporary buffer in lower memory then copy from there to upper memory
+; This 'trampolining' from lower to upper memory requires us to be in unreal mode when this function is called
+; The function does disk read --> lower memory --> copy to upper memory sector by sector
 
 ReadFromDisk:
 
@@ -135,14 +136,14 @@ ReadFromDisk:
 	
 	DiskReadUsingLBA:
 	
-		mov eax, DWORD [bp+0x4]
-		mov ebx, DWORD [bp+0x8]
-		mov edi, DWORD [bp+0xC]
-		mov  si,  WORD [bp+0x10]
-		mov  dl,  BYTE [bp+0x12]
+		mov eax, [bp+0x4]
+		mov ebx, [bp+0x8]
+		mov edi, [bp+0xC]
+		mov  si, [bp+0x10]
+		mov  dl, [bp+0x12]
 		
-		mov DWORD [DAP_Start_Sector] , eax
-		mov  WORD [DAP_Memory_Offset], si
+		mov [DAP_Start_Sector] , eax
+		mov [DAP_Memory_Offset], si
 		
 		.readnmove:
 		    test ebx, ebx
@@ -151,7 +152,7 @@ ReadFromDisk:
 		    mov  si, Disk_Address_Packet
 		    mov  ah, 0x42
 		    int  0x13
-		    jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set then halt system
+		    jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
 		
 		    movzx esi, WORD [DAP_Memory_Offset]
 		    mov  ecx, 0x200
@@ -163,20 +164,20 @@ ReadFromDisk:
 		
 	DiskReadUsingCHS:
 	
-		mov  eax, DWORD [bp+0x4]
-		mov  ebx, DWORD [bp+0x8]
-		mov  edi, DWORD [bp+0xC]
+		mov  eax, [bp+0x4]
+		mov  ebx, [bp+0x8]
+		mov  edi, [bp+0xC]
 		
-		mov  DWORD [CHS_Start_Sector] , eax
-		mov  DWORD [CHS_Sectors_Count], ebx
-		mov  DWORD [CHS_Memory_Offset], edi
+		mov  [CHS_Start_Sector] , eax
+		mov  [CHS_Sectors_Count], ebx
+		mov  [CHS_Memory_Offset], edi
 	
 		.readnmove:
-			mov  ebx, DWORD [CHS_Sectors_Count]
+			mov  ebx, [CHS_Sectors_Count]
 			test ebx, ebx
 			jz   ReadFromDisk.rettrue
 			
-			mov  eax, DWORD [CHS_Start_Sector]
+			mov  eax, [CHS_Start_Sector]
 			mov  edx, 0
 			movzx ebx, WORD [Sectors_Per_Cylinder]
 			div  ebx
@@ -193,19 +194,19 @@ ReadFromDisk:
 			
 			mov  dh, al
 			
-			mov  bx, WORD [bp+0x10]
-			mov  dl, BYTE [bp+0x12]
+			mov  bx, [bp+0x10]
+			mov  dl, [bp+0x12]
 			mov  al, 1
 			
 			mov  ah, 0x02
 			int  0x13
-			jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set then halt system
+			jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
 			
 			movzx esi, WORD [bp+0x10]
-			mov  edi, DWORD [CHS_Memory_Offset]
+			mov  edi, [CHS_Memory_Offset]
 			mov  ecx, 0x200
 			a32  rep movsb
-			mov  DWORD [CHS_Memory_Offset], edi
+			mov  [CHS_Memory_Offset], edi
 			
 			dec  DWORD [CHS_Sectors_Count]
 			inc  WORD [CHS_Start_Sector]

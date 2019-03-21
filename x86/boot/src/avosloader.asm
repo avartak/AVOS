@@ -8,7 +8,27 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-%include "x86/boot/src/defs.asm"
+START_BOOT2             equ 0x8000                                      ; This is where we load the 2nd stage of the boot loader
+START_KERNEL            equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
+START_SCRATCH           equ 0x7000                                      ; Starting point of the scratch area 
+START_GDT               equ 0x7E00                                      ; Memory location of the GDT
+
+SIZE_KERNEL             equ 0x100000/0x200                              ; Assumed size of the kernel binary in terms of number of sectors
+
+SEG32_CODE              equ 0x08                                        ; 32-bit code segment
+SEG32_DATA              equ 0x10                                        ; 32-bit data segment
+
+FLOPPY_ID               equ 0                                           ; Floppy ID used by the BIOS
+HDD_ID                  equ 0x80                                        ; Floppy ID used by the BIOS
+
+START_KERNEL_DISK       equ 0x40                                        ; Starting sector of the kernel
+
+MULTIBOOT_MAGIC         equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
+MULTIBOOT_HEADER_SIZE   equ 0x1000                                      ; Multiboot2 header size, more specifically amount of bytes set aside for the header (it's actual size may be less)
+MULTIBOOT_INFO_ADDRESS  equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)
+MULTIBOOT_INFO_SEGMENT  equ 0x0800
+MULTIBOOT_INFO_OFFSET   equ 0x8000                                      ; Location of the start of the boot information structures 
+
 
 ; Starting point of the kernel loader
 
@@ -25,7 +45,7 @@ AVOS:
 	; To enable the protected mode we will :
 	; - Clear all interrupts
 	; - Switch on the A20 line 
-	; - Store the multiboot information to be used by the kernel during initialization
+	; - Store the memory map (in multiboot2 compatible format) to be used by the kernel during initialization
 	; - Create a GDT and load it
 	; - Enter protected mode
 	; - Enter unreal mode
@@ -41,18 +61,15 @@ AVOS:
 	
 	push MULTIBOOT_INFO_OFFSET
 	push MULTIBOOT_INFO_SEGMENT
-	call StoreMultibootInfo
+	call StoreMemoryMap
 	test al, al
 	jz   HaltSystem
 	
 	push START_GDT
 	call LoadGDT
 	
-	push ds
-	push es
-	
 	mov  eax, cr0                                       
-	or   eax, 1
+	or    al, 1
 	mov  cr0, eax
 	
 	mov  ax, SEG32_DATA                                 
@@ -60,23 +77,24 @@ AVOS:
 	mov  es, ax                                         
 	
 	mov  eax, cr0	
-	and  al , 0xFE
+	and   al, 0xFE
 	mov  cr0, eax
 	
-	pop  es
-	pop  ds
+	xor  ax, ax
+	mov  ds, ax
+	mov  es, ax
 	
 	push HDD_ID
 	push START_SCRATCH
 	push DWORD START_KERNEL
-	push DWORD SIZE_KERNEL/SECTOR_SIZE
+	push DWORD SIZE_KERNEL
 	push DWORD START_KERNEL_DISK
 	call ReadFromDisk
 	test al, al
 	jz   HaltSystem
 	
 	mov  eax, cr0
-	or   eax, 1
+	or    al, 1
 	mov  cr0, eax
 	
 	jmp  SEG32_CODE:InProtectedMode
@@ -91,7 +109,7 @@ HaltSystem:
 %include "x86/boot/src/a20.asm"
 
 ; Code to store the memory map
-%include "x86/boot/src/multibootinfo.asm"
+%include "x86/boot/src/memorymap.asm"
 
 ; Code to create the GDT
 %include "x86/boot/src/gdt.asm"

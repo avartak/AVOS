@@ -4,7 +4,7 @@
 ; This is the function that reads the memory map using INT 0x15, AH=0xE820
 ; We are not going to try anything else right now if E820 fails
 
-StoreMultibootInfo:
+StoreMemoryMap:
 
 	push bp
 	mov  bp, sp

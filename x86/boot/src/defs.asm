@@ -1,12 +1,8 @@
-BOOTSECTOR_MAGIC        equ 0xAA55                                      ; The magic number needed at the end of the boot sector
-
-START_BOOT1             equ 0x7C00                                      ; This is where BIOS will load the boot sector
 START_BOOT2             equ 0x8000                                      ; This is where we load the 2nd stage of the boot loader
 START_KERNEL            equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
 START_SCRATCH           equ 0x7000                                      ; Starting point of the scratch area 
 START_GDT               equ 0x7E00                                      ; Memory location of the GDT
 
-SIZE_BOOT1              equ 0x0200                                      ; Boot sector is 512 bytes long
 SIZE_BOOT2              equ 0x8000                                      ; We allow 32 KB for the 2nd stage of the boot loader - it is unlikely we will ever need this much space
 SIZE_KERNEL             equ 0x100000                                    ; Size of the kernel is assumed to be 1 MB
 SIZE_GDT                equ 0x0200                                      ; 512 bytes allotted to the GDT
