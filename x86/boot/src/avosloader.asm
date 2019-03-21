@@ -32,22 +32,22 @@ AVOS:
 	; - Copy the kernel from disk memory
 	; - Enter back into 32-bit protected mode
 	; - Launch the kernel
-
+	
 	cli
-
+	
 	call SwitchOnA20
 	test al, al
 	jz   HaltSystem
-
+	
 	push MULTIBOOT_INFO_OFFSET
 	push MULTIBOOT_INFO_SEGMENT
 	call StoreMultibootInfo
 	test al, al
 	jz   HaltSystem
-
+	
 	push START_GDT
 	call LoadGDT
-
+	
 	push ds
 	push es
 	
@@ -65,7 +65,7 @@ AVOS:
 	
 	pop  es
 	pop  ds
-
+	
 	push HDD_ID
 	push START_SCRATCH
 	push DWORD START_KERNEL
@@ -74,12 +74,12 @@ AVOS:
 	call ReadFromDisk
 	test al, al
 	jz   HaltSystem
-
-    mov eax, cr0
-    or  eax, 1
-    mov cr0, eax
-
-    jmp SEG32_CODE:InProtectedMode
+	
+	mov eax, cr0
+	or  eax, 1
+	mov cr0, eax
+	
+	jmp SEG32_CODE:InProtectedMode
 	
 ; Halt the system in case of trouble
 HaltSystem:
@@ -106,9 +106,9 @@ HaltSystem:
 
 BITS 32
 
-	InProtectedMode:
+InProtectedMode:
 
-	mov ax, SEG32_DATA                                  ; Lets set up the segment registers correctly
+	mov ax, SEG32_DATA
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
@@ -118,7 +118,7 @@ BITS 32
 	mov eax, MULTIBOOT_MAGIC
 	mov ebx, MULTIBOOT_INFO_ADDRESS
 	
-	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE              ; Launch into the kernel
+	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
