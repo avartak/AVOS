@@ -159,9 +159,9 @@ ReadFromDisk:
 	
 		.readnmove:
 			mov  ebx, DWORD [CHS_Sectors_Count]
-		    test ebx, ebx
-		    jz   ReadFromDisk.rettrue
-		
+			test ebx, ebx
+			jz   ReadFromDisk.rettrue
+			
 			mov  eax, DWORD [CHS_Start_Sector]
 			mov  edx, 0
 			movzx ebx, WORD [Sectors_Per_Cylinder]
@@ -170,29 +170,29 @@ ReadFromDisk:
 			jg   ReadFromDisk.retfalse
 			shl  ax, 0x6
 			mov  cx, ax
-		
+			
 			mov  ax, dx
 			div  BYTE [Sectors_Per_Track]
 			add  ah, 0x1
 			and  ah, 0x3F
 			or   cl, ah
-		
+			
 			mov  dh, al
-		
+			
 			mov  bx, WORD [bp+0x10]
 			mov  dl, BYTE [bp+0x12]
 			mov  al, 1
-		
+			
 			mov  ah, 0x02
 			int  0x13
-		    jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set then halt system
-		
+			jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set then halt system
+			
 			movzx esi, WORD [bp+0x10]
 			mov  edi, DWORD [CHS_Memory_Offset]
-		    mov  ecx, 0x200
-		    a32  rep movsb
+			mov  ecx, 0x200
+			a32  rep movsb
 			mov  DWORD [CHS_Memory_Offset], edi
-		
+			
 			dec  DWORD [CHS_Sectors_Count]
 			inc  WORD [CHS_Start_Sector]
 			jmp  .readnmove
