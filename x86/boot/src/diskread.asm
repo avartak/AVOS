@@ -142,8 +142,8 @@ ReadFromDisk:
 		mov    si, [bp+0x10]
 		mov    dl, [bp+0x12]
 		
-		mov [DAP_Start_Sector] , eax
-		mov [DAP_Memory_Offset], si
+		mov   [DAP_Start_Sector] , eax
+		mov   [DAP_Memory_Offset], si
 		
 		.readnmove:
 		    test  ebx, ebx
