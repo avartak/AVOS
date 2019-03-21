@@ -5,34 +5,34 @@ GetDiskGeometry:
 
 	push bp
 	mov  bp, sp	
-
-    mov  di, 0
-    mov  dl, BYTE [bp+0x4]
-    mov  ah, 0x08
-    int  0x13
-    jc   .retfalse
-
-    add  dh, 0x1
-    mov  [Heads], dh
-    cmp  cl, 0x3F
-    jg   .retfalse
-    and  cl, 0x3F
-    mov  [Sectors_Per_Track], cl
-    mov  al, cl
-    mul  dh
-    mov  [Sectors_Per_Cylinder], ax
-
+	
+	mov  di, 0
+	mov  dl, BYTE [bp+0x4]
+	mov  ah, 0x08
+	int  0x13
+	jc   .retfalse
+	
+	add  dh, 0x1
+	mov  [Heads], dh
+	cmp  cl, 0x3F
+	jg   .retfalse
+	and  cl, 0x3F
+	mov  [Sectors_Per_Track], cl
+	mov  al, cl
+	mul  dh
+	mov  [Sectors_Per_Cylinder], ax
+	
 	.rettrue:
 	mov  al, 1
 	jmp  .end
-
+	
 	.retfalse:
 	mov  al, 0
-
+	
 	.end:
 	mov  sp, bp
 	pop  bp
-
+	
 	ret
 
 
@@ -53,9 +53,9 @@ CheckForBIOSExtensions:
 
 	push bp
 	mov  bp, sp
-
+	
 	mov  dl, BYTE [bp+0x4]
-
+	
 	mov  ah, 0x41
 	mov  bx, 0x55AA
 	int  0x13
@@ -95,7 +95,7 @@ ReadFromDisk:
 
 	push bp
 	mov  bp, sp
-
+	
 	movzx dx, BYTE [bp+0x12]
 	push dx
 	call CheckForBIOSExtensions
@@ -106,7 +106,7 @@ ReadFromDisk:
 	test al, al
 	jz   .retfalse	
 	jmp  DiskReadUsingCHS
-
+	
 	.rettrue:
 	mov al, 1
 	jmp .end
@@ -118,7 +118,7 @@ ReadFromDisk:
 	mov sp, bp
 	pop bp
 	ret	
-
+	
 	DiskReadUsingLBA:
 	
 		mov eax, DWORD [bp+0x4]
@@ -148,7 +148,7 @@ ReadFromDisk:
 		    jmp  .readnmove
 		
 	DiskReadUsingCHS:
-
+	
 		mov  eax, DWORD [bp+0x4]
 		mov  ebx, DWORD [bp+0x8]
 		mov  edi, DWORD [bp+0xC]
@@ -156,7 +156,7 @@ ReadFromDisk:
 		mov  DWORD [CHS_Start_Sector] , eax
 		mov  DWORD [CHS_Sectors_Count], ebx
 		mov  DWORD [CHS_Memory_Offset], edi
-
+	
 		.readnmove:
 			mov  ebx, DWORD [CHS_Sectors_Count]
 		    test ebx, ebx
