@@ -42,6 +42,7 @@ LoadGDT:
     mov [bp+0x1C],  WORD 0
     mov [bp+0x1E],  WORD 0
 
+	; Load the GDT
 	lgdt [bp+0x18]
 
 	pop  bp
