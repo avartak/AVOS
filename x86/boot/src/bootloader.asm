@@ -6,11 +6,18 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-%include "x86/boot/src/defs.asm"
+STACK_TOP               equ 0x7000      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+
+FLOPPY_ID               equ 0           ; Floppy ID used by the BIOS
+HDD_ID                  equ 0x80        ; ATA hard disk ID used by the BIOS
+
+START_BOOT2             equ 0x8000      ; This is where the 2nd stage of the boot loader is loaded in memory
+START_BOOT2_DISK        equ 0x01        ; Starting sector of the 2nd stage of the boot loader on disk
+SIZE_BOOT2              equ 0x20        ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
-ORG START_BOOT1
+ORG 0x7C00
 
 ; The x86 system always starts in the REAL mode
 ; This is the 16-bit mode without any of the protected mode features
@@ -27,26 +34,26 @@ Boot:
 	; The code in the boot sector will simply load the 2nd stage from disk to the memory location 0x8000
 	; The 2nd stage will then set up the 32-bit system in protected mode and load the kernel
 	; Alright, lets get started. We don't want any interrupts right now.
-
+	
 	cli
-
+	
 	; Physical address given by reg:add combination is : [reg] x 0x10 + add
 	; We should initialize the segment registers to the base address values that we want to use
 	; We should not assume the segment registers to be initialized in a certain way when we are handed control
 	; The segment registers in 16-bit environment are : CS, DS, ES, SS. We will set all of them to 0
 	; First the code segment (CS) -- The only way to change the value of the code segment register is by performing a long jump
-
-	jmp 0x0000:Start
+	
+	jmp   0x0000:Start
 	Start:
-
+	
 	; Then, lets set DS, ES and SS to 0, and the stack pointer (SP) at 0x7000
-
-	xor  ax, ax
-	mov  ds, ax
-	mov  es, ax
-	mov  ss, ax
-	mov  sp, STACK_TOP 
-
+	
+	xor   ax, ax
+	mov   ds, ax
+	mov   es, ax
+	mov   ss, ax
+	mov   sp, STACK_TOP 
+	
 	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
 	; So we need some code that does the reading from disk
 	; We don't have enough space to write a disk driver here, so we will simply use routines provided by the BIOS
@@ -67,27 +74,28 @@ Boot:
 	;        2 -> Drive locking and ejecting
 	;        4 -> Enhanced Disk Drive (EDD) support 
 	; If BIOS extension is not usable we fall back to the 'old' BIOS routine that reads from disk using the CHS scheme	
-
-	mov  dl, HDD_ID
-    mov  bx, 0x55AA
-    mov  ah, 0x41
-    int  0x13
-    jc   DiskReadUsingCHS
-    cmp  bx, 0xAA55
-    jne  DiskReadUsingCHS
-    test cx, 1
-    jz   DiskReadUsingCHS
-
+	
+	mov   dl, HDD_ID
+	mov   bx, 0x55AA
+	mov   ah, 0x41
+	int   0x13
+	jc    DiskReadUsingCHS
+	cmp   bx, 0xAA55
+	jne   DiskReadUsingCHS
+	test  cx, 1
+	jz    DiskReadUsingCHS
+	
 	; We will use the INT 0x13, AH=0x42 BIOS routine to read sectors from disk using the LBA scheme
 	; We need to provide this routine a data structure containing information about what sectors to read, and where to put the read data in memory
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
-
-    mov  dl, HDD_ID
-    mov  si, Disk_Address_Packet
-    mov  ah, 0x42
-    int  0x13
-    jnc  LaunchStage2
-
+	
+	DiskReadUsingLBA:
+	mov   dl, HDD_ID
+	mov   si, Disk_Address_Packet
+	mov   ah, 0x42
+	int   0x13
+	jnc   LaunchStage2
+	
 	; If BIOS extensions do not exist we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	; This routine should exist even on older BIOSes
 	; However, it has some limitations, most notably the fact that it cannot access very large disks
@@ -96,7 +104,7 @@ Boot:
 	; Cylinder = LBA / (Heads * Sectors_Per_Track)
 	; Head     = Temp / Sectors_Per_Track
 	; Sector   = Temp % Sectors_Per_Track + 1	
-
+	
 	; First we read the disk geometry (number of cylinders, heads and sectors per track) using the BIOS routine INT 0x13, AH=0x08
 	; This routing requires the drive ID to be stored in DL
 	; To work around some buggy BIOSes, make sure that ES:DI is 0:0
@@ -108,69 +116,69 @@ Boot:
 	; - CX : First 6 bits store the number of sectors per track, highest 10 bits store the last logical index of the cylinders (or number of cylinders - 1)
 	; - BL : Drive type (only AT/PS2 floppies) 
 	; - ES:DI --> Pointer to drive parameter table (only for floppies) 
-
+	
 	DiskReadUsingCHS:
-	xor  ax, ax
-	mov  es, ax
-	mov  di, ax
-	mov  dl, HDD_ID
-	mov  ah, 0x08
-	int  0x13
-	jc   HaltSystem
-
-	add  dh, 0x1
-	mov  [Heads], dh
-	cmp  cl, 0x3F
-	jg   HaltSystem
-	and  cl, 0x3F
-	mov  [Sectors_Per_Track], cl
-	mov  al, cl
-	mul  dh
-	mov  [Sectors_Per_Cylinder], ax
-
-
+	xor   ax, ax
+	mov   es, ax
+	mov   di, ax
+	mov   dl, HDD_ID
+	mov   ah, 0x08
+	int   0x13
+	jc    HaltSystem
+	
+	add   dh, 0x1
+	mov   [Heads], dh
+	cmp   cl, 0x3F
+	jg    HaltSystem
+	and   cl, 0x3F
+	mov   [Sectors_Per_Track], cl
+	mov   al, cl
+	mul   dh
+	mov   [Sectors_Per_Cylinder], ax
+	
+	
 	; This is the code that converts the address of the starting sector that we want to read from the LBA scheme to the CHS scheme 
 	; Look at the translation formulas above to understand what's being done
 	; Note that : Sectors_Per_Cylinder = Heads * Sectors_Per_Track
-
-	mov  eax, START_BOOT2_DISK
-	mov  edx, 0
-	movzx  ebx, WORD [Sectors_Per_Cylinder]
-	div  ebx 
-	cmp  eax, 0x3FF
-	jg   HaltSystem
-	shl  ax, 0x6
-	mov  cx, ax
-
-	mov  ax, dx
-	div  BYTE [Sectors_Per_Track]
-	add  ah, 0x1
-	and  ah, 0x3F
-	or   cl, ah
-
-	mov  dh, al
-
-	xor  ax, ax
-	mov  es, ax
-	mov  bx, START_BOOT2
-	mov  dl, HDD_ID
-	mov  al, SIZE_BOOT2/SECTOR_SIZE
-
-	mov  ah, 0x02
-	int  0x13
-	jc   HaltSystem
-
+	
+	mov   eax, START_BOOT2_DISK
+	mov   edx, 0
+	movzx ebx, WORD [Sectors_Per_Cylinder]
+	div   ebx 
+	cmp   eax, 0x3FF
+	jg    HaltSystem
+	shl   ax, 0x6
+	mov   cx, ax
+	
+	mov   ax, dx
+	div   BYTE [Sectors_Per_Track]
+	add   ah, 0x1
+	and   ah, 0x3F
+	or    cl, ah
+	
+	mov   dh, al
+	
+	xor   ax, ax
+	mov   es, ax
+	mov   bx, START_BOOT2
+	mov   dl, HDD_ID
+	mov   al, SIZE_BOOT2
+	
+	mov   ah, 0x02
+	int   0x13
+	jc    HaltSystem
+	
 	; We reach here if the disk read was successful 
-
+	
 	LaunchStage2:
-	jmp  START_BOOT2 
-
+	jmp   START_BOOT2 
+	
 	; If we did not read what we wanted to we halt
-
+	
 	HaltSystem:
 	cli
 	hlt
-	jmp HaltSystem
+	jmp   HaltSystem
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,7 +191,7 @@ Sectors_Per_Cylinder dw 18
 Disk_Address_Packet:
 DAP_Size             db 0x10
 DAP_Unused1          db 0
-DAP_Sectors_Count    db SIZE_BOOT2/SECTOR_SIZE
+DAP_Sectors_Count    db SIZE_BOOT2
 DAP_Unused2          db 0
 DAP_Memory_Offset    dw START_BOOT2
 DAP_Memory_Segment   dw 0
@@ -191,14 +199,21 @@ DAP_Start_Sector     dq START_BOOT2_DISK
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Adding a zero padding to the boot sector
+; Adding a zero padding till the start of the 4x16 byte primary partition table that contains 4 primary partition entries, each 16 bytes long
 
-times SIZE_BOOT1-2-($-$$) db 0 
+times 446-($-$$) db 0 
 
-; The last two bytes of the boot sector need to have the following boot signature 
-; Otherwise BIOS will not recognize this as a boot sector
+; Primary partition table - we will not fill it here
 
-dw BOOTSECTOR_MAGIC
+Partition_Table:
+
+times 510-($-$$) db 0 
+
+; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
+
+Boot_Signature:
+
+dw   0xAA55
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
