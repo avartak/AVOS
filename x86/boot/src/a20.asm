@@ -23,29 +23,29 @@ BITS 16
 
 SwitchOnA20:
 
-    call CheckA20                                     ; Check if A20 line is enabled
-    test al, al                                       ; If AX is 0, then the A20 line is disabled
-    jnz .end
-
-    call EnableA20BIOS                                ; Enable the A20 line using BIOS
-    call CheckA20                                     ; Check again and print the A20 line status
-    test al, al                                       ; Check again
-    jnz .end
-
-    call EnableA20Keyboard                            ; Enable the A20 line using the PS/2 (8042) controller
-    call CheckA20                                     ; Check again and print the A20 line status
-    test al, al                                       ; Check again
-    jnz .end
-
-    call EnableA20FastGate                            ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
-    call CheckA20                                     ; Check again and print the A20 line status
-    test al, al                                       ; Check again
-    jnz .end
-
-    .retfalse:
-    mov al, 0
-
-    .end:
+	call CheckA20                                     ; Check if A20 line is enabled
+	test al, al                                       ; If AX is 0, then the A20 line is disabled
+	jnz .end
+	
+	call EnableA20BIOS                                ; Enable the A20 line using BIOS
+	call CheckA20                                     ; Check again and print the A20 line status
+	test al, al                                       ; Check again
+	jnz .end
+	
+	call EnableA20Keyboard                            ; Enable the A20 line using the PS/2 (8042) controller
+	call CheckA20                                     ; Check again and print the A20 line status
+	test al, al                                       ; Check again
+	jnz .end
+	
+	call EnableA20FastGate                            ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
+	call CheckA20                                     ; Check again and print the A20 line status
+	test al, al                                       ; Check again
+	jnz .end
+	
+	.retfalse:
+	mov al, 0
+	
+	.end:	
 	ret
 
 
