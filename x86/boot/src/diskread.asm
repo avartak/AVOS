@@ -17,35 +17,35 @@ BITS 16
 GetDiskGeometry:
 
 
-	push bp
-	mov  bp, sp	
+	push  bp
+	mov   bp, sp	
 	
-	mov  di, 0
-	mov  dl, [bp+0x4]
-	mov  ah, 0x08
-	int  0x13
-	jc   .retfalse
+	mov   di, 0
+	mov   dl, [bp+0x4]
+	mov   ah, 0x08
+	int   0x13
+	jc    .retfalse
 	
-	add  dh, 0x1
-	mov  [Heads], dh
-	cmp  cl, 0x3F
-	jg   .retfalse
-	and  cl, 0x3F
-	mov  [Sectors_Per_Track], cl
-	mov  al, cl
-	mul  dh
-	mov  [Sectors_Per_Cylinder], ax
+	add   dh, 0x1
+	mov   [Heads], dh
+	cmp   cl, 0x3F
+	jg    .retfalse
+	and   cl, 0x3F
+	mov   [Sectors_Per_Track], cl
+	mov   al, cl
+	mul   dh
+	mov   [Sectors_Per_Cylinder], ax
 	
 	.rettrue:
-	mov  al, 1
-	jmp  .end
+	mov   al, 1
+	jmp   .end
 	
 	.retfalse:
-	mov  al, 0
+	mov   al, 0
 	
 	.end:
-	mov  sp, bp
-	pop  bp
+	mov   sp, bp
+	pop   bp
 	
 	ret
 
@@ -65,30 +65,30 @@ GetDiskGeometry:
 
 CheckForBIOSExtensions:
 
-	push bp
-	mov  bp, sp
+	push  bp
+	mov   bp, sp
 	
-	mov  dl, [bp+0x4]
+	mov   dl, [bp+0x4]
 	
-	mov  ah, 0x41
-	mov  bx, 0x55AA
-	int  0x13
-	jc   .retfalse
-	cmp  bx, 0xAA55
-	jne  .retfalse
-	test cx, 1
-	jz   .retfalse
+	mov   ah, 0x41
+	mov   bx, 0x55AA
+	int   0x13
+	jc    .retfalse
+	cmp   bx, 0xAA55
+	jne   .retfalse
+	test  cx, 1
+	jz    .retfalse
 	
 	.rettrue:
-	mov al, 1
-	jmp .end
+	mov   al, 1
+	jmp   .end
 	
 	.retfalse:
-	mov al, 0
+	mov   al, 0
 	
 	.end:
-	mov sp, bp
-	pop bp
+	mov   sp, bp
+	pop   bp
 	ret
 	
 
@@ -108,109 +108,109 @@ CheckForBIOSExtensions:
 
 ReadFromDisk:
 
-	push bp
-	mov  bp, sp
+	push  bp
+	mov   bp, sp
 	
 	movzx dx, BYTE [bp+0x12]
-	push dx
-	call CheckForBIOSExtensions
-	test al, al
-	jnz  DiskReadUsingLBA
+	push  dx
+	call  CheckForBIOSExtensions
+	test  al, al
+	jnz   DiskReadUsingLBA
 	
-	call GetDiskGeometry
-	test al, al
-	jz   .retfalse	
-	jmp  DiskReadUsingCHS
+	call  GetDiskGeometry
+	test  al, al
+	jz    .retfalse	
+	jmp   DiskReadUsingCHS
 	
 	.rettrue:
-	mov al, 1
-	jmp .end
+	mov   al, 1
+	jmp   .end
 	
 	.retfalse:
-	mov al, 0
+	mov   al, 0
 	
 	.end:
-	mov sp, bp
-	pop bp
+	mov   sp, bp
+	pop   bp
 	ret	
 	
 	DiskReadUsingLBA:
 	
-		mov eax, [bp+0x4]
-		mov ebx, [bp+0x8]
-		mov edi, [bp+0xC]
-		mov  si, [bp+0x10]
-		mov  dl, [bp+0x12]
+		mov   eax, [bp+0x4]
+		mov   ebx, [bp+0x8]
+		mov   edi, [bp+0xC]
+		mov    si, [bp+0x10]
+		mov    dl, [bp+0x12]
 		
 		mov [DAP_Start_Sector] , eax
 		mov [DAP_Memory_Offset], si
 		
 		.readnmove:
-		    test ebx, ebx
-		    jz   ReadFromDisk.rettrue
+		    test  ebx, ebx
+		    jz    ReadFromDisk.rettrue
 		
-		    mov  si, Disk_Address_Packet
-		    mov  ah, 0x42
-		    int  0x13
-		    jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
+		    mov   si, Disk_Address_Packet
+		    mov   ah, 0x42
+		    int   0x13
+		    jc    ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
 		
 		    movzx esi, WORD [DAP_Memory_Offset]
-		    mov  ecx, 0x200
-		    a32  rep movsb
+		    mov   ecx, 0x200
+		    a32   rep movsb
 		
-		    dec  ebx
-		    inc  DWORD [DAP_Start_Sector]
-		    jmp  .readnmove
+		    dec   ebx
+		    inc   DWORD [DAP_Start_Sector]
+		    jmp   .readnmove
 		
 	DiskReadUsingCHS:
 	
-		mov  eax, [bp+0x4]
-		mov  ebx, [bp+0x8]
-		mov  edi, [bp+0xC]
+		mov   eax, [bp+0x4]
+		mov   ebx, [bp+0x8]
+		mov   edi, [bp+0xC]
 		
-		mov  [CHS_Start_Sector] , eax
-		mov  [CHS_Sectors_Count], ebx
-		mov  [CHS_Memory_Offset], edi
+		mov   [CHS_Start_Sector] , eax
+		mov   [CHS_Sectors_Count], ebx
+		mov   [CHS_Memory_Offset], edi
 	
 		.readnmove:
-			mov  ebx, [CHS_Sectors_Count]
-			test ebx, ebx
-			jz   ReadFromDisk.rettrue
+			mov   ebx, [CHS_Sectors_Count]
+			test  ebx, ebx
+			jz    ReadFromDisk.rettrue
 			
-			mov  eax, [CHS_Start_Sector]
-			mov  edx, 0
+			mov   eax, [CHS_Start_Sector]
+			mov   edx, 0
 			movzx ebx, WORD [Sectors_Per_Cylinder]
-			div  ebx
-			cmp  eax, 0x3FF
-			jg   ReadFromDisk.retfalse
-			shl  ax, 0x6
-			mov  cx, ax
+			div   ebx
+			cmp   eax, 0x3FF
+			jg    ReadFromDisk.retfalse
+			shl   ax, 0x6
+			mov   cx, ax
 			
-			mov  ax, dx
-			div  BYTE [Sectors_Per_Track]
-			add  ah, 0x1
-			and  ah, 0x3F
-			or   cl, ah
+			mov   ax, dx
+			div   BYTE [Sectors_Per_Track]
+			add   ah, 0x1
+			and   ah, 0x3F
+			or    cl, ah
 			
-			mov  dh, al
+			mov   dh, al
 			
-			mov  bx, [bp+0x10]
-			mov  dl, [bp+0x12]
-			mov  al, 1
+			mov   bx, [bp+0x10]
+			mov   dl, [bp+0x12]
+			mov   al, 1
 			
-			mov  ah, 0x02
-			int  0x13
-			jc   ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
+			mov   ah, 0x02
+			int   0x13
+			jc    ReadFromDisk.rettrue                          ; This is a hack. Need to put the exact number of sectors for the kernel image in EBX, and then if carry is set halt system
 			
 			movzx esi, WORD [bp+0x10]
-			mov  edi, [CHS_Memory_Offset]
-			mov  ecx, 0x200
-			a32  rep movsb
-			mov  [CHS_Memory_Offset], edi
+			mov   edi, [CHS_Memory_Offset]
+			mov   ecx, 0x200
+			a32   rep movsb
+			mov   [CHS_Memory_Offset], edi
 			
-			dec  DWORD [CHS_Sectors_Count]
-			inc  WORD [CHS_Start_Sector]
-			jmp  .readnmove
+			dec   DWORD [CHS_Sectors_Count]
+			inc   WORD [CHS_Start_Sector]
+			jmp   .readnmove
 		
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
