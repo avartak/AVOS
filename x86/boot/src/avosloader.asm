@@ -75,9 +75,9 @@ AVOS:
 	test al, al
 	jz   HaltSystem
 	
-	mov eax, cr0
-	or  eax, 1
-	mov cr0, eax
+	mov  eax, cr0
+	or   eax, 1
+	mov  cr0, eax
 	
 	jmp SEG32_CODE:InProtectedMode
 	
@@ -85,7 +85,7 @@ AVOS:
 HaltSystem:
 	cli
 	hlt
-	jmp HaltSystem
+	jmp  HaltSystem
 
 ; Code to enable the A20 line
 %include "x86/boot/src/a20.asm"
@@ -108,17 +108,17 @@ BITS 32
 
 InProtectedMode:
 
-	mov ax, SEG32_DATA
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov ss, ax
+	mov  ax, SEG32_DATA
+	mov  ds, ax
+	mov  es, ax
+	mov  fs, ax
+	mov  gs, ax
+	mov  ss, ax
 	
-	mov eax, MULTIBOOT_MAGIC
-	mov ebx, MULTIBOOT_INFO_ADDRESS
+	mov  eax, MULTIBOOT_MAGIC
+	mov  ebx, MULTIBOOT_INFO_ADDRESS
 	
-	jmp START_KERNEL+MULTIBOOT_HEADER_SIZE
+	jmp  START_KERNEL+MULTIBOOT_HEADER_SIZE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
