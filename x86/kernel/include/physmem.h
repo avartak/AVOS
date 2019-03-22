@@ -29,7 +29,7 @@ extern struct    Memory_NodeDispenser* Kernel_node_dispenser;
 extern void      Physical_Memory_Initialize();
 extern uintptr_t Physical_Memory_MaxFreeMemoryAddress(struct E820_Table_Entry* table, size_t size);
 extern bool      Physical_Memory_IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820_Table_Entry* table, size_t size);
-extern bool      Physical_Memory_CheckRange(uint32_t* mbi, uintptr_t min, uintptr_t max);
+extern bool      Physical_Memory_CheckRange(uintptr_t min, uintptr_t max, uint32_t* mbi);
 extern void      Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, uintptr_t map_end, struct E820_Table_Entry* table, size_t size);
 
 extern bool      Physical_Memory_AllocatePage(uintptr_t virtual_address);

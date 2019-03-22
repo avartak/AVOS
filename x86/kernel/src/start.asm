@@ -27,37 +27,37 @@ Kstart:
 
 	cli
 
-	mov esp, Stack_Temp-HIGHER_HALF_OFFSET
+	cmp  eax, MULTIBOOT2_BOOTLOADER_MAGIC
+	jne  HaltSystem
 
-	cmp eax, MULTIBOOT2_BOOTLOADER_MAGIC
-	jne End
+	mov  esp, Stack_Temp-HIGHER_HALF_OFFSET
 
+	push ebx
 	push KERN_MEM_MAX
 	push KERN_MEM_MIN
-	push ebx
 	call Physical_Memory_CheckRange
-	pop ebx
-	add esp, 8
-	cmp eax, 0
-	je  End
+	add  esp, 8
+	test al, al
+	jz   HaltSystem
 
+	push ebx
 	push DISP_MEM_MAX
 	push DISP_MEM_MIN
-	push ebx
 	call Physical_Memory_CheckRange
-	pop ebx
-	add esp, 8
-	cmp eax, 0
-	je  End
+	add  esp, 8
+	test al, al
+	jz   HaltSystem
 
-	add ebx, HIGHER_HALF_OFFSET
-	mov [MBI_address-HIGHER_HALF_OFFSET], ebx
+	pop  ebx
+	add  ebx, HIGHER_HALF_OFFSET
+	mov  [MBI_address-HIGHER_HALF_OFFSET], ebx
 
-	mov esp, STACK_TOP
+	mov  esp, STACK_TOP
 
 	call Kinit
 
-	End:
+	HaltSystem:
 	cli
 	hlt
+	jmp  HaltSystem
 

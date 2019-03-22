@@ -94,7 +94,7 @@ bool Physical_Memory_IsMemoryAvailable(uintptr_t min, uintptr_t max, struct E820
 	return false;
 }
 
-bool Physical_Memory_CheckRange(uint32_t* mbi, uintptr_t min, uintptr_t max) {
+bool Physical_Memory_CheckRange(uintptr_t min, uintptr_t max, uint32_t* mbi) {
     size_t   size_e820 = 0;
     struct   E820_Table_Entry* table_e820;
     struct   Multiboot_Tag* tag;

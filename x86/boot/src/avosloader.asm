@@ -23,11 +23,11 @@ HDD_ID                  equ 0x80                                        ; Floppy
 
 START_KERNEL_DISK       equ 0x40                                        ; Starting sector of the kernel
 
-MULTIBOOT_MAGIC         equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
-MULTIBOOT_HEADER_SIZE   equ 0x1000                                      ; Multiboot2 header size, more specifically amount of bytes set aside for the header (it's actual size may be less)
-MULTIBOOT_INFO_ADDRESS  equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)
-MULTIBOOT_INFO_SEGMENT  equ 0x0800
-MULTIBOOT_INFO_OFFSET   equ 0x8000                                      ; Location of the start of the boot information structures 
+MULTIBOOT2_MAGIC        equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
+MULTIBOOT2_HEADER_SIZE  equ 0x1000                                      ; Multiboot2 header size, more specifically amount of bytes set aside for the header (it's actual size may be less)
+MULTIBOOT2_INFO_ADDRESS equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)
+MULTIBOOT2_INFO_SEGMENT equ 0x0800
+MULTIBOOT2_INFO_OFFSET  equ 0x8000                                      ; Location of the start of the boot information structures 
 
 
 ; Starting point of the kernel loader
@@ -59,8 +59,8 @@ AVOS:
 	test al, al
 	jz   HaltSystem
 	
-	push MULTIBOOT_INFO_OFFSET
-	push MULTIBOOT_INFO_SEGMENT
+	push MULTIBOOT2_INFO_OFFSET
+	push MULTIBOOT2_INFO_SEGMENT
 	call StoreMemoryMap
 	test al, al
 	jz   HaltSystem
@@ -133,10 +133,10 @@ InProtectedMode:
 	mov  gs, ax
 	mov  ss, ax
 	
-	mov  eax, MULTIBOOT_MAGIC
-	mov  ebx, MULTIBOOT_INFO_ADDRESS
+	mov  eax, MULTIBOOT2_MAGIC
+	mov  ebx, MULTIBOOT2_INFO_ADDRESS
 	
-	jmp  START_KERNEL+MULTIBOOT_HEADER_SIZE
+	jmp  START_KERNEL+MULTIBOOT2_HEADER_SIZE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
