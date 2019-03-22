@@ -8,14 +8,14 @@ times 0x1000-($-$$) db 0
 
 Stack_Temp:
 
-MULTIBOOT2_BOOTLOADER_MAGIC equ 0x36d76289
-HIGHER_HALF_OFFSET          equ 0xC0000000
-STACK_TOP                   equ 0x00400000	
+MULTIBOOT2_MAGIC     equ 0x36d76289
+HIGHER_HALF_OFFSET   equ 0xC0000000
+STACK_TOP            equ 0x00400000	
 
-KERN_MEM_MIN                equ 0x0100000
-KERN_MEM_MAX                equ 0x0400000
-DISP_MEM_MIN                equ 0x1000000
-DISP_MEM_MAX                equ 0x1400000
+KERN_MEM_MIN         equ 0x0100000
+KERN_MEM_MAX         equ 0x0400000
+DISP_MEM_MIN         equ 0x1000000
+DISP_MEM_MAX         equ 0x1400000
 
 global Kstart
 Kstart:
@@ -27,7 +27,7 @@ Kstart:
 
 	cli
 
-	cmp  eax, MULTIBOOT2_BOOTLOADER_MAGIC
+	cmp  eax, MULTIBOOT2_MAGIC
 	jne  HaltSystem
 
 	mov  esp, Stack_Temp-HIGHER_HALF_OFFSET
