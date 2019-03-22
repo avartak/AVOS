@@ -173,13 +173,32 @@ Boot:
 	LaunchStage2:
 	jmp   START_BOOT2 
 	
+
+
 	; If we did not read what we wanted to we halt
+	; Before halting we print an error message on the screen 
+	; In the PC architecture the video buffer sits at 0xB8000
+	; We put the ES segment at that location
+	; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
+	; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
+	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
+	mov   ax, 0xB800         
+	mov   es, ax             
+	mov   di, 80*23*2        
+	mov   si, Halt_Message   
+	.printchar:
+		lodsb                
+		test  al, al        
+		jz    .printdone    
+		mov   ah, 0x04      
+		stosw                   
+		jmp   .printchar 
+	.printdone:	
 	cli
 	hlt
 	jmp   HaltSystem
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,6 +215,9 @@ DAP_Unused2          db 0
 DAP_Memory_Offset    dw START_BOOT2
 DAP_Memory_Segment   dw 0
 DAP_Start_Sector     dq START_BOOT2_DISK
+
+Messages:
+Halt_Message         db 'Unable to read AVOS loader from disk', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
