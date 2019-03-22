@@ -40,7 +40,6 @@ Kstart:
 	test al, al
 	jz   HaltSystem
 
-	push ebx
 	push DISP_MEM_MAX
 	push DISP_MEM_MIN
 	call Physical_Memory_CheckRange
