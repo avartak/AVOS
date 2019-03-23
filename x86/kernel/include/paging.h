@@ -9,12 +9,12 @@
 #define PAGING_USER_TABLE_FLAGS 0x7
 #define PAGING_USER_PAGE_FLAGS  0x7
 
-extern uint32_t Paging_directory[]__attribute__((aligned(0x1000)));
-extern uint32_t Paging_kerntable[]__attribute__((aligned(0x1000)));
+extern uint32_t        Paging_directory[]__attribute__((aligned(0x1000)));
+extern uint32_t        Paging_kerntable[]__attribute__((aligned(0x1000)));
 
-extern void            Paging_SwitchToHigherHalf();
 extern void            Paging_EnablePGBitInCR0();
 extern void            Paging_LoadDirectory(uintptr_t pd);
+extern void            Paging_SwitchToHigherHalf();
 
 extern uintptr_t       Paging_GetPhysicalAddress      (uintptr_t virtual_address);
 extern bool            Paging_TableExists             (uintptr_t virtual_address);
