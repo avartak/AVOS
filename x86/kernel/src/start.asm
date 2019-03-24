@@ -23,7 +23,6 @@ Kstart:
 	extern MBI_address
 	extern Physical_Memory_CheckRange
 	extern Kinit
-	extern PrintNum
 
 	cli
 

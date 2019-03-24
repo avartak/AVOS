@@ -28,8 +28,6 @@ GetDiskGeometry:
 	
 	add   dh, 0x1
 	mov   [Heads], dh
-	cmp   cl, 0x3F
-	jg    .retfalse
 	and   cl, 0x3F
 	mov   [Sectors_Per_Track], cl
 	mov   al, cl
