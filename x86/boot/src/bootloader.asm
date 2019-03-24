@@ -134,7 +134,6 @@ Boot:
 	mul   dh
 	mov   [Sectors_Per_Cylinder], ax
 	
-	
 	; This is the code that converts the address of the starting sector that we want to read from the LBA scheme to the CHS scheme 
 	; Look at the translation formulas above to understand what's being done
 	; Note that : Sectors_Per_Cylinder = Heads * Sectors_Per_Track
@@ -155,12 +154,18 @@ Boot:
 	or    cl, ah
 	
 	mov   dh, al
-	
+
+	; Store the memory location where to copy from disk in ES:BX
+	; Number of sectors to copy are stored in AL
+	; Drive ID is stored in DL as always
+
 	xor   ax, ax
 	mov   es, ax
 	mov   bx, START_BOOT2
 	mov   dl, HDD_ID
 	mov   al, SIZE_BOOT2
+
+	; Now call INT 0x13, AH=0x02
 	
 	mov   ah, 0x02
 	int   0x13
