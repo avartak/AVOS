@@ -16,7 +16,7 @@ extern void            Paging_Enable();
 extern void            Paging_LoadDirectory(uintptr_t pd);
 extern void            Paging_SwitchToHigherHalf();
 
-extern void            Paging_MapEntry          (uint32_t* pd, uintptr_t pt, uint32_t entry, uint16_t attr);
+extern void            Paging_MapEntry          (uint32_t* table, uintptr_t entry_ptr, uint32_t entry_num, uint16_t attr);
 extern uint32_t        Paging_GetDirectoryEntry (uintptr_t virtual_address);
 extern uint32_t        Paging_GetTableEntry     (uintptr_t virtual_address);
 

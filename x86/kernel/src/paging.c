@@ -3,8 +3,8 @@
 uint32_t Paging_directory[0x400]__attribute__((aligned(0x1000)));
 uint32_t Paging_kerntable[0x400]__attribute__((aligned(0x1000)));
 
-void Paging_MapEntry(uint32_t* pd, uintptr_t pt, uint32_t entry, uint16_t attr) {
-    pd[entry & 0x03FF] = (pt & 0xFFFFF000) | (attr & 0x0FFF);
+void Paging_MapEntry(uint32_t* table, uintptr_t entry_ptr, uint32_t entry_num, uint16_t attr) {
+    table[entry_num & 0x03FF] = (entry_ptr & 0xFFFFF000) | (attr & 0x0FFF);
 }
 
 uint32_t Paging_GetDirectoryEntry(uintptr_t virtual_address) {
