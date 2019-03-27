@@ -9,12 +9,12 @@ times 0x1000-($-$$) db 0
 MULTIBOOT2_MAGIC            equ 0x36d76289
 KERNEL_HIGHER_HALF_OFFSET   equ 0xC0000000
 
-KERN_MEM_MIN         equ 0x0100000
-KERN_MEM_MAX         equ 0x0400000
-DISP_MEM_MIN         equ 0x1000000
-DISP_MEM_MAX         equ 0x1400000
+KERN_MEM_MIN                equ 0x0100000
+KERN_MEM_MAX                equ 0x0400000
+DISP_MEM_MIN                equ 0x1000000
+DISP_MEM_MAX                equ 0x1400000
 
-STACK_TOP            equ 0x00400000	
+STACK_TOP                   equ 0x00400000	
 
 global AVOS
 AVOS:
