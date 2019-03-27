@@ -4,8 +4,8 @@ section .text
 
 extern Paging_directory
 
-global Paging_EnablePGBitInCR0
-Paging_EnablePGBitInCR0:
+global Paging_Enable
+Paging_Enable:
 	mov  eax, cr0
 	or   eax, 0x80000000
 	mov  cr0, eax
@@ -22,10 +22,8 @@ Paging_SwitchToHigherHalf:
     mov  eax, High_Memory
     jmp  eax
     High_Memory:
-    mov  [Paging_directory], DWORD 0
-    mov  eax, [esp]
-    add  eax, HIGHER_HALF_OFFSET
-    mov  [esp], eax
+	add  [esp], DWORD HIGHER_HALF_OFFSET
     add  esp, HIGHER_HALF_OFFSET
+    mov  [Paging_directory], DWORD 0
     ret
 

@@ -24,12 +24,12 @@ bool Physical_Memory_AllocatePage(uintptr_t virtual_address) {
 			Memory_Stack_Push(&Physical_Memory_high, mem_node, true);
 			return false;
 		}
-		Paging_MapTableInDirectory(Paging_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
+		Paging_MapEntry(Paging_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
 		Paging_ClearTable(virtual_address);
 		Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
 	}
 	
-	if (!(Paging_MapVirtualToPhysicalPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
+	if (!(Paging_MapVirtualPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
 		Memory_Stack_Push(&Physical_Memory_high, mem_node, true);
 		return false;
 	}
@@ -157,9 +157,9 @@ void Physical_Memory_Initialize() {
     }
 
 	// Lets create the virtual space for the heap
-	Paging_MapTableInDirectory(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Kernel_dispensary_table), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
+	Paging_MapEntry(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Kernel_dispensary_table), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
 	Paging_ClearTable(VIRTUAL_MEMORY_START_DISP);
-	Paging_MapVirtualToPhysicalPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
+	Paging_MapVirtualPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
 	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
 
 	// Lets setup the node dispenser at the very start of the heap
