@@ -3,6 +3,26 @@
 uint32_t Paging_directory[0x400]__attribute__((aligned(0x1000)));
 uint32_t Paging_kerntable[0x400]__attribute__((aligned(0x1000)));
 
+void Paging_MapTableInDirectory(uint32_t* pd, uintptr_t pt, uint32_t entry, uint16_t attr) {
+    pd[entry & 0x03FF] = (pt & 0xFFFFF000) | (attr & 0x0FFF);
+}
+
+void Paging_MapPageInTable(uint32_t* pt, uintptr_t pg, uint32_t entry, uint16_t attr) {
+    pt[entry & 0x03FF] = (pg & 0xFFFFF000) | (attr & 0x0FFF);
+}
+
+void Paging_MapMemoryBlockInTable(uint32_t* pt, uintptr_t addr, uint16_t attr) {
+    for(size_t i = 0; i < 1024; i++) pt[i] = i * 0x1000 + ((addr & 0xFFFFF000) | (attr & 0x0FFF));
+}
+
+uint32_t Paging_GetDirectoryEntry(uintptr_t virtual_address) {
+    return (uint32_t)virtual_address >> 22;
+}
+
+uint32_t Paging_GetTableEntry(uintptr_t virtual_address) {
+    return (uint32_t)virtual_address >> 12 & 0x03FF;
+}
+
 uintptr_t Paging_GetPhysicalAddress(uintptr_t virtual_address) {
 	uint32_t pdindex = Paging_GetDirectoryEntry(virtual_address);
 	uint32_t ptindex = Paging_GetTableEntry(virtual_address);
