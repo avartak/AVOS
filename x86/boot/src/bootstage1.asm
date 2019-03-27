@@ -28,7 +28,7 @@ BITS 16
 ; This is where the bootloader starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Boot:
+BootStage1:
 
 	; The 512 B available here are too few to do much in terms of loading an OS
 	; The code in the boot sector will simply load the 2nd stage from disk to the memory location 0x8000

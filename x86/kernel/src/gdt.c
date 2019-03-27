@@ -21,13 +21,12 @@ void GDT_SetupEntry(struct GDT_Entry* entry, uint32_t base, uint32_t limit, uint
 void GDT_Initialize() {
 
 	TSS_seg.ss0 = GDT_KERN_DATA_SEG;
-	TSS_seg.esp = 0xC0400000;
+	TSS_seg.esp = KERNEL_HIGHER_HALF_OFFSET + 0x400000;
 	for (size_t i = 0; i < 0x2000; i++) TSS_seg.ioport_map[i] = 0xFF;
 
 	uint16_t tss_seg_desc  = GDT_TSS_SEG;
-	uint32_t tss_seg_base  = (uint32_t) &TSS_seg;
+	uint32_t tss_seg_base  = (uint32_t)(&TSS_seg) - KERNEL_HIGHER_HALF_OFFSET;
 	uint32_t tss_seg_limit = sizeof(TSS_seg) - 1;
-	if (tss_seg_base > 0xC0000000) tss_seg_base -= 0xC0000000;
 
 	GDT_SetupEntry(&(GDT_entries[0]), 0x00000000  , 0x00000000   , 0x00                    , 0x00               );
 	GDT_SetupEntry(&(GDT_entries[1]), 0x00000000  , 0x000FFFFF   , GDT_KERN_CODE_SEG_ACCESS, GDT_SEG_GRANULARITY);

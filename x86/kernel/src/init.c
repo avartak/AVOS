@@ -7,9 +7,9 @@
 #include <x86/drivers/include/pit.h>
 #include <kernel/include/machine.h>
 
-extern void Kmain();
+extern void Kernel();
 
-void Kinit() {
+void InitializeSystem() {
 
 	Paging_Initialize();
 
@@ -18,11 +18,11 @@ void Kinit() {
 	GDT_Initialize();
 	
 	IDT_Initialize();
-	
+
 	Physical_Memory_Initialize();
 	
 	Welcome();
 
-	Kmain();
+	Kernel();
 
 }

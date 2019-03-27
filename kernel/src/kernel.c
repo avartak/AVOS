@@ -25,7 +25,7 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 #include <kernel/include/drivers.h>
 #include <kernel/include/machine.h>
 
-void Kmain() {
+void Kernel() {
 
     KHeap_Initialize();
 

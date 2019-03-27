@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(Kstart)
+ENTRY(AVOS)
 
 /* Output format */
 OUTPUT_FORMAT("binary")

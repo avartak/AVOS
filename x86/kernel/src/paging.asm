@@ -1,4 +1,4 @@
-HIGHER_HALF_OFFSET equ 0xC0000000
+KERNEL_HIGHER_HALF_OFFSET equ 0xC0000000
 
 section .text
 
@@ -22,8 +22,8 @@ Paging_SwitchToHigherHalf:
     mov  eax, High_Memory
     jmp  eax
     High_Memory:
-	add  [esp], DWORD HIGHER_HALF_OFFSET
-    add  esp, HIGHER_HALF_OFFSET
+	add [esp], DWORD KERNEL_HIGHER_HALF_OFFSET
+    add  esp , DWORD KERNEL_HIGHER_HALF_OFFSET
     mov  [Paging_directory], DWORD 0
     ret
 

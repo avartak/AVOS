@@ -13,7 +13,7 @@ extern uint32_t        Paging_directory[]__attribute__((aligned(0x1000)));
 extern uint32_t        Paging_kerntable[]__attribute__((aligned(0x1000)));
 
 extern void            Paging_Enable();
-extern void            Paging_LoadDirectory(uintptr_t pd);
+extern void            Paging_LoadDirectory     (uintptr_t pd);
 extern void            Paging_SwitchToHigherHalf();
 
 extern void            Paging_MapEntry          (uint32_t* table, uintptr_t entry_ptr, uint32_t entry_num, uint16_t attr);

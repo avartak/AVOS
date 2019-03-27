@@ -5,7 +5,6 @@
 
 #define GDT_KERN_CODE_SEG_ACCESS  0x9A
 #define GDT_KERN_DATA_SEG_ACCESS  0x92
-
 #define GDT_USER_CODE_SEG_ACCESS  0xFA
 #define GDT_USER_DATA_SEG_ACCESS  0xF2
 
@@ -16,7 +15,6 @@
 
 #define GDT_KERN_CODE_SEG         0x08
 #define GDT_KERN_DATA_SEG         0x10
-
 #define GDT_USER_CODE_SEG         0x18
 #define GDT_USER_DATA_SEG         0x20
 

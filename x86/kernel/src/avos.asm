@@ -6,31 +6,31 @@ section .text
 
 times 0x1000-($-$$) db 0
 
-Stack_Temp:
-
-MULTIBOOT2_MAGIC     equ 0x36d76289
-HIGHER_HALF_OFFSET   equ 0xC0000000
-STACK_TOP            equ 0x00400000	
+MULTIBOOT2_MAGIC            equ 0x36d76289
+KERNEL_HIGHER_HALF_OFFSET   equ 0xC0000000
 
 KERN_MEM_MIN         equ 0x0100000
 KERN_MEM_MAX         equ 0x0400000
 DISP_MEM_MIN         equ 0x1000000
 DISP_MEM_MAX         equ 0x1400000
 
-global Kstart
-Kstart:
+STACK_TOP            equ 0x00400000	
 
-	extern MBI_address
-	extern Physical_Memory_CheckRange
-	extern Kinit
+global AVOS
+AVOS:
 
 	cli
+
+	mov  esp, AVOS-KERNEL_HIGHER_HALF_OFFSET
 
 	cmp  eax, MULTIBOOT2_MAGIC
 	jne  HaltSystem
 
-	mov  esp, Stack_Temp-HIGHER_HALF_OFFSET
+	extern MBI_address
+	mov [MBI_address-KERNEL_HIGHER_HALF_OFFSET], ebx
+	add [MBI_address-KERNEL_HIGHER_HALF_OFFSET], DWORD 0xC0000000
 
+	extern Physical_Memory_CheckRange
 	push ebx
 	push KERN_MEM_MAX
 	push KERN_MEM_MIN
@@ -47,15 +47,12 @@ Kstart:
 	jz   HaltSystem
 
 	pop  ebx
-	add  ebx, HIGHER_HALF_OFFSET
-	mov  [MBI_address-HIGHER_HALF_OFFSET], ebx
-
 	mov  esp, STACK_TOP
 
-	call Kinit
+	extern InitializeSystem
+	jmp  InitializeSystem
 
 	HaltSystem:
 	cli
 	hlt
 	jmp  HaltSystem
-
