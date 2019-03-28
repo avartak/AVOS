@@ -16,7 +16,6 @@ struct E820_Table_Entry {
 
 extern size_t    E820_Table_size;
 extern struct    E820_Table_Entry* E820_Table;
-extern uint32_t* MBI_address;
 
 extern struct    Memory_Stack Physical_Memory_usable;
 extern struct    Memory_Stack Physical_Memory_high;

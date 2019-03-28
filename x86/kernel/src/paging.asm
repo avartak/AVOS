@@ -24,6 +24,7 @@ Paging_SwitchToHigherHalf:
     High_Memory:
 	add [esp], DWORD KERNEL_HIGHER_HALF_OFFSET
     add  esp , DWORD KERNEL_HIGHER_HALF_OFFSET
+    add  ebp , DWORD KERNEL_HIGHER_HALF_OFFSET
     mov  [Paging_directory], DWORD 0
     ret
 

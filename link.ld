@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(AVOS)
+ENTRY(Start)
 
 /* Output format */
 OUTPUT_FORMAT("binary")

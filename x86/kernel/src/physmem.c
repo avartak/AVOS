@@ -4,7 +4,6 @@
 
 size_t    E820_Table_size = 0;
 struct    E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
-uint32_t* MBI_address = MEMORY_NULL_PTR;
 
 struct    Memory_Stack Physical_Memory_usable;
 struct    Memory_Stack Physical_Memory_high;
@@ -150,7 +149,7 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t map_start, 
 void Physical_Memory_Initialize() {
 	// We point the E820 structure to the memory map produced by the boot loader
     struct Multiboot_Tag* tag;
-    for (tag = (struct Multiboot_Tag*) (MBI_address + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
+    for (tag = (struct Multiboot_Tag*) (MultibootInfo + 2); tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
         if (tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
         E820_Table_size  = (tag->size - 0x10) / 0x18;
         E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);

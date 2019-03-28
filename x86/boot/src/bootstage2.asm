@@ -8,20 +8,19 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-START_BOOT2             equ 0x8000                                      ; This is where we load the 2nd stage of the boot loader
-START_KERNEL            equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
-START_SCRATCH           equ 0x7000                                      ; Starting point of the scratch area 
-START_GDT               equ 0x7E00                                      ; Memory location of the GDT
+BOOT2_START             equ 0x8000                                      ; This is where we load the 2nd stage of the boot loader
+SCRATCH_START           equ 0x7000                                      ; Starting point of the scratch area 
+GDT_START               equ 0x7E00                                      ; Memory location of the GDT
 
-SIZE_KERNEL             equ 0x100000/0x200                              ; Assumed size of the kernel binary in terms of number of sectors
+KERNEL_START            equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
+KERNEL_SIZE             equ 0x100000/0x200                              ; Assumed size of the kernel binary in terms of number of sectors
+KERNEL_DISK_START       equ 0x40                                        ; Starting sector of the kernel
 
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
 FLOPPY_ID               equ 0                                           ; Floppy ID used by the BIOS
 HDD_ID                  equ 0x80                                        ; Floppy ID used by the BIOS
-
-START_KERNEL_DISK       equ 0x40                                        ; Starting sector of the kernel
 
 MULTIBOOT2_MAGIC        equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
 MULTIBOOT2_HEADER_SIZE  equ 0x1000                                      ; Multiboot2 header size, more specifically amount of bytes set aside for the header (it's actual size may be less)
@@ -32,7 +31,7 @@ MULTIBOOT2_INFO_OFFSET  equ 0x8000                                      ; Locati
 
 ; Starting point of the kernel loader
 
-ORG START_BOOT2
+ORG BOOT2_START
 
 ; We are still in 16-bit real mode
 
@@ -65,7 +64,7 @@ BootStage2:
 	test al, al
 	jz   HaltSystem
 	
-	push START_GDT
+	push GDT_START
 	call LoadGDT
 	
 	mov  eax, cr0                                       
@@ -85,10 +84,10 @@ BootStage2:
 	mov  es, ax
 	
 	push HDD_ID
-	push START_SCRATCH
-	push DWORD START_KERNEL
-	push DWORD SIZE_KERNEL
-	push DWORD START_KERNEL_DISK
+	push SCRATCH_START
+	push DWORD KERNEL_START
+	push DWORD KERNEL_SIZE
+	push DWORD KERNEL_DISK_START
 	call ReadFromDisk
 	test al, al
 	jz   HaltSystem
@@ -136,7 +135,7 @@ InProtectedMode:
 	mov  eax, MULTIBOOT2_MAGIC
 	mov  ebx, MULTIBOOT2_INFO_ADDRESS
 	
-	jmp  START_KERNEL+MULTIBOOT2_HEADER_SIZE
+	jmp  KERNEL_START+MULTIBOOT2_HEADER_SIZE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

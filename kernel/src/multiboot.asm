@@ -150,3 +150,8 @@ Multiboot_Start:
 	dd MULTIBOOT2_TAG0_SIZE
 
 Multiboot_End:
+
+global MultibootInfo
+MultibootInfo :
+
+	dd 0xFFFFFFFF

@@ -3,17 +3,19 @@
 #include <x86/kernel/include/idt.h>
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/welcome.h>
-#include <x86/drivers/include/pic.h>
-#include <x86/drivers/include/pit.h>
-#include <kernel/include/machine.h>
 
-extern void Kernel();
+extern uint32_t* MultibootInfo;
+extern void      AVOS();
 
-void InitializeSystem() {
+void LaunchAVOS(uint32_t* bootinfo) {
+
+	if (! (Physical_Memory_CheckRange(0x100000, 0x400000, bootinfo) && Physical_Memory_CheckRange(0x1000000, 0x1400000, bootinfo)) ) return;
 
 	Paging_Initialize();
 
 	Paging_SwitchToHigherHalf();
+
+	MultibootInfo = bootinfo + 0xC0000000/sizeof(uint32_t);
 
 	GDT_Initialize();
 	
@@ -23,6 +25,5 @@ void InitializeSystem() {
 	
 	Welcome();
 
-	Kernel();
-
+	AVOS();
 }

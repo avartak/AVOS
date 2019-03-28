@@ -11,9 +11,9 @@ STACK_TOP               equ 0x7000      ; Top of the stack - it can extend down 
 FLOPPY_ID               equ 0           ; Floppy ID used by the BIOS
 HDD_ID                  equ 0x80        ; ATA hard disk ID used by the BIOS
 
-START_BOOT2             equ 0x8000      ; This is where the 2nd stage of the boot loader is loaded in memory
-START_BOOT2_DISK        equ 0x01        ; Starting sector of the 2nd stage of the boot loader on disk
-SIZE_BOOT2              equ 0x20        ; Size of the 2nd stage of the boot loader in sectors (512 B)
+BOOT2_START             equ 0x8000      ; This is where the 2nd stage of the boot loader is loaded in memory
+BOOT2_DISK_START        equ 0x01        ; Starting sector of the 2nd stage of the boot loader on disk
+BOOT2_SIZE              equ 0x20        ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -138,7 +138,7 @@ BootStage1:
 	; Look at the translation formulas above to understand what's being done
 	; Note that : Sectors_Per_Cylinder = Heads * Sectors_Per_Track
 	
-	mov   eax, START_BOOT2_DISK
+	mov   eax, BOOT2_DISK_START
 	mov   edx, 0
 	movzx ebx, WORD [Sectors_Per_Cylinder]
 	div   ebx 
@@ -161,9 +161,9 @@ BootStage1:
 
 	xor   ax, ax
 	mov   es, ax
-	mov   bx, START_BOOT2
+	mov   bx, BOOT2_START
 	mov   dl, HDD_ID
-	mov   al, SIZE_BOOT2
+	mov   al, BOOT2_SIZE
 
 	; Now call INT 0x13, AH=0x02
 	
@@ -174,7 +174,7 @@ BootStage1:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
-	jmp   START_BOOT2 
+	jmp   BOOT2_START 
 	
 
 
@@ -213,11 +213,11 @@ Sectors_Per_Cylinder dw 18
 Disk_Address_Packet:
 DAP_Size             db 0x10
 DAP_Unused1          db 0
-DAP_Sectors_Count    db SIZE_BOOT2
+DAP_Sectors_Count    db BOOT2_SIZE
 DAP_Unused2          db 0
-DAP_Memory_Offset    dw START_BOOT2
+DAP_Memory_Offset    dw BOOT2_START
 DAP_Memory_Segment   dw 0
-DAP_Start_Sector     dq START_BOOT2_DISK
+DAP_Start_Sector     dq BOOT2_DISK_START
 
 Messages:
 Halt_Message         db 'Unable to read AVOS loader from disk', 0
