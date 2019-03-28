@@ -8,18 +8,25 @@ StoreMemoryMap:
 
 	push bp
 	mov  bp, sp
+	push es
 	
 	mov  bx, [bp+4]                                     ; Set the ES segment to the value of the first parameter passed to this function (expected to be 0x800)
 	mov  es, bx
 	mov  bx, [bp+6]
-	mov  [es:bx], DWORD 8
-	add  bx, 4
-	mov  [es:bx], DWORD 0
-	add  bx, 0x14
+	mov  [es:bx]     , DWORD 0x10
+	mov  [es:bx+0x04], DWORD 0
+
+	mov  [es:bx+0x08], DWORD 0x6
+	mov  [es:bx+0x0C], DWORD 0x10
+	mov  [es:bx+0x10], DWORD 24
+	mov  [es:bx+0x14], DWORD 0
+	add  [es:bx]     , DWORD 0x10
+
+	add  bx, 0x18
 	mov  di, bx                                         ; Set DI to the address where the memory map boot information structure starts
 	
 	xor  ebx, ebx                                       ; EBX must be 0 to start
-	xor  esi, esi                                       ; Clear the ESI register ; use for entry count
+	xor  esi, esi                                       ; Clear the ESI register -- use for entry count
 	mov  edx, 0x0534D4150                               ; Place "SMAP" into EDX
 	mov  eax, 0xE820                                    ; Write the signature E820 into AX
 	mov  [es:di+20], DWORD 1                            ; Require the entry to be valid for ACPI 3.0
@@ -47,7 +54,7 @@ StoreMemoryMap:
 		jcxz .nextentry                                 ; Skip any 0 length entries
 		cmp  cl, 20                                     ; Check for a 24-byte entry
 		jbe  .addentry
-		test byte [es:di+20], 1                         ; Got a 24 byte ACPI 3.X entry? Is the "ignore this data" bit clear?
+		test BYTE [es:di+20], 1                         ; Got a 24 byte ACPI 3.X entry? Is the "ignore this data" bit clear?
 		je   .nextentry
 		
 		.addentry:
@@ -66,26 +73,15 @@ StoreMemoryMap:
 	mov  al, 0
 	
 	.end:
-	mov  bx,  [bp+6]
-	add  bx,  0x8
-	add  esi, 0x10                                      ; There are 16 bytes of tag information in addition to the size
-	mov  [es:bx],     DWORD 6                           ; Tag type
-	mov  [es:bx+0x4], esi                               ; Size of the tag as a whole
-	mov  [es:bx+0x8], DWORD 24                          ; Size of each E820 entry
-	mov  [es:bx+0xC], DWORD 0                           ; E820 entry version (recommended to be 0)
-	
-	mov  bx, [bp+6]
-	add  [es:bx], esi                                   ; Total size of all tags (+ this header)
-	
 	clc
-	mov  di, [bp+6]
-	add  bx, [es:di]
-	add  [es:bx]  , DWORD 0                             ; Terminating tag 
-	mov  [es:bx+4], DWORD 8
+	mov  bx, [bp+6]
+	add  [es:bx]    , esi                               ; Total size of all tags (+ this header)
+	add  [es:bx+0xC], esi                               ; Total size of the tag
+	add  bx, [es:bx]
+	add  [es:bx-0x8], DWORD 0                           ; Terminating tag 
+	mov  [es:bx-0x4], DWORD 8
 	
-	xor  bx, bx
-	mov  es, bx
-	
+	pop  es	
 	mov  sp, bp
 	pop  bp
 	ret

@@ -9,7 +9,6 @@ LoadGDT:
 	; For now we just use this for setting up the protected mode
 	
 	push bp
-	mov  bp, sp
 	mov  bp, [bp+0x4]
 	
 	; First there is a NULL segment

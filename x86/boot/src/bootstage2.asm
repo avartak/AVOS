@@ -23,7 +23,6 @@ FLOPPY_ID               equ 0                                           ; Floppy
 HDD_ID                  equ 0x80                                        ; Floppy ID used by the BIOS
 
 MULTIBOOT2_MAGIC        equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
-MULTIBOOT2_HEADER_SIZE  equ 0x1000                                      ; Multiboot2 header size, more specifically amount of bytes set aside for the header (it's actual size may be less)
 MULTIBOOT2_INFO_ADDRESS equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)
 MULTIBOOT2_INFO_SEGMENT equ 0x0800
 MULTIBOOT2_INFO_OFFSET  equ 0x8000                                      ; Location of the start of the boot information structures 
@@ -39,6 +38,7 @@ BITS 16
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 BootStage2:
 
 	; To enable the protected mode we will :
@@ -54,7 +54,7 @@ BootStage2:
 	
 	cli
 	
-	call SwitchOnA20
+	call EnableA20
 	test al, al
 	jz   HaltSystem
 	
@@ -68,7 +68,7 @@ BootStage2:
 	call LoadGDT
 	
 	mov  eax, cr0                                       
-	or    al, 1
+	or   al , 1
 	mov  cr0, eax
 	
 	mov  ax, SEG32_DATA                                 
@@ -76,7 +76,7 @@ BootStage2:
 	mov  es, ax                                         
 	
 	mov  eax, cr0	
-	and   al, 0xFE
+	and  al , 0xFE
 	mov  cr0, eax
 	
 	xor  ax, ax
@@ -93,7 +93,7 @@ BootStage2:
 	jz   HaltSystem
 	
 	mov  eax, cr0
-	or    al, 1
+	or   al , 1
 	mov  cr0, eax
 	
 	jmp  SEG32_CODE:InProtectedMode
@@ -135,7 +135,7 @@ InProtectedMode:
 	mov  eax, MULTIBOOT2_MAGIC
 	mov  ebx, MULTIBOOT2_INFO_ADDRESS
 	
-	jmp  KERNEL_START+MULTIBOOT2_HEADER_SIZE
+	jmp  KERNEL_START
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

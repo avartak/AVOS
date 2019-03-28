@@ -4,7 +4,7 @@
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/welcome.h>
 
-extern uint32_t* MultibootInfo;
+extern uint32_t* Multiboot_Info;
 extern void      AVOS();
 
 void LaunchAVOS(uint32_t* bootinfo) {
@@ -15,7 +15,7 @@ void LaunchAVOS(uint32_t* bootinfo) {
 
 	Paging_SwitchToHigherHalf();
 
-	MultibootInfo = bootinfo + 0xC0000000/sizeof(uint32_t);
+	Multiboot_Info = bootinfo + 0xC0000000/sizeof(uint32_t);
 
 	GDT_Initialize();
 	

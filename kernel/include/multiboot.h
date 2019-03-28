@@ -12,6 +12,6 @@ struct Multiboot_Tag {
 	uint32_t size;
 };
 
-extern uint32_t* MultibootInfo;
+extern uint32_t* Multiboot_Info;
 
 #endif

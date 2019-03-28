@@ -106,7 +106,7 @@ MULTIBOOT2_TAG1_REQ_TYPE6    equ 0x6
 MULTIBOOT2_TAG2_TAG          equ 0x2
 MULTIBOOT2_TAG2_FLAGS        equ 0x0
 MULTIBOOT2_TAG2_SIZE         equ 0x18
-MULTIBOOT2_TAG2_HEADER_ADDR  equ 0x100000
+MULTIBOOT2_TAG2_HEADER_ADDR  equ Multiboot_Start
 MULTIBOOT2_TAG2_LOAD_ADDR    equ -1 
 MULTIBOOT2_TAG2_LOAD_END     equ 0
 MULTIBOOT2_TAG2_BSS_END      equ 0
@@ -114,11 +114,18 @@ MULTIBOOT2_TAG2_BSS_END      equ 0
 MULTIBOOT2_TAG3_TAG          equ 0x3
 MULTIBOOT2_TAG3_FLAGS        equ 0x0
 MULTIBOOT2_TAG3_SIZE         equ 0xC
-MULTIBOOT2_TAG3_ENTRY        equ 0x100000+MULTIBOOT2_HEADER_SIZE
+MULTIBOOT2_TAG3_ENTRY        equ 0x100000
 
 MULTIBOOT2_TAG0_TAG          equ 0x0
 MULTIBOOT2_TAG0_FLAGS        equ 0x0
 MULTIBOOT2_TAG0_SIZE         equ 0x8
+
+global Multiboot_Info
+Multiboot_Info :
+
+	dd 0xFFFFFFFF
+
+align 0x8
 
 Multiboot_Start:
 
@@ -151,7 +158,3 @@ Multiboot_Start:
 
 Multiboot_End:
 
-global MultibootInfo
-MultibootInfo :
-
-	dd 0xFFFFFFFF

@@ -21,7 +21,7 @@ BITS 16
 ; If the line is enabled it returns
 ; Otherwise, it halts the computer
 
-SwitchOnA20:
+EnableA20:
 
 	call CheckA20                                     ; Check if A20 line is enabled
 	test al, al                                       ; If AX is 0, then the A20 line is disabled

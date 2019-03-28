@@ -3,8 +3,8 @@ BITS 32
 section .text
 
 MULTIBOOT2_MAGIC   equ 0x36d76289
-KERNEL_START       equ 0x00100000
-KERNEL_STACK_SIZE  equ 0x00004000
+KERNEL_START       equ 0x100000
+KERNEL_STACK_SIZE  equ 0x1000
 
 global Start
 Start:
