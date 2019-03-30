@@ -1,6 +1,5 @@
 #include <x86/kernel/include/physmem.h>
 #include <x86/kernel/include/paging.h>
-#include <kernel/include/multiboot.h>
 
 struct Memory_Stack Physical_Memory_high;
 struct Memory_Stack Physical_Memory_dma;
