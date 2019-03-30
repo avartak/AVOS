@@ -19,6 +19,7 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 
 */
 
+#include <kernel/include/physmem.h>
 #include <kernel/include/heap.h>
 #include <kernel/include/interrupts.h>
 #include <kernel/include/timer.h>
@@ -27,7 +28,9 @@ All interrupts are disabled and the system returns to the calling Kstart functio
 
 void AVOS() {
 
-    KHeap_Initialize();
+	Memory_Physical_Initialize();
+	
+    Heap_Initialize();
 
 	Interrupt_Initialize();
 	

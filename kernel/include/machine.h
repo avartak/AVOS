@@ -14,9 +14,6 @@ extern void Interrupt_Enable(uint8_t);
 extern void Interrupt_Disable(uint8_t);
 extern bool Interrupt_IsFlagSet();
 
-extern bool Memory_AllocateBlock(uintptr_t);
-extern bool Memory_FreeBlock(uintptr_t);
-
 struct Process_State {
     uint32_t cr3;
     uint32_t ss0;

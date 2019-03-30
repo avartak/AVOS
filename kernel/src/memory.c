@@ -1,7 +1,7 @@
 #include <kernel/include/memory.h>
-#include <kernel/include/machine.h>
+#include <kernel/include/physmem.h>
 
-extern uint8_t Kernel_dispensary_map[];
+extern uint8_t Dispensary_pagemap[];
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {
     uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -19,16 +19,16 @@ uintptr_t Memory_NodeDispenser_New() {
     uint32_t  ptridx  = 0xFFFFFFFF;
 
     for (size_t i = 0; i < DISPENSARY_SIZE; i++) {
-        if (Kernel_dispensary_map[i] == 0) {
-            Kernel_dispensary_map[i] = 1;
-            pointer = MEMORY_VIRTUAL_START_DISP + i*MEMORY_SIZE_PAGE;
+        if (Dispensary_pagemap[i] == 0) {
+            Dispensary_pagemap[i] = 1;
+            pointer = MEMORY_START_DISP + i*MEMORY_SIZE_PAGE;
             ptridx  = i;
         }
     }
 
     if (pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
-    if (Memory_AllocateBlock(pointer) == false) {
-        Kernel_dispensary_map[ptridx] = 0;
+    if (Memory_Physical_AllocateBlock(pointer) == false) {
+        Dispensary_pagemap[ptridx] = 0;
         return (uintptr_t)MEMORY_NULL_PTR;
     }
 
@@ -36,9 +36,9 @@ uintptr_t Memory_NodeDispenser_New() {
 }
 
 bool Memory_NodeDispenser_Delete(uintptr_t pointer) {
-    if (pointer < MEMORY_VIRTUAL_START_DISP || pointer >= MEMORY_VIRTUAL_END_DISP) return false;
-    if (!Memory_FreeBlock(pointer)) return false;
-    Kernel_dispensary_map[(pointer - MEMORY_VIRTUAL_START_DISP)/MEMORY_SIZE_PAGE] = 0;
+    if (pointer < MEMORY_START_DISP || pointer >= MEMORY_END_DISP) return false;
+    if (!Memory_Physical_FreeBlock(pointer)) return false;
+    Dispensary_pagemap[(pointer - MEMORY_START_DISP)/MEMORY_SIZE_PAGE] = 0;
     return true;
 }
 
@@ -137,7 +137,7 @@ struct Memory_Node* Memory_NodeDispenser_Dispense(struct Memory_NodeDispenser* d
         }
     }
 }
-bool Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintptr_t ptr_max) {
+bool Memory_Map_Contains(struct Memory_Map* stack, uintptr_t ptr_min, uintptr_t ptr_max) {
     if (stack == MEMORY_NULL_PTR) return false;
 
 	struct Memory_Node* current = stack->start;
@@ -150,7 +150,7 @@ bool Memory_Stack_Contains(struct Memory_Stack* stack, uintptr_t ptr_min, uintpt
 }
 
 
-bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
+bool Memory_Map_Push(struct Memory_Map* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -173,7 +173,7 @@ bool Memory_Stack_Push(struct Memory_Stack* stack, struct Memory_Node* node, boo
     return true;
 }
 
-bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
+bool Memory_Map_Append(struct Memory_Map* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -182,7 +182,7 @@ bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node, b
     if (node_end <= node->pointer) return false;
 
 	struct Memory_Node* last_node = stack->start;
-	if (last_node == MEMORY_NULL_PTR) return Memory_Stack_Push(stack, node, merge);
+	if (last_node == MEMORY_NULL_PTR) return Memory_Map_Push(stack, node, merge);
 	while (last_node->next != MEMORY_NULL_PTR) last_node = last_node->next;
 
     if (last_node->pointer + last_node->size * node_base_size != node->pointer || !merge) {
@@ -198,7 +198,7 @@ bool Memory_Stack_Append(struct Memory_Stack* stack, struct Memory_Node* node, b
     return true;
 }
 
-bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, bool merge) {
+bool Memory_Map_Insert(struct Memory_Map* stack, struct Memory_Node* node, bool merge) {
     if (stack == MEMORY_NULL_PTR || node == MEMORY_NULL_PTR) return false;
     if (node->attrib != stack->attrib) return false;
 
@@ -206,7 +206,7 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, b
     uintptr_t node_end = node->pointer + node->size * node_base_size;
     if (node_end <= node->pointer) return false;
 
-	if (stack->start == MEMORY_NULL_PTR || node_end <= stack->start->pointer) return Memory_Stack_Push(stack, node, merge);
+	if (stack->start == MEMORY_NULL_PTR || node_end <= stack->start->pointer) return Memory_Map_Push(stack, node, merge);
 
 	struct Memory_Node* current_node = stack->start;
 	while (current_node->next != MEMORY_NULL_PTR) {
@@ -245,12 +245,12 @@ bool Memory_Stack_Insert(struct Memory_Stack* stack, struct Memory_Node* node, b
 		current_node = current_node->next;
 	}
 
-	if (current_node->next == MEMORY_NULL_PTR && current_node->pointer + current_node->size * node_base_size <= node->pointer) return Memory_Stack_Append(stack, node, merge);
+	if (current_node->next == MEMORY_NULL_PTR && current_node->pointer + current_node->size * node_base_size <= node->pointer) return Memory_Map_Append(stack, node, merge);
 
 	return false;
 }
 
-struct Memory_Node* Memory_Stack_Pop(struct Memory_Stack* stack) {
+struct Memory_Node* Memory_Map_Pop(struct Memory_Map* stack) {
     if (stack == MEMORY_NULL_PTR || stack->start == MEMORY_NULL_PTR || stack->size == 0 || stack->start->size == 0) return MEMORY_NULL_PTR;
 
     struct Memory_Node* current = stack->start;
@@ -279,7 +279,7 @@ struct Memory_Node* Memory_Stack_Pop(struct Memory_Stack* stack) {
 	return pop_node;
 }
 
-struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, size_t node_size) {
+struct Memory_Node* Memory_Map_Extract(struct Memory_Map* stack, size_t node_size) {
     if (stack == MEMORY_NULL_PTR || stack->start == MEMORY_NULL_PTR || node_size == 0 || stack->size < node_size) return MEMORY_NULL_PTR;
 
     struct Memory_Node* pop_node = MEMORY_NULL_PTR;
@@ -342,7 +342,7 @@ struct Memory_Node* Memory_Stack_Extract(struct Memory_Stack* stack, size_t node
     return pop_node;
 }
 
-struct Memory_Node* Memory_Stack_Get(struct Memory_Stack* stack, uintptr_t node_ptr) {
+struct Memory_Node* Memory_Map_Get(struct Memory_Map* stack, uintptr_t node_ptr) {
     if (stack == MEMORY_NULL_PTR || stack->start == MEMORY_NULL_PTR || node_ptr == (uintptr_t)MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
 
 	struct Memory_Node* return_node = MEMORY_NULL_PTR;

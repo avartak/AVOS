@@ -1,12 +1,15 @@
-#include <x86/kernel/include/paging.h>
-#include <x86/kernel/include/gdt.h>
-#include <x86/kernel/include/idt.h>
-#include <x86/kernel/include/ram.h>
-#include <x86/kernel/include/physmem.h>
-#include <x86/kernel/include/welcome.h>
+#include <kernel/include/common.h>
 
 extern uintptr_t Multiboot_Info;
-extern void      AVOS();
+
+extern void Paging_Initialize();
+extern void Paging_SwitchToHigherHalf();
+extern void GDT_Initialize();
+extern void IDT_Initialize();
+extern bool RAM_Initialize();
+extern void Memory_Physical_Initialize();
+extern void Welcome();
+extern void AVOS();
 
 void LaunchAVOS(uintptr_t bootinfo) {
 
@@ -20,12 +23,8 @@ void LaunchAVOS(uintptr_t bootinfo) {
 	
 	IDT_Initialize();
 
-	RAM_Initialize();
+	if (!RAM_Initialize()) return;
 
-	if (! (RAM_IsMemoryPresent(0x100000, 0x400000) && RAM_IsMemoryPresent(0x1000000, 0x1400000)) ) return;
-
-	Physical_Memory_Initialize();
-	
 	Welcome();
 
 	AVOS();

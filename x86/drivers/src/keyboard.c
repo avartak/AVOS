@@ -30,12 +30,12 @@ uint32_t Keyboard_HandleInterrupt() {
 }
 
 void Keyboard_Initialize() {
-    struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(KHeap_Allocate(sizeof(struct Interrupt_Handler)));
+    struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(Heap_Allocate(sizeof(struct Interrupt_Handler)));
     handler->next     = MEMORY_NULL_PTR;
     handler->handler  = &Keyboard_HandleInterrupt;
     handler->id       = 0;
     handler->process  = 0;
 
     uint8_t retval = Interrupt_AddHandler(handler, 0x21);
-    if (retval == 0 || retval == 1) KHeap_Free((uintptr_t)handler);
+    if (retval == 0 || retval == 1) Heap_Free((uintptr_t)handler);
 }

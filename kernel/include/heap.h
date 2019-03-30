@@ -13,8 +13,8 @@ Bits  8-15  : Node size
 
 #include <kernel/include/common.h>
 
-extern uintptr_t KHeap_Allocate(size_t nbytes);
-extern bool      KHeap_Free(uintptr_t pointer);
-extern void      KHeap_Initialize();
+extern uintptr_t Heap_Allocate(size_t nbytes);
+extern bool      Heap_Free(uintptr_t pointer);
+extern void      Heap_Initialize();
 
 #endif

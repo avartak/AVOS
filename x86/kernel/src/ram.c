@@ -1,11 +1,18 @@
 #include <x86/kernel/include/ram.h>
 #include <kernel/include/multiboot.h>
 
+struct E820_Table_Entry {
+    uint64_t base;
+    uint64_t size;
+    uint32_t type;
+    uint32_t acpi3;
+}__attribute__((packed));
+
 size_t E820_Table_size = 0;
 struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 
 extern uint32_t RAM_Table_size;
-extern struct RAM_Table_Entry RAM_Table;
+extern struct Memory_RAM_Table_Entry RAM_Table;
 
 uintptr_t RAM_MaxPresentMemoryAddress() {
 	uintptr_t mem_max = 0;
@@ -44,7 +51,7 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
 	return false;
 }
 
-void RAM_Initialize() {
+bool RAM_Initialize() {
 	struct Multiboot_Tag* tag;
 	for (tag = (struct Multiboot_Tag*) (Multiboot_Info + 2); tag->type != MULTIBOOT2_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
 		if (tag->type != MULTIBOOT2_TAG_TYPE_MMAP) continue;
@@ -52,8 +59,10 @@ void RAM_Initialize() {
 		E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);
 	}
 	
+	if (! (RAM_IsMemoryPresent(0x100000, 0x400000) && RAM_IsMemoryPresent(0x1000000, 0x1400000)) ) return false;
+
 	RAM_Table_size = 0;
-	struct RAM_Table_Entry* table_ptr = &RAM_Table;
+	struct Memory_RAM_Table_Entry* table_ptr = &RAM_Table;
 	table_ptr->pointer = 0;
 	table_ptr->size = 0;
 	
@@ -76,5 +85,7 @@ void RAM_Initialize() {
 			}
 		}
 	}
+
+	return true;
 }
 

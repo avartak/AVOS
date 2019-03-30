@@ -17,12 +17,12 @@ uint32_t Timer_HandleInterrupt() {
 
 void Timer_Initialize() {
 	timerticks = 0;
-	struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(KHeap_Allocate(sizeof(struct Interrupt_Handler)));	
+	struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(Heap_Allocate(sizeof(struct Interrupt_Handler)));	
 	handler->next     = MEMORY_NULL_PTR;
 	handler->handler  = &Timer_HandleInterrupt;
 	handler->id       = 0;
 	handler->process  = 0;	
 
 	uint8_t retval = Interrupt_AddHandler(handler, 0x20);
-	if (retval == 0 || retval == 1) KHeap_Free((uintptr_t)handler);
+	if (retval == 0 || retval == 1) Heap_Free((uintptr_t)handler);
 }

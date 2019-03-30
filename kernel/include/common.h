@@ -10,7 +10,6 @@
 #define MEMORY_MAX_ADDRESS        0xFFFFFFFF
 #define KERNEL_HIGHER_HALF_OFFSET 0xC0000000
 
-
 typedef uint32_t clock_t;
 
 #endif
