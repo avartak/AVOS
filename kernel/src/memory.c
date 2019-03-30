@@ -1,7 +1,17 @@
 #include <kernel/include/memory.h>
-#include <kernel/include/physmem.h>
+#include <kernel/include/paging.h>
 
-extern uint8_t Dispensary_pagemap[];
+struct Memory_Map Memory_Physical_high;
+struct Memory_Map Memory_Physical_dma;
+struct Memory_Map Memory_Virtual_free;
+struct Memory_Map Memory_Virtual_inuse;
+
+uint8_t  Dispensary_pagemap[DISPENSARY_SIZE];
+uint32_t Dispensary_pagetable[0x400]__attribute__((aligned(0x1000)));
+struct   Memory_NodeDispenser* Dispensary_nodepot = MEMORY_NULL_PTR;
+
+extern uint32_t RAM_Table_size;
+extern struct Memory_RAM_Table_Entry RAM_Table;
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {
     uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -374,3 +384,172 @@ struct Memory_Node* Memory_Map_Get(struct Memory_Map* stack, uintptr_t node_ptr)
     return return_node;
 }
 
+void Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end) {
+    struct Memory_RAM_Table_Entry* table_ptr = &RAM_Table;
+
+    if (mem_start < table_ptr[0].pointer) return;
+
+    for (size_t i = 0; i < RAM_Table_size && table_ptr[i].pointer < mem_end; i++) {
+        struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
+        if (node == MEMORY_NULL_PTR) return;
+        node->pointer = table_ptr[i].pointer;
+        node->size    = (mem_end > table_ptr[i].pointer + table_ptr[i].size ? table_ptr[i].size : mem_end - table_ptr[i].pointer) / MEMORY_SIZE_PAGE;
+        node->attrib  = mem_map->attrib;
+        node->next    = MEMORY_NULL_PTR;
+        Memory_Map_Insert(mem_map, node, true);
+    }
+}
+
+bool Memory_Physical_AllocateBlock(uintptr_t virtual_address) {
+	struct Memory_Node* mem_node = Memory_Map_Pop(&Memory_Physical_high);
+	if (mem_node == MEMORY_NULL_PTR) return false;
+
+	if (!Paging_TableExists(virtual_address)) {
+		struct Memory_Node* table_node = Memory_Map_Pop(&Memory_Physical_high);
+		if (table_node == MEMORY_NULL_PTR) {
+			Memory_Map_Push(&Memory_Physical_high, mem_node, true);
+			return false;
+		}
+		Paging_MapEntry(Paging_directory, table_node->pointer, Paging_GetDirectoryEntry(virtual_address), PAGING_KERN_TABLE_FLAGS);
+		Paging_ClearTable(virtual_address);
+		Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
+	}
+	
+	if (!(Paging_MapVirtualPage(virtual_address, mem_node->pointer, PAGING_KERN_PAGE_FLAGS))) {
+		Memory_Map_Push(&Memory_Physical_high, mem_node, true);
+		return false;
+	}
+
+	return true;
+}
+
+bool Memory_Physical_FreeBlock(uintptr_t virtual_address) {
+	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Memory_Physical_high.node_dispenser);
+	uintptr_t physical_address = Paging_GetPhysicalAddress(virtual_address);
+
+	if (((uintptr_t)node & MEMORY_PAGE_MASK) == (virtual_address & MEMORY_PAGE_MASK) || !(Paging_UnmapVirtualPage(virtual_address))) {
+		Memory_NodeDispenser_Return(node);
+		return false;
+	}
+
+	node->pointer = physical_address;
+	node->size    = 1;
+	node->attrib  = Memory_Physical_high.attrib;
+	node->next    = MEMORY_NULL_PTR;
+	
+	return Memory_Map_Push(&Memory_Physical_high, node, true);
+}
+
+uintptr_t Memory_Virtual_Allocate(size_t nbytes) {
+    struct Memory_Node* node = Memory_Map_Extract(&Memory_Virtual_free, nbytes);
+    if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
+
+	uintptr_t start_page  = (node->pointer) & MEMORY_PAGE_MASK;
+	uintptr_t start_alloc = start_page + MEMORY_SIZE_PAGE;
+	if (start_page == node->pointer) start_alloc = start_page;
+	uintptr_t end_alloc = (node->pointer + nbytes - 1) & MEMORY_PAGE_MASK;
+
+	bool check_alloc = true;
+	uintptr_t unalloc = start_alloc;
+	for (uintptr_t page = start_alloc; page <= end_alloc; page += MEMORY_SIZE_PAGE) {
+		check_alloc = Memory_Physical_AllocateBlock(page);
+		if (!check_alloc) {
+			unalloc = page;
+			break;
+		}
+	}
+	if (!check_alloc) {
+		for (uintptr_t page = start_alloc; page <= end_alloc && page <= unalloc; page += MEMORY_SIZE_PAGE) Memory_Physical_FreeBlock(page);
+		Memory_Map_Insert(&Memory_Virtual_free, node, true);
+		return (uintptr_t)MEMORY_NULL_PTR;
+	}
+
+	Memory_Map_Insert(&Memory_Virtual_inuse, node, false);
+
+    return node->pointer;
+}
+
+bool Memory_Virtual_Free(uintptr_t pointer) {
+    struct Memory_Node* node = Memory_Map_Get(&Memory_Virtual_inuse, pointer);
+	if (node == MEMORY_NULL_PTR) return false;
+
+	uintptr_t start_page = pointer & MEMORY_PAGE_MASK;
+	uintptr_t end_page   = (node->pointer + node->size * Memory_Node_GetBaseSize(node->attrib) - 1) & MEMORY_PAGE_MASK;
+	
+	node->attrib = Memory_Virtual_free.attrib;
+	node->next   = MEMORY_NULL_PTR;
+	bool ret_val = Memory_Map_Insert(&Memory_Virtual_free, node, true);
+	if (!ret_val) {
+		node->attrib = Memory_Virtual_inuse.attrib;
+    	Memory_Map_Insert(&Memory_Virtual_inuse, node, false);
+		return ret_val; 
+	}
+
+	for (uintptr_t page = start_page; page <= end_page; page += MEMORY_SIZE_PAGE) {
+		if (Memory_Map_Contains(&Memory_Virtual_free, page, page + MEMORY_SIZE_PAGE - 1)) Memory_Physical_FreeBlock(page);
+	}
+	return true;
+}
+
+void Memory_Initialize() {
+
+    // Lets create the virtual space for the heap
+    Paging_MapEntry(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Dispensary_pagetable), Paging_GetDirectoryEntry(MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
+    Paging_ClearTable(MEMORY_START_DISP);
+    Paging_MapVirtualPage(MEMORY_START_DISP, MEMORY_PHYSICAL_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
+    Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
+
+    // Lets setup the node dispenser at the very start of the heap
+    Dispensary_nodepot = (struct Memory_NodeDispenser*)MEMORY_START_DISP;
+    Dispensary_nodepot->freenode = DISPENSER_FIRST_NODE(Dispensary_nodepot);
+    Dispensary_nodepot->size = DISPENSER_FULL_SIZE;
+    Dispensary_nodepot->attrib = 0;
+    Dispensary_nodepot->next = MEMORY_NULL_PTR;
+    struct Memory_Node* nodes = (struct Memory_Node*)DISPENSER_FIRST_NODE(Dispensary_nodepot);
+    for (size_t i = 0; i < Dispensary_nodepot->size; i++) nodes[i].attrib = Memory_Physical_high.attrib | 0xFF;
+
+    // Here we initialize the bitmap
+    for (size_t i = 0; i < DISPENSARY_SIZE; i++) Dispensary_pagemap[i] = 0;
+    Dispensary_pagemap[0] = 1;
+
+    // Here we set up the map for the free high memory
+    struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Dispensary_nodepot);
+    Memory_Physical_high.start  = free_node;
+    Memory_Physical_high.size   = 0x400000/MEMORY_SIZE_PAGE - 1;
+    Memory_Physical_high.attrib = MEMORY_4KB << 8;
+    Memory_Physical_high.node_dispenser = Dispensary_nodepot;
+
+    free_node->attrib  = Memory_Physical_high.attrib;
+    free_node->pointer = MEMORY_PHYSICAL_START_HIGHMEM + MEMORY_SIZE_PAGE;
+    free_node->size    = Memory_Physical_high.size;
+    free_node->next    = MEMORY_NULL_PTR;
+
+    Memory_Physical_MakeMap(&Memory_Physical_high, MEMORY_PHYSICAL_START_HIGHMEM + 0x400000, MEMORY_MAX_ADDRESS);
+
+    // Here we set up the map for the free low memory
+    Memory_Physical_dma.start  = MEMORY_NULL_PTR;
+    Memory_Physical_dma.size   = 0;
+    Memory_Physical_dma.attrib = MEMORY_4KB << 8;
+    Memory_Physical_dma.node_dispenser = Dispensary_nodepot;
+
+    Memory_Physical_MakeMap(&Memory_Physical_dma, MEMORY_PHYSICAL_START_DMA, MEMORY_PHYSICAL_START_HIGHMEM);
+
+    // Here we set up the map for the virtual free memory
+    free_node = Memory_NodeDispenser_Dispense(Dispensary_nodepot);
+    Memory_Virtual_free.start   = free_node;
+    Memory_Virtual_free.size    = MEMORY_END_HEAP - MEMORY_START_HEAP;
+    Memory_Virtual_free.attrib  = MEMORY_1B << 8;
+    Memory_Virtual_free.node_dispenser = Dispensary_nodepot;
+   
+    free_node->attrib  = Memory_Virtual_free.attrib;
+    free_node->pointer = MEMORY_START_HEAP;
+    free_node->size    = Memory_Virtual_free.size;
+    free_node->next    = MEMORY_NULL_PTR;
+
+    // Here we set up the map for the virtual memory in use
+    free_node = Memory_NodeDispenser_Dispense(Dispensary_nodepot);
+    Memory_Virtual_inuse.start  = MEMORY_NULL_PTR;
+    Memory_Virtual_inuse.size   = 0;
+    Memory_Virtual_inuse.attrib = MEMORY_1B << 8;
+    Memory_Virtual_inuse.node_dispenser = Dispensary_nodepot;
+}

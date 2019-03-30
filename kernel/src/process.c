@@ -1,6 +1,5 @@
 #include <kernel/include/process.h>
 #include <kernel/include/memory.h>
-#include <kernel/include/heap.h>
 
 struct Process*      Process_current  = MEMORY_NULL_PTR;
 struct Process*      Process_next     = MEMORY_NULL_PTR;
@@ -33,7 +32,7 @@ bool Process_Enqueue(struct Process* proc) {
 		return false;
 	}
 
-	struct Process_Node* node = (struct Process_Node*)(Heap_Allocate(sizeof(struct Process_Node)));
+	struct Process_Node* node = (struct Process_Node*)(Memory_Virtual_Allocate(sizeof(struct Process_Node)));
 	if (node == MEMORY_NULL_PTR) {
 		if (isInterruptEnabled) Interrupt_EnableAll();
 		return false;	
@@ -107,7 +106,7 @@ bool Process_Dequeue(struct Process* proc) {
 
 	if (node != MEMORY_NULL_PTR && (proc == Process_current || proc == Process_next)) Process_SelectNextToRun();
 
-	Heap_Free((uintptr_t)node);
+	Memory_Virtual_Free((uintptr_t)node);
 
 	if (isInterruptEnabled) Interrupt_EnableAll();
 	return  true;	

@@ -13,10 +13,13 @@ Bits  8-15  : Node size
 
 #include <kernel/include/common.h>
 
+#define MEMORY_PHYSICAL_START_DMA      0x00400000
+#define MEMORY_PHYSICAL_START_HIGHMEM  0x01000000
+
 #define MEMORY_START_DISP              0xC0400000
 #define MEMORY_END_DISP                0xC0800000
 #define MEMORY_START_HEAP              0xC0800000
-#define MEMORY_END_HEAP                0xD0000000
+#define MEMORY_END_HEAP                0xE0000000
 
 #define MEMORY_1B                      0x01
 #define MEMORY_4B                      0x02
@@ -59,24 +62,41 @@ struct Memory_Map {
 	struct Memory_NodeDispenser* node_dispenser;
 };
 
-extern size_t              Memory_Node_GetBaseSize(uint32_t attrib);
+extern uint8_t                      Dispensary_pagemap[];
+extern uint32_t                     Dispensary_pagetable[]__attribute__((aligned(0x1000)));
+extern struct Memory_NodeDispenser* Dispensary_nodepot;
 
-extern uintptr_t           Memory_NodeDispenser_New();
-extern bool                Memory_NodeDispenser_Delete   (uintptr_t pointer);
-extern bool                Memory_NodeDispenser_Return   (struct Memory_Node* node);
-extern struct Memory_Node* Memory_NodeDispenser_Dispense (struct Memory_NodeDispenser* dispenser);
-extern bool                Memory_NodeDispenser_Refill   (struct Memory_NodeDispenser* dispenser);
-extern void                Memory_NodeDispenser_Retire   (struct Memory_NodeDispenser* dispenser);
-extern size_t              Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser);
-extern size_t              Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser);
+extern struct                       Memory_Map Memory_Physical_high;
+extern struct                       Memory_Map Memory_Physical_dma;
+extern struct                       Memory_Map Memory_Virtual_free;
+extern struct                       Memory_Map Memory_Virtual_inuse;
 
-extern bool                Memory_Map_Contains(struct Memory_Map* stack, uintptr_t ptr_min, uintptr_t ptr_max);
-extern bool                Memory_Map_Push    (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
-extern bool                Memory_Map_Append  (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
-extern bool                Memory_Map_Insert  (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
-extern struct Memory_Node* Memory_Map_Pop     (struct Memory_Map* stack);
-extern struct Memory_Node* Memory_Map_Extract (struct Memory_Map* stack, size_t  node_size);
-extern struct Memory_Node* Memory_Map_Get     (struct Memory_Map* stack, uintptr_t node_ptr); 
+extern size_t                       Memory_Node_GetBaseSize(uint32_t attrib);
 
+extern uintptr_t                    Memory_NodeDispenser_New();
+extern bool                         Memory_NodeDispenser_Delete   (uintptr_t pointer);
+extern bool                         Memory_NodeDispenser_Return   (struct Memory_Node* node);
+extern struct Memory_Node*          Memory_NodeDispenser_Dispense (struct Memory_NodeDispenser* dispenser);
+extern bool                         Memory_NodeDispenser_Refill   (struct Memory_NodeDispenser* dispenser);
+extern void                         Memory_NodeDispenser_Retire   (struct Memory_NodeDispenser* dispenser);
+extern size_t                       Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser);
+extern size_t                       Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser);
+
+extern bool                         Memory_Map_Contains(struct Memory_Map* stack, uintptr_t ptr_min, uintptr_t ptr_max);
+extern bool                         Memory_Map_Push    (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
+extern bool                         Memory_Map_Append  (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
+extern bool                         Memory_Map_Insert  (struct Memory_Map* stack, struct Memory_Node* node, bool merge);
+extern struct Memory_Node*          Memory_Map_Pop     (struct Memory_Map* stack);
+extern struct Memory_Node*          Memory_Map_Extract (struct Memory_Map* stack, size_t  node_size);
+extern struct Memory_Node*          Memory_Map_Get     (struct Memory_Map* stack, uintptr_t node_ptr); 
+
+
+extern void                         Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end);
+extern bool                         Memory_Physical_AllocateBlock(uintptr_t virtual_address);
+extern bool                         Memory_Physical_FreeBlock(uintptr_t virtual_address);
+extern uintptr_t                    Memory_Virtual_Allocate(size_t nbytes);
+extern bool                         Memory_Virtual_Free(uintptr_t pointer);
+
+extern void                         Memory_Initialize();
 
 #endif

@@ -2,7 +2,7 @@
 #include <x86/drivers/include/io.h>
 #include <x86/drivers/include/pic.h>
 #include <kernel/include/interrupts.h>
-#include <kernel/include/heap.h>
+#include <kernel/include/memory.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -30,12 +30,12 @@ uint32_t Keyboard_HandleInterrupt() {
 }
 
 void Keyboard_Initialize() {
-    struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(Heap_Allocate(sizeof(struct Interrupt_Handler)));
+    struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(Memory_Virtual_Allocate(sizeof(struct Interrupt_Handler)));
     handler->next     = MEMORY_NULL_PTR;
     handler->handler  = &Keyboard_HandleInterrupt;
     handler->id       = 0;
     handler->process  = 0;
 
     uint8_t retval = Interrupt_AddHandler(handler, 0x21);
-    if (retval == 0 || retval == 1) Heap_Free((uintptr_t)handler);
+    if (retval == 0 || retval == 1) Memory_Virtual_Free((uintptr_t)handler);
 }
