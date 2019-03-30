@@ -3,8 +3,8 @@
 
 #include <kernel/include/common.h>
 
-#define MULTIBOOT_TAG_TYPE_END  0
-#define MULTIBOOT_TAG_TYPE_MMAP 6
+#define MULTIBOOT2_TAG_TYPE_END  0
+#define MULTIBOOT2_TAG_TYPE_MMAP 6
 
 
 struct Multiboot_Tag {

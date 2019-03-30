@@ -3,6 +3,85 @@
 ; Note : Tags are terminated with a 'null tag' of type 0 and size 8
 ; We will only include tags 2 and 3 in our multiboot header
 
+MULTIBOOT2_HEADER_MAGIC      equ 0xE85250D6
+MULTIBOOT2_HEADER_ARCH       equ 0
+MULTIBOOT2_HEADER_SIZE       equ Multiboot_End - Multiboot_Start
+MULTIBOOT2_HEADER_CHECKSUM   equ 0x100000000 -(MULTIBOOT2_HEADER_MAGIC + MULTIBOOT2_HEADER_ARCH + MULTIBOOT2_HEADER_SIZE)
+
+MULTIBOOT2_TAG1_TAG          equ 0x1
+MULTIBOOT2_TAG1_FLAGS        equ 0x0
+MULTIBOOT2_TAG1_SIZE         equ 0xC
+MULTIBOOT2_TAG1_REQ_TYPE6    equ 0x6
+
+MULTIBOOT2_TAG2_TAG          equ 0x2
+MULTIBOOT2_TAG2_FLAGS        equ 0x0
+MULTIBOOT2_TAG2_SIZE         equ 0x18
+MULTIBOOT2_TAG2_HEADER_ADDR  equ Multiboot_Start
+MULTIBOOT2_TAG2_LOAD_ADDR    equ -1 
+MULTIBOOT2_TAG2_LOAD_END     equ 0
+MULTIBOOT2_TAG2_BSS_END      equ 0
+
+MULTIBOOT2_TAG3_TAG          equ 0x3
+MULTIBOOT2_TAG3_FLAGS        equ 0x0
+MULTIBOOT2_TAG3_SIZE         equ 0xC
+MULTIBOOT2_TAG3_ENTRY        equ 0x100000
+
+MULTIBOOT2_TAG0_TAG          equ 0x0
+MULTIBOOT2_TAG0_FLAGS        equ 0x0
+MULTIBOOT2_TAG0_SIZE         equ 0x8
+
+global Multiboot_Info
+Multiboot_Info:
+
+	dd 0xFFFFFFFF
+
+align 0x8
+Multiboot_Start:
+
+	dd MULTIBOOT2_HEADER_MAGIC
+	dd MULTIBOOT2_HEADER_ARCH
+	dd MULTIBOOT2_HEADER_SIZE	
+	dd MULTIBOOT2_HEADER_CHECKSUM
+
+	dw MULTIBOOT2_TAG1_TAG
+	dw MULTIBOOT2_TAG1_FLAGS
+	dd MULTIBOOT2_TAG1_SIZE
+	dd MULTIBOOT2_TAG1_REQ_TYPE6
+
+	dw MULTIBOOT2_TAG2_TAG
+	dw MULTIBOOT2_TAG2_FLAGS
+	dd MULTIBOOT2_TAG2_SIZE
+	dd MULTIBOOT2_TAG2_HEADER_ADDR	
+	dd MULTIBOOT2_TAG2_LOAD_ADDR
+	dd MULTIBOOT2_TAG2_LOAD_END
+	dd MULTIBOOT2_TAG2_BSS_END
+
+	dw MULTIBOOT2_TAG3_TAG
+	dw MULTIBOOT2_TAG3_FLAGS
+	dd MULTIBOOT2_TAG3_SIZE
+	dd MULTIBOOT2_TAG3_ENTRY
+
+	dw MULTIBOOT2_TAG0_TAG
+	dw MULTIBOOT2_TAG0_FLAGS
+	dd MULTIBOOT2_TAG0_SIZE
+
+Multiboot_End:
+
+align 0x8
+
+global Tables
+Tables:
+
+global RAM_Table_size
+RAM_Table_size:
+
+	dq 0
+
+global RAM_Table
+RAM_Table:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;                        +-------------------+
 ;    unsigned 32-bit     | magic             |
 ;    unsigned 32-bit     | architecture      |
@@ -93,68 +172,4 @@
 ;    unsigned 32-bit     | preference        |
 ;                        +-------------------+
 
-MULTIBOOT2_HEADER_MAGIC      equ 0xE85250D6
-MULTIBOOT2_HEADER_ARCH       equ 0
-MULTIBOOT2_HEADER_SIZE       equ Multiboot_End - Multiboot_Start
-MULTIBOOT2_HEADER_CHECKSUM   equ 0x100000000 -(MULTIBOOT2_HEADER_MAGIC + MULTIBOOT2_HEADER_ARCH + MULTIBOOT2_HEADER_SIZE)
-
-MULTIBOOT2_TAG1_TAG          equ 0x1
-MULTIBOOT2_TAG1_FLAGS        equ 0x0
-MULTIBOOT2_TAG1_SIZE         equ 0xC
-MULTIBOOT2_TAG1_REQ_TYPE6    equ 0x6
-
-MULTIBOOT2_TAG2_TAG          equ 0x2
-MULTIBOOT2_TAG2_FLAGS        equ 0x0
-MULTIBOOT2_TAG2_SIZE         equ 0x18
-MULTIBOOT2_TAG2_HEADER_ADDR  equ Multiboot_Start
-MULTIBOOT2_TAG2_LOAD_ADDR    equ -1 
-MULTIBOOT2_TAG2_LOAD_END     equ 0
-MULTIBOOT2_TAG2_BSS_END      equ 0
-
-MULTIBOOT2_TAG3_TAG          equ 0x3
-MULTIBOOT2_TAG3_FLAGS        equ 0x0
-MULTIBOOT2_TAG3_SIZE         equ 0xC
-MULTIBOOT2_TAG3_ENTRY        equ 0x100000
-
-MULTIBOOT2_TAG0_TAG          equ 0x0
-MULTIBOOT2_TAG0_FLAGS        equ 0x0
-MULTIBOOT2_TAG0_SIZE         equ 0x8
-
-global Multiboot_Info
-Multiboot_Info :
-
-	dd 0xFFFFFFFF
-
-align 0x8
-
-Multiboot_Start:
-
-	dd MULTIBOOT2_HEADER_MAGIC
-	dd MULTIBOOT2_HEADER_ARCH
-	dd MULTIBOOT2_HEADER_SIZE	
-	dd MULTIBOOT2_HEADER_CHECKSUM
-
-	dw MULTIBOOT2_TAG1_TAG
-	dw MULTIBOOT2_TAG1_FLAGS
-	dd MULTIBOOT2_TAG1_SIZE
-	dd MULTIBOOT2_TAG1_REQ_TYPE6
-
-	dw MULTIBOOT2_TAG2_TAG
-	dw MULTIBOOT2_TAG2_FLAGS
-	dd MULTIBOOT2_TAG2_SIZE
-	dd MULTIBOOT2_TAG2_HEADER_ADDR	
-	dd MULTIBOOT2_TAG2_LOAD_ADDR
-	dd MULTIBOOT2_TAG2_LOAD_END
-	dd MULTIBOOT2_TAG2_BSS_END
-
-	dw MULTIBOOT2_TAG3_TAG
-	dw MULTIBOOT2_TAG3_FLAGS
-	dd MULTIBOOT2_TAG3_SIZE
-	dd MULTIBOOT2_TAG3_ENTRY
-
-	dw MULTIBOOT2_TAG0_TAG
-	dw MULTIBOOT2_TAG0_FLAGS
-	dd MULTIBOOT2_TAG0_SIZE
-
-Multiboot_End:
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

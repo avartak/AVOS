@@ -16,6 +16,7 @@ uint32_t Timer_HandleInterrupt() {
 }
 
 void Timer_Initialize() {
+	timerticks = 0;
 	struct Interrupt_Handler* handler = (struct Interrupt_Handler*)(KHeap_Allocate(sizeof(struct Interrupt_Handler)));	
 	handler->next     = MEMORY_NULL_PTR;
 	handler->handler  = &Timer_HandleInterrupt;

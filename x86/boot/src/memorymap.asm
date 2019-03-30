@@ -1,8 +1,6 @@
-; This code is taken from :
-; https://wiki.osdev.org/Detecting_Memory_(x86)
-
 ; This is the function that reads the memory map using INT 0x15, AH=0xE820
-; We are not going to try anything else right now if E820 fails
+; This code is taken from : https://wiki.osdev.org/Detecting_Memory_(x86)
+; The map is wrapped in the Multiboot2 tag structure
 
 StoreMemoryMap:
 
@@ -22,9 +20,7 @@ StoreMemoryMap:
 	mov  [es:bx+0x14], DWORD 0
 	add  [es:bx]     , DWORD 0x10
 
-	add  bx, 0x18
-	mov  di, bx                                         ; Set DI to the address where the memory map boot information structure starts
-	
+	lea  di, [es:bx+0x18]	                            ; Set DI to the address where the memory map boot information structure starts
 	xor  ebx, ebx                                       ; EBX must be 0 to start
 	xor  esi, esi                                       ; Clear the ESI register -- use for entry count
 	mov  edx, 0x0534D4150                               ; Place "SMAP" into EDX

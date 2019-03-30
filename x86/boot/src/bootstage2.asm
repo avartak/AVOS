@@ -23,7 +23,6 @@ FLOPPY_ID               equ 0                                           ; Floppy
 HDD_ID                  equ 0x80                                        ; Floppy ID used by the BIOS
 
 MULTIBOOT2_MAGIC        equ 0x36d76289                                  ; Need to provide this as input to the kernel to convey that it has been loaded by a multiboot-2 compliant boot loader (which this is not)
-MULTIBOOT2_INFO_ADDRESS equ 0x10000                                     ; Physical memory location of the multiboot information structures (MBI)
 MULTIBOOT2_INFO_SEGMENT equ 0x0800
 MULTIBOOT2_INFO_OFFSET  equ 0x8000                                      ; Location of the start of the boot information structures 
 
@@ -133,7 +132,7 @@ InProtectedMode:
 	mov  ss, ax
 	
 	mov  eax, MULTIBOOT2_MAGIC
-	mov  ebx, MULTIBOOT2_INFO_ADDRESS
+	mov  ebx, MULTIBOOT2_INFO_SEGMENT*0x10 + MULTIBOOT2_INFO_OFFSET
 	
 	jmp  KERNEL_START
 
