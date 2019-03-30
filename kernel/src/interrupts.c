@@ -1,6 +1,6 @@
 #include <kernel/include/interrupts.h>
 #include <kernel/include/machine.h>
-#include <kernel/include/dispensary.h>
+#include <kernel/include/memory.h>
 #include <kernel/include/machine.h>
 
 int32_t                   Interrupt_kernel_reentries = 0;

@@ -4,7 +4,7 @@
 struct Memory_Stack Physical_Memory_high;
 struct Memory_Stack Physical_Memory_dma;
 
-uint8_t   Kernel_dispensary_map[SIZE_DISPENSARY];
+uint8_t   Kernel_dispensary_map[DISPENSARY_SIZE];
 uint32_t  Kernel_dispensary_table[0x400]__attribute__((aligned(0x1000)));
 struct    Memory_NodeDispenser* Kernel_node_dispenser = MEMORY_NULL_PTR;
 
@@ -38,7 +38,7 @@ bool Physical_Memory_FreePage(uintptr_t virtual_address) {
 	struct Memory_Node* node = Memory_NodeDispenser_Dispense(Physical_Memory_high.node_dispenser);
 	uintptr_t physical_address = Paging_GetPhysicalAddress(virtual_address);
 
-	if (((uintptr_t)node & PAGE_MASK) == (virtual_address & PAGE_MASK) || !(Paging_UnmapVirtualPage(virtual_address))) {
+	if (((uintptr_t)node & MEMORY_PAGE_MASK) == (virtual_address & MEMORY_PAGE_MASK) || !(Paging_UnmapVirtualPage(virtual_address))) {
 		Memory_NodeDispenser_Return(node);
 		return false;
 	}
@@ -69,22 +69,22 @@ void Physical_Memory_MakeMap(struct Memory_Stack* mem_map, uintptr_t mem_start, 
 
 void Physical_Memory_Initialize() {
 	// Lets create the virtual space for the heap
-	Paging_MapEntry(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Kernel_dispensary_table), Paging_GetDirectoryEntry(VIRTUAL_MEMORY_START_DISP), PAGING_KERN_TABLE_FLAGS);
-	Paging_ClearTable(VIRTUAL_MEMORY_START_DISP);
-	Paging_MapVirtualPage(VIRTUAL_MEMORY_START_DISP, PHYSICAL_MEMORY_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
+	Paging_MapEntry(Paging_directory, Paging_GetPhysicalAddress((uintptr_t)Kernel_dispensary_table), Paging_GetDirectoryEntry(MEMORY_VIRTUAL_START_DISP), PAGING_KERN_TABLE_FLAGS);
+	Paging_ClearTable(MEMORY_VIRTUAL_START_DISP);
+	Paging_MapVirtualPage(MEMORY_VIRTUAL_START_DISP, MEMORY_PHYSICAL_START_HIGHMEM, PAGING_KERN_PAGE_FLAGS);
 	Paging_LoadDirectory(Paging_GetPhysicalAddress((uintptr_t)Paging_directory));
 
 	// Lets setup the node dispenser at the very start of the heap
-	Kernel_node_dispenser = (struct Memory_NodeDispenser*)VIRTUAL_MEMORY_START_DISP;	
-    Kernel_node_dispenser->freenode = FIRST_NODE(Kernel_node_dispenser);
-    Kernel_node_dispenser->size = FULL_DISPENSER_SIZE;
+	Kernel_node_dispenser = (struct Memory_NodeDispenser*)MEMORY_VIRTUAL_START_DISP;	
+    Kernel_node_dispenser->freenode = DISPENSER_FIRST_NODE(Kernel_node_dispenser);
+    Kernel_node_dispenser->size = DISPENSER_FULL_SIZE;
     Kernel_node_dispenser->attrib = 0;
     Kernel_node_dispenser->next = MEMORY_NULL_PTR;
-    struct Memory_Node* nodes = (struct Memory_Node*)FIRST_NODE(Kernel_node_dispenser);
+    struct Memory_Node* nodes = (struct Memory_Node*)DISPENSER_FIRST_NODE(Kernel_node_dispenser);
     for (size_t i = 0; i < Kernel_node_dispenser->size; i++) nodes[i].attrib = Physical_Memory_high.attrib | 0xFF;
 
 	// Here we initialize the bitmap
-	for (size_t i = 0; i < SIZE_DISPENSARY; i++) Kernel_dispensary_map[i] = 0;
+	for (size_t i = 0; i < DISPENSARY_SIZE; i++) Kernel_dispensary_map[i] = 0;
 	Kernel_dispensary_map[0] = 1;
 
 	// Here we set up the map for the free high memory
@@ -95,11 +95,11 @@ void Physical_Memory_Initialize() {
     Physical_Memory_high.node_dispenser = Kernel_node_dispenser;
 
 	free_node->attrib  = Physical_Memory_high.attrib;
-	free_node->pointer = PHYSICAL_MEMORY_START_HIGHMEM + MEMORY_SIZE_PAGE;
+	free_node->pointer = MEMORY_PHYSICAL_START_HIGHMEM + MEMORY_SIZE_PAGE;
 	free_node->size    = Physical_Memory_high.size;
 	free_node->next    = MEMORY_NULL_PTR; 
 
-	Physical_Memory_MakeMap(&Physical_Memory_high, PHYSICAL_MEMORY_START_HIGHMEM + 0x400000, MEMORY_MAX_ADDRESS);
+	Physical_Memory_MakeMap(&Physical_Memory_high, MEMORY_PHYSICAL_START_HIGHMEM + 0x400000, MEMORY_MAX_ADDRESS);
 
 	// Here we set up the map for the free low memory
     Physical_Memory_dma.start  = MEMORY_NULL_PTR;
@@ -107,7 +107,7 @@ void Physical_Memory_Initialize() {
     Physical_Memory_dma.attrib = MEMORY_4KB << 8;
     Physical_Memory_dma.node_dispenser = Kernel_node_dispenser;
 
-	Physical_Memory_MakeMap(&Physical_Memory_dma, PHYSICAL_MEMORY_START_DMA, PHYSICAL_MEMORY_START_HIGHMEM);
+	Physical_Memory_MakeMap(&Physical_Memory_dma, MEMORY_PHYSICAL_START_DMA, MEMORY_PHYSICAL_START_HIGHMEM);
 }
 
 

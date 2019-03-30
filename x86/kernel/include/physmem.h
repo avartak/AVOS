@@ -5,9 +5,6 @@
 #include <kernel/include/memory.h>
 #include <x86/kernel/include/ram.h>
 
-#define PHYSICAL_MEMORY_START_DMA      0x00400000
-#define PHYSICAL_MEMORY_START_HIGHMEM  0x01000000
-
 extern struct    Memory_Stack Physical_Memory_high;
 extern struct    Memory_Stack Physical_Memory_dma;
 

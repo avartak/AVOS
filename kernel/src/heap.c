@@ -11,10 +11,10 @@ uintptr_t KHeap_Allocate(size_t nbytes) {
     struct Memory_Node* node = Memory_Stack_Extract(&KHeap_free, nbytes);
     if (node == MEMORY_NULL_PTR || node->pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
 
-	uintptr_t start_page  = (node->pointer) & PAGE_MASK;
+	uintptr_t start_page  = (node->pointer) & MEMORY_PAGE_MASK;
 	uintptr_t start_alloc = start_page + MEMORY_SIZE_PAGE;
 	if (start_page == node->pointer) start_alloc = start_page;
-	uintptr_t end_alloc = (node->pointer + nbytes - 1) & PAGE_MASK;
+	uintptr_t end_alloc = (node->pointer + nbytes - 1) & MEMORY_PAGE_MASK;
 
 	bool check_alloc = true;
 	uintptr_t unalloc = start_alloc;
@@ -40,8 +40,8 @@ bool KHeap_Free(uintptr_t pointer) {
     struct Memory_Node* node = Memory_Stack_Get(&KHeap_inuse, pointer);
 	if (node == MEMORY_NULL_PTR) return false;
 
-	uintptr_t start_page = pointer & PAGE_MASK;
-	uintptr_t end_page   = (node->pointer + node->size * Memory_Node_GetBaseSize(node->attrib) - 1) & PAGE_MASK;
+	uintptr_t start_page = pointer & MEMORY_PAGE_MASK;
+	uintptr_t end_page   = (node->pointer + node->size * Memory_Node_GetBaseSize(node->attrib) - 1) & MEMORY_PAGE_MASK;
 	
 	node->attrib = KHeap_free.attrib;
 	node->next   = MEMORY_NULL_PTR;
@@ -61,12 +61,12 @@ bool KHeap_Free(uintptr_t pointer) {
 void KHeap_Initialize() {
     struct Memory_Node* free_node = Memory_NodeDispenser_Dispense(Kernel_node_dispenser);
     KHeap_free.start   = free_node;
-    KHeap_free.size    = VIRTUAL_MEMORY_END_HEAP - VIRTUAL_MEMORY_START_HEAP;
+    KHeap_free.size    = MEMORY_VIRTUAL_END_HEAP - MEMORY_VIRTUAL_START_HEAP;
     KHeap_free.attrib  = MEMORY_1B << 8;
     KHeap_free.node_dispenser = Kernel_node_dispenser;
    
     free_node->attrib  = KHeap_free.attrib;
-    free_node->pointer = VIRTUAL_MEMORY_START_HEAP;
+    free_node->pointer = MEMORY_VIRTUAL_START_HEAP;
     free_node->size    = KHeap_free.size;
     free_node->next    = MEMORY_NULL_PTR;
 

@@ -1,5 +1,5 @@
 #include <kernel/include/process.h>
-#include <kernel/include/dispensary.h>
+#include <kernel/include/memory.h>
 #include <kernel/include/heap.h>
 
 struct Process*      Process_current  = MEMORY_NULL_PTR;
