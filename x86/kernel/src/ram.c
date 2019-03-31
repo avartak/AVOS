@@ -49,7 +49,7 @@ bool RAM_Initialize() {
 		E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);
 	}
 	
-	if (! (RAM_IsMemoryPresent(0x100000, 0x400000) && RAM_IsMemoryPresent(0x1000000, 0x1400000)) ) return false;
+	if (!RAM_IsMemoryPresent(0x100000, 0x1000000)) return false;
 
 	RAM_Table_size = 0;
 	struct Memory_RAM_Table_Entry* table_ptr = &RAM_Table;

@@ -1,4 +1,5 @@
 #include <kernel/include/common.h>
+#include <kernel/include/machine.h>
 
 extern uintptr_t Multiboot_Info;
 
@@ -23,7 +24,12 @@ void LaunchAVOS(uintptr_t bootinfo) {
 	
 	IDT_Initialize();
 
-	if (!RAM_Initialize()) return;
+	if (!RAM_Initialize()) {
+		while (1) {
+			Interrupt_DisableAll();
+			System_Halt();
+		}		
+	}
 
 	Welcome();
 
