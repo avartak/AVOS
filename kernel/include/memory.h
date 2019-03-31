@@ -13,8 +13,7 @@ Bits  8-15  : Node size
 
 #include <kernel/include/common.h>
 
-#define MEMORY_PHYSICAL_START_DMA      0x00400000
-#define MEMORY_PHYSICAL_START_HIGHMEM  0x01000000
+#define MEMORY_PHYSICAL_START_HIGHMEM  0x00400000
 
 #define MEMORY_START_DISP              0xC0400000
 #define MEMORY_END_DISP                0xC0800000
@@ -31,6 +30,7 @@ Bits  8-15  : Node size
 #define MEMORY_PAGE_MASK               (~0xFFF)
 
 #define DISPENSARY_SIZE                0x400
+#define DISPENSER_PRIME_ADDRESS        0xC0102000
 #define DISPENSER_BOTTOM_OUT           8
 #define DISPENSER_FULL_SIZE            (0x1000 - sizeof(struct Memory_NodeDispenser)) / sizeof(struct Memory_Node)
 #define DISPENSER_FROM_NODE(node)      ((struct Memory_NodeDispenser*)((uintptr_t)node & (~0xFFF)))
@@ -82,11 +82,13 @@ extern struct Memory_Node* Memory_Map_Extract (struct Memory_Map* stack, size_t 
 extern struct Memory_Node* Memory_Map_Get     (struct Memory_Map* stack, uintptr_t node_ptr); 
 
 
-extern void                Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end);
-extern bool                Memory_Physical_AllocateBlock(uintptr_t virtual_address);
-extern bool                Memory_Physical_FreeBlock(uintptr_t virtual_address);
-extern uintptr_t           Memory_Virtual_Allocate(size_t nbytes);
-extern bool                Memory_Virtual_Free(uintptr_t pointer);
+extern void                Memory_Physical_MakeMap       (struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end);
+extern bool                Memory_Physical_AllocateBlock (uintptr_t virtual_address);
+extern bool                Memory_Physical_AllocateBlocks(uintptr_t virtual_address, size_t nblocks);
+extern bool                Memory_Physical_FreeBlock     (uintptr_t virtual_address);
+extern bool                Memory_Physical_FreeBlocks    (uintptr_t virtual_address, size_t nblocks);
+extern uintptr_t           Memory_Virtual_Allocate       (size_t nbytes);
+extern bool                Memory_Virtual_Free           (uintptr_t pointer);
 
 extern void                Memory_Initialize();
 

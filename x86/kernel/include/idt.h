@@ -12,9 +12,6 @@
 
 #define IDT_KERN_CODE_SEG       0x08
 
-#define asm __asm__
-#define volatile __volatile__
-
 struct IDT_Entry{
 	uint16_t addr_low;
 	uint16_t segment;

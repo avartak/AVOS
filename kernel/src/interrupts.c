@@ -9,14 +9,14 @@ uintptr_t                 Interrupt_stack;
 struct Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
 
 void Interrupt_Initialize() {
-	Interrupt_Handler_map = (struct Interrupt_Handler*)(Memory_NodeDispenser_New());
+	Interrupt_Handler_map = (struct Interrupt_Handler*)(Memory_Virtual_Allocate(0x1000));
 	for (size_t i = 0; i < MEMORY_SIZE_PAGE/sizeof(struct Interrupt_Handler); i++) {
 		Interrupt_Handler_map[i].next     = MEMORY_NULL_PTR;
 		Interrupt_Handler_map[i].handler  = MEMORY_NULL_PTR;
 		Interrupt_Handler_map[i].id       = 0;
 		Interrupt_Handler_map[i].process  = 0;
 	}
-	Interrupt_stack = Memory_NodeDispenser_New();
+	Interrupt_stack = Memory_Virtual_Allocate(0x1000);
 }
 
 uint8_t Interrupt_AddHandler(struct Interrupt_Handler* handler, uint8_t interrupt) {

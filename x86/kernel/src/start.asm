@@ -4,7 +4,7 @@ section .text
 
 MULTIBOOT2_MAGIC        equ 0x36d76289
 KERNEL_START            equ 0x100000
-KERNEL_STACK_PTR_OFFSET equ 0x5000
+KERNEL_STACK_PTR_OFFSET equ 0x6000
 
 global Start
 Start:

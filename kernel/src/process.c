@@ -11,7 +11,7 @@ struct Process_Node* Process_ready_queue_front[PROCESS_SCHED_QUEUES];
 struct Process_Node* Process_ready_queue_back [PROCESS_SCHED_QUEUES];
 
 void Process_Initialize() {
-	Process_map = (uintptr_t*)(Memory_NodeDispenser_New());
+	Process_map = (uintptr_t*)(Memory_Virtual_Allocate(0x1000));
 }
 
 uintptr_t Process_GetKernelSwitchStackLocation(struct Process* proc) {

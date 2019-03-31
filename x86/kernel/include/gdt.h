@@ -20,10 +20,6 @@
 
 #define GDT_TSS_SEG               0x2B
 
-#define asm __asm__
-#define volatile __volatile__
-
-
 struct GDT_Entry {
     uint16_t limit_low;
     uint16_t base_low;

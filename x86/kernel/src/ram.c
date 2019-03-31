@@ -1,18 +1,8 @@
 #include <x86/kernel/include/ram.h>
 #include <kernel/include/multiboot.h>
 
-struct E820_Table_Entry {
-    uint64_t base;
-    uint64_t size;
-    uint32_t type;
-    uint32_t acpi3;
-}__attribute__((packed));
-
 size_t E820_Table_size = 0;
 struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
-
-extern uint32_t RAM_Table_size;
-extern struct Memory_RAM_Table_Entry RAM_Table;
 
 uintptr_t RAM_MaxPresentMemoryAddress() {
 	uintptr_t mem_max = 0;
