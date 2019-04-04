@@ -11,13 +11,16 @@ STACK_TOP               equ 0x7000      ; Top of the stack - it can extend down 
 FLOPPY_ID               equ 0           ; Floppy ID used by the BIOS
 HDD_ID                  equ 0x80        ; ATA hard disk ID used by the BIOS
 
+BOOT1_START             equ 0x7C00      ; This is where the bootloader gets loaded in memory by the BIOS -- 0x7C00
+BOOT1_SIZE              equ 0x200       ; BIOS loads exactly one sector, the first sector of a bootable drive, in memory
+
 BOOT2_START             equ 0x8000      ; This is where the 2nd stage of the boot loader is loaded in memory
 BOOT2_DISK_START        equ 0x01        ; Starting sector of the 2nd stage of the boot loader on disk
 BOOT2_SIZE              equ 0x20        ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
-ORG 0x7C00
+ORG BOOT1_START
 
 ; The x86 system always starts in the REAL mode
 ; This is the 16-bit mode without any of the protected mode features
@@ -224,15 +227,9 @@ Halt_Message         db 'Unable to read AVOS loader from disk', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Adding a zero padding till the start of the 4x16 byte primary partition table that contains 4 primary partition entries, each 16 bytes long
+; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 446-($-$$) db 0 
-
-; Primary partition table - we will not fill it here
-
-Partition_Table:
-
-times 510-($-$$) db 0 
+times BOOT1_SIZE-2-($-$$) db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 

@@ -1,18 +1,21 @@
 #include <kernel/include/common.h>
 #include <kernel/include/machine.h>
-
-extern uintptr_t Multiboot_Info;
+#include <kernel/include/multiboot.h>
 
 extern void Paging_Initialize();
 extern void Paging_SwitchToHigherHalf();
 extern void GDT_Initialize();
 extern void IDT_Initialize();
 extern bool RAM_Initialize();
-extern void Memory_Physical_Initialize();
 extern void Welcome();
+
+extern void AVOS_Launch(uint32_t magic, uintptr_t bootinfo);
+extern void AVOS_Halt();
 extern void AVOS();
 
-void LaunchAVOS(uintptr_t bootinfo) {
+void AVOS_Launch(uint32_t magic, uintptr_t bootinfo) {
+
+	if (magic != MULTIBOOT2_MAGIC) AVOS_Halt();
 
 	Paging_Initialize();
 
@@ -24,15 +27,20 @@ void LaunchAVOS(uintptr_t bootinfo) {
 	
 	IDT_Initialize();
 
-	if (!RAM_Initialize()) {
-		while (1) {
-			Interrupt_DisableAll();
-			System_Halt();
-		}		
-	}
+	if (!RAM_Initialize()) AVOS_Halt();
 
 	Welcome();
 
 	AVOS();
 
 }
+
+void AVOS_Halt() {
+
+	while (true) {
+		Interrupt_DisableAll();
+		System_Halt();
+	}		
+
+}
+

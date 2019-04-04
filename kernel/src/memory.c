@@ -36,7 +36,7 @@ uintptr_t Memory_NodeDispenser_New() {
     }
 
     if (pointer == (uintptr_t)MEMORY_NULL_PTR) return (uintptr_t)MEMORY_NULL_PTR;
-    if (Memory_Physical_AllocateBlock(pointer) == false) {
+    if (!Memory_Physical_AllocateBlock(pointer)) {
         Dispensary_pagemap[ptridx] = 0;
         return (uintptr_t)MEMORY_NULL_PTR;
     }
@@ -53,21 +53,15 @@ bool Memory_NodeDispenser_Delete(uintptr_t pointer) {
 
 size_t Memory_NodeDispenser_NodesLeft(struct Memory_NodeDispenser* dispenser) {
     size_t size = 0;
-    struct Memory_NodeDispenser* current_dispenser = dispenser;
-    while (current_dispenser != MEMORY_NULL_PTR) {
-        size += current_dispenser->size;
-        current_dispenser = current_dispenser->next;
-    }
+	for (struct Memory_NodeDispenser* idisp = dispenser; idisp != MEMORY_NULL_PTR; idisp = idisp->next) size += idisp->size;
     return size;
 }
 
 size_t Memory_NodeDispenser_FullCount(struct Memory_NodeDispenser* dispenser) {
     size_t count = 0;
-    struct Memory_NodeDispenser* current_dispenser = dispenser;
-    while (current_dispenser != MEMORY_NULL_PTR) {
-        if (current_dispenser->size == DISPENSER_FULL_SIZE) count++;
-        current_dispenser = current_dispenser->next;
-    }
+	for (struct Memory_NodeDispenser* idisp = dispenser; idisp != MEMORY_NULL_PTR; idisp = idisp->next) {
+        if (idisp->size == DISPENSER_FULL_SIZE) count++;
+	}
     return count;
 }
 
@@ -75,8 +69,7 @@ bool Memory_NodeDispenser_Return(struct Memory_Node* node) {
     if (node == MEMORY_NULL_PTR || (node->attrib | 0xFF) == node->attrib) return false;
     node->attrib |= 0xFF;
     struct Memory_NodeDispenser* dispenser = DISPENSER_FROM_NODE(node);
-    if (dispenser->freenode == (uintptr_t)dispenser) dispenser->freenode = (uintptr_t)node;
-    else if (dispenser->freenode > (uintptr_t)node)  dispenser->freenode = (uintptr_t)node;
+    if (dispenser->freenode == (uintptr_t)dispenser || dispenser->freenode > (uintptr_t)node) dispenser->freenode = (uintptr_t)node;
     (dispenser->size)++;
     return true;
 }
@@ -93,69 +86,53 @@ bool Memory_NodeDispenser_Refill(struct Memory_NodeDispenser* dispenser) {
     new_dispenser->size = DISPENSER_FULL_SIZE;
     new_dispenser->attrib = 0;
     new_dispenser->next = MEMORY_NULL_PTR;
-    struct Memory_Node* nodes = (struct Memory_Node*)(new_dispenser->freenode);
-    for (size_t i = 0; i < new_dispenser->size; i++) nodes[i].attrib = 0xFF;
+    struct Memory_Node* nodes = (struct Memory_Node*)(DISPENSER_FIRST_NODE(new_dispenser));
+    for (size_t i = 0; i < DISPENSER_FULL_SIZE; i++) nodes[i].attrib = 0xFF;
     return true;
 }
 
 void Memory_NodeDispenser_Retire(struct Memory_NodeDispenser* dispenser) {
-    if (Memory_NodeDispenser_FullCount(dispenser) > 1) {
-        bool foundone = false;
-        struct Memory_NodeDispenser* current_dispenser = dispenser;
-        while (current_dispenser != MEMORY_NULL_PTR) {
-            if (current_dispenser->size == DISPENSER_FULL_SIZE) {
-                if (!foundone) {
-                    foundone = true;
-                    current_dispenser = current_dispenser->next;
-                }
-                else {
-                    struct Memory_NodeDispenser* disp = dispenser;
-                    while (disp->next != current_dispenser) disp = disp->next;
-                    struct Memory_NodeDispenser* next = current_dispenser->next;
-                    bool freed = Memory_NodeDispenser_Delete((uintptr_t)current_dispenser);
-                    if (freed) {
-                        disp->next = next;
-                        current_dispenser = next;
-                    }
-                }
-            }
-        }
-    }
+	if (Memory_NodeDispenser_FullCount(dispenser) <= 1) return;
+
+	struct Memory_NodeDispenser* pdisp = dispenser;
+	bool found_one_full = false;
+	for (struct Memory_NodeDispenser* idisp = dispenser; idisp != MEMORY_NULL_PTR; pdisp = idisp, idisp = idisp->next) {
+	    if (idisp->size != DISPENSER_FULL_SIZE) continue;
+	    if (!found_one_full) found_one_full = true;
+	    else {
+	        struct Memory_NodeDispenser* ndisp = idisp->next;
+	        if (Memory_NodeDispenser_Delete((uintptr_t)idisp)) pdisp->next = ndisp;
+	    }
+	}
 }
 
 struct Memory_Node* Memory_NodeDispenser_Dispense(struct Memory_NodeDispenser* dispenser) {
-    if (dispenser == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+	if (dispenser == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+	size_t nodes_left = Memory_NodeDispenser_NodesLeft(dispenser);
+	if (nodes_left == 0) return MEMORY_NULL_PTR;
 
-    size_t nodes_left = Memory_NodeDispenser_NodesLeft(dispenser);
-    if (nodes_left == 0) return MEMORY_NULL_PTR;
-    else {
-        struct Memory_NodeDispenser* current_dispenser = dispenser;
-        while (current_dispenser != MEMORY_NULL_PTR && (uintptr_t)(current_dispenser->freenode) == (uintptr_t)current_dispenser) current_dispenser = current_dispenser->next;
-        if (current_dispenser == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
-        else {
-            struct Memory_Node* return_node = (struct Memory_Node*)(current_dispenser->freenode);
-            return_node->attrib &= (~0xFF);
-            current_dispenser->freenode = (uintptr_t)current_dispenser;
-            struct Memory_Node* nodes = (struct Memory_Node*)DISPENSER_FIRST_NODE(current_dispenser);
-            for (size_t i = 0; i < DISPENSER_FULL_SIZE; i++) {
-                if ((nodes[i].attrib | 0xFF) == nodes[i].attrib) current_dispenser->freenode = (uintptr_t)(&(nodes[i]));
-            }
-            (current_dispenser->size)--;
-            if (nodes_left < DISPENSER_BOTTOM_OUT) Memory_NodeDispenser_Refill(dispenser);
-            return return_node;
-        }
-    }
+	struct Memory_NodeDispenser* current_dispenser = dispenser;
+	while (current_dispenser != MEMORY_NULL_PTR && (uintptr_t)(current_dispenser->freenode) == (uintptr_t)current_dispenser) current_dispenser = current_dispenser->next;
+	if (current_dispenser == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
+
+	struct Memory_Node* return_node = (struct Memory_Node*)(current_dispenser->freenode);
+	return_node->attrib &= (~0xFF);
+	(current_dispenser->size)--;
+	current_dispenser->freenode = (uintptr_t)current_dispenser;
+	struct Memory_Node* nodes = (struct Memory_Node*)DISPENSER_FIRST_NODE(current_dispenser);
+	for (size_t i = 0; i < DISPENSER_FULL_SIZE; i++) {
+	    if ((nodes[i].attrib | 0xFF) == nodes[i].attrib) current_dispenser->freenode = (uintptr_t)(&(nodes[i]));
+	}
+
+	if (nodes_left < DISPENSER_BOTTOM_OUT) Memory_NodeDispenser_Refill(dispenser);
+	return return_node;
 }
 
 bool Memory_Map_Contains(struct Memory_Map* stack, uintptr_t ptr_min, uintptr_t ptr_max) {
     if (stack == MEMORY_NULL_PTR) return false;
-
-	struct Memory_Node* current = stack->start;
-	while (current != MEMORY_NULL_PTR) {
-		if (ptr_min >= current->pointer && ptr_max <= current->pointer + current->size * Memory_Node_GetBaseSize(stack->attrib)) return true;
-		current = current->next;
+	for (struct Memory_Node* imnode = stack->start; imnode != MEMORY_NULL_PTR; imnode = imnode->next) {
+		if (ptr_min >= imnode->pointer && ptr_max <= imnode->pointer + imnode->size * Memory_Node_GetBaseSize(stack->attrib)) return true;
 	}
-
 	return false;
 }
 
@@ -194,14 +171,12 @@ bool Memory_Map_Append(struct Memory_Map* stack, struct Memory_Node* node, bool 
 	if (last_node == MEMORY_NULL_PTR) return Memory_Map_Push(stack, node, merge);
 	while (last_node->next != MEMORY_NULL_PTR) last_node = last_node->next;
 
-    if (last_node->pointer + last_node->size * node_base_size != node->pointer || !merge) {
-        last_node->next = node;
-    }
-    else {
+	if (merge && last_node->pointer + last_node->size * node_base_size == node->pointer) {
         last_node->size += node->size;
         Memory_NodeDispenser_Return(node);
         Memory_NodeDispenser_Retire(stack->node_dispenser);
-    }
+	}
+	else last_node->next = node;
 
     stack->size += node->size;
     return true;

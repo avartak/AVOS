@@ -43,7 +43,7 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
 
 bool RAM_Initialize() {
 	struct Multiboot_Tag* tag;
-	for (tag = (struct Multiboot_Tag*) (Multiboot_Info + 2); tag->type != MULTIBOOT2_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
+	for (tag = (struct Multiboot_Tag*) ((uint32_t*)Multiboot_Info + 2); tag->type != MULTIBOOT2_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
 		if (tag->type != MULTIBOOT2_TAG_TYPE_MMAP) continue;
 		E820_Table_size  = (tag->size - 0x10) / 0x18;
 		E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);

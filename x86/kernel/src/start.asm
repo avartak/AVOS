@@ -2,7 +2,6 @@ BITS 32
 
 section .text
 
-MULTIBOOT2_MAGIC        equ 0x36d76289
 KERNEL_START            equ 0x100000
 KERNEL_STACK_PTR_OFFSET equ 0x6000
 
@@ -13,17 +12,10 @@ Start:
 
 	mov  esp, KERNEL_START+KERNEL_STACK_PTR_OFFSET
 
-	cmp  eax, MULTIBOOT2_MAGIC
-	jne  HaltSystem
-
-	extern LaunchAVOS
+	extern AVOS_Launch
 	push ebx
-	call LaunchAVOS
-
-	HaltSystem:
-	cli
-	hlt
-	jmp  HaltSystem
+	push eax
+	call AVOS_Launch
 
 	%include "kernel/src/multiboot.asm"
 

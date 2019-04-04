@@ -3,10 +3,10 @@
 #include <kernel/include/memory.h>
 #include <kernel/include/machine.h>
 
-int32_t                   Interrupt_kernel_reentries = 0;
-uint16_t                  Interrupt_active_IRQs = 0xFFFF;
-uintptr_t                 Interrupt_stack;
-struct Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
+int32_t   Interrupt_kernel_reentries = 0;
+uint16_t  Interrupt_active_IRQs = 0xFFFF;
+uintptr_t Interrupt_stack;
+struct    Interrupt_Handler* Interrupt_Handler_map = MEMORY_NULL_PTR;
 
 void Interrupt_Initialize() {
 	Interrupt_Handler_map = (struct Interrupt_Handler*)(Memory_Virtual_Allocate(0x1000));

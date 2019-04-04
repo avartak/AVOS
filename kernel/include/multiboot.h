@@ -3,6 +3,7 @@
 
 #include <kernel/include/common.h>
 
+#define MULTIBOOT2_MAGIC         0x36d76289
 #define MULTIBOOT2_TAG_TYPE_END  0
 #define MULTIBOOT2_TAG_TYPE_MMAP 6
 
@@ -12,6 +13,7 @@ struct Multiboot_Tag {
 	uint32_t size;
 };
 
-extern uint32_t* Multiboot_Info;
+//extern uint32_t* Multiboot_Info;
+extern uintptr_t Multiboot_Info;
 
 #endif
