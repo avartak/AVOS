@@ -1,8 +1,5 @@
-#include <x86/kernel/include/ram.h>
-#include <kernel/include/multiboot.h>
-
-size_t E820_Table_size = 0;
-struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
+#include <x86/boot/include/ram.h>
+#include <x86/boot/include/e820.h>
 
 uintptr_t RAM_MaxPresentMemoryAddress() {
 	uintptr_t mem_max = 0;
@@ -41,18 +38,9 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
 	return false;
 }
 
-bool RAM_Initialize() {
-	struct Multiboot_Tag* tag;
-	for (tag = (struct Multiboot_Tag*) ((uint32_t*)Multiboot_Info + 2); tag->type != MULTIBOOT2_TAG_TYPE_END; tag = (struct Multiboot_Tag*) ((uint8_t*)tag + ((tag->size + 7) & ~7))) {
-		if (tag->type != MULTIBOOT2_TAG_TYPE_MMAP) continue;
-		E820_Table_size  = (tag->size - 0x10) / 0x18;
-		E820_Table = (struct E820_Table_Entry*)((uint8_t*)tag + 0x10);
-	}
-	
-	if (!RAM_IsMemoryPresent(0x100000, 0x1000000)) return false;
-
-	RAM_Table_size = 0;
-	struct Memory_RAM_Table_Entry* table_ptr = &RAM_Table;
+uintptr_t RAM_StoreMap(uintptr_t addr) {
+	size_t table_size  = 0;
+	struct RAM_Table_Entry* table_ptr = (struct RAM_Table_Entry*)(addr);
 	table_ptr->pointer = 0;
 	table_ptr->size = 0;
 	
@@ -63,7 +51,7 @@ bool RAM_Initialize() {
 		if (mem < mem-MEMORY_SIZE_PAGE || mem > mem_end) break;
 		
 		if (RAM_IsMemoryPresent(mem-MEMORY_SIZE_PAGE, mem)) {
-			if (table_ptr->size == 0) RAM_Table_size++;
+			if (table_ptr->size == 0) table_size++;
 			table_ptr->size += MEMORY_SIZE_PAGE;
 		}
 		else {
@@ -75,7 +63,9 @@ bool RAM_Initialize() {
 			}
 		}
 	}
+	table_size *= sizeof(struct RAM_Table_Entry);
 
-	return true;
+	if (!RAM_IsMemoryPresent(0x00100000, 0x01000000)) return 0;
+
+	return addr + table_size;
 }
-

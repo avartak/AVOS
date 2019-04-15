@@ -21,24 +21,25 @@ BITS 16
 ; If the line is enabled it returns
 ; Otherwise, it halts the computer
 
-EnableA20:
+global A20_Enable
+A20_Enable:
 
-	call CheckA20                                     ; Check if A20 line is enabled
+	call A20_IsEnabled                                ; Check if A20 line is enabled
 	test al, al                                       ; If AX is 0, then the A20 line is disabled
 	jnz  .end
 	
-	call EnableA20BIOS                                ; Enable the A20 line using BIOS
-	call CheckA20                                     ; Check again and print the A20 line status
+	call A20_EnableWithBIOS                           ; Enable the A20 line using BIOS
+	call A20_IsEnabled                                ; Check again and print the A20 line status
 	test al, al                                       ; Check again
 	jnz  .end
 	
-	call EnableA20Keyboard                            ; Enable the A20 line using the PS/2 (8042) controller
-	call CheckA20                                     ; Check again and print the A20 line status
+	call A20_EnableWithKeyboard                       ; Enable the A20 line using the PS/2 (8042) controller
+	call A20_IsEnabled                                ; Check again and print the A20 line status
 	test al, al                                       ; Check again
 	jnz  .end
 	
-	call EnableA20FastGate                            ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
-	call CheckA20                                     ; Check again and print the A20 line status
+	call A20_EnableWithFastGate                       ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
+	call A20_IsEnabled                                ; Check again and print the A20 line status
 	test al, al                                       ; Check again
 	jnz  .end
 	
@@ -51,7 +52,7 @@ EnableA20:
 
 ; The following code is public domain licensed
  
-; CheckA20 : Check the status of the A20 line in a completely self-contained state-preserving way.
+; A20_IsEnabled : Check the status of the A20 line in a completely self-contained state-preserving way.
 ; The function can be modified as necessary by removing push's at the beginning and their
 ; respective pop's at the end if complete self-containment is not required.
 ;
@@ -61,7 +62,7 @@ EnableA20:
 
 
 
-CheckA20:
+A20_IsEnabled:
 	push ds                                           ; Push the data segments as well
 	push es
 	
@@ -103,16 +104,16 @@ CheckA20:
 
 
 
-; EnableA20BIOS : Enable the A20 line using INT 15H
+; A20_EnableWithBIOS : Enable the A20 line using INT 15H
 ; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
-EnableA20BIOS:
+A20_EnableWithBIOS:
 	mov ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
 	int 0x15
 	ret
 
 
-; EnableA20Keyboard : Enable the A20 line the 8042 controller for the PS/2 keyboard
+; A20_EnableWithKeyboard : Enable the A20 line the 8042 controller for the PS/2 keyboard
 ; The first byte of the PS/2 controller output controls the A20 gate
 ; We will need to enable this bit
 ; First we disable the PS/2 ports (this operation does not have anything to do with the PS/2 ports)
@@ -134,73 +135,73 @@ TEST_8042_WRITE_ACCESS        equ 0x02                ; We always test if the 2n
 
 A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data from the PS/2 controller output port drives the A20 gate
 
-EnableA20Keyboard:
+A20_EnableWithKeyboard:
 
 	; Disbale PS/2 port 1
-	call WriteWaitFor8042                      
+	call A20_WriteWaitFor8042                      
 	mov  al, COMD_8042_DISABLE_PS2_PORT1      
 	out  IOPORT_8042_COMD, al
 	
 	; Disbale PS/2 port 2
-	call WriteWaitFor8042                      
+	call A20_WriteWaitFor8042                      
 	mov  al, COMD_8042_DISABLE_PS2_PORT2      
 	out  IOPORT_8042_COMD, al
 	
 	; Command to read from PS/2 controller output port
-	call WriteWaitFor8042
+	call A20_WriteWaitFor8042
 	mov  al, COMD_8042_READ_CONT_OUT_PORT
 	out  IOPORT_8042_COMD, al
 	
 	; Read PS/2 controller output port
-	call ReadWaitFor8042
+	call A20_ReadWaitFor8042
 	in   al, IOPORT_8042_DATA
 	push ax
 	
 	; Command to write to PS/2 controller output port
-	call WriteWaitFor8042
+	call A20_WriteWaitFor8042
 	mov  al, COMD_8042_WRITE_CONT_OUT_PORT
 	out  IOPORT_8042_COMD, al
 	
 	; Enable A20 bit
-	call WriteWaitFor8042
+	call A20_WriteWaitFor8042
 	pop  ax
 	or   al, A20_BIT_ENABLE
 	out  IOPORT_8042_DATA, al
 	
 	; Enable PS/2 port 1
-	call WriteWaitFor8042
+	call A20_WriteWaitFor8042
 	mov  al, COMD_8042_ENABLE_PS2_PORT1
 	out  IOPORT_8042_COMD, al
 	
 	; Enable PS/2 port 2
-	call WriteWaitFor8042                      
+	call A20_WriteWaitFor8042                      
 	mov  al, COMD_8042_ENABLE_PS2_PORT2      
 	out  IOPORT_8042_COMD, al
 	
 	ret
  
 
-; ReadWaitFor8042 : Function to poll the 8042 status register to check if we have read access to the data port 
+; A20_ReadWaitFor8042 : Function to poll the 8042 status register to check if we have read access to the data port 
 
-ReadWaitFor8042:
+A20_ReadWaitFor8042:
 	in   al, IOPORT_8042_COMD
 	test al, TEST_8042_READ_ACCESS
-	jz   ReadWaitFor8042
+	jz   A20_ReadWaitFor8042
 	ret
 
-; ReadWaitFor8042 : Function to poll the 8042 status register to check if we have write access to the data and command ports 
+; A20_WriteWaitFor8042 : Function to poll the 8042 status register to check if we have write access to the data and command ports 
 
-WriteWaitFor8042:
+A20_WriteWaitFor8042:
 	in   al, IOPORT_8042_COMD
 	test al, TEST_8042_WRITE_ACCESS
-	jnz  WriteWaitFor8042
+	jnz  A20_WriteWaitFor8042
 	ret
 
 
 
-; EnableA20FastGate : Enable the A20 line using the 'Fast A20 Gate'
+; A20_EnableWithFastGate : Enable the A20 line using the 'Fast A20 Gate'
 
-EnableA20FastGate:
+A20_EnableWithFastGate:
 	in   al, 0x92
 	or   al, 2
 	out  0x92, al	

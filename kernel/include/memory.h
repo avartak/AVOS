@@ -30,7 +30,7 @@ Bits  8-15  : Node size
 #define MEMORY_PAGE_MASK               (~0xFFF)
 
 #define DISPENSARY_SIZE                0x400
-#define DISPENSER_PRIME_ADDRESS        0xC0102000
+#define DISPENSER_PRIME_ADDRESS        0xC0101000
 #define DISPENSER_BOTTOM_OUT           8
 #define DISPENSER_FULL_SIZE            (0x1000 - sizeof(struct Memory_NodeDispenser)) / sizeof(struct Memory_Node)
 #define DISPENSER_FROM_NODE(node)      ((struct Memory_NodeDispenser*)((uintptr_t)node & (~0xFFF)))

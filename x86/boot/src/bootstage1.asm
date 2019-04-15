@@ -6,21 +6,13 @@
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
-STACK_TOP               equ 0x7000      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
-
-FLOPPY_ID               equ 0           ; Floppy ID used by the BIOS
-HDD_ID                  equ 0x80        ; ATA hard disk ID used by the BIOS
-
-BOOT1_START             equ 0x7C00      ; This is where the bootloader gets loaded in memory by the BIOS -- 0x7C00
-BOOT1_SIZE              equ 0x200       ; BIOS loads exactly one sector, the first sector of a bootable drive, in memory
-
-BOOT2_START             equ 0x8000      ; This is where the 2nd stage of the boot loader is loaded in memory
-BOOT2_DISK_START        equ 0x01        ; Starting sector of the 2nd stage of the boot loader on disk
-BOOT2_SIZE              equ 0x20        ; Size of the 2nd stage of the boot loader in sectors (512 B)
+STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+BOOT2_DISK_START        equ 1                                           ; Starting sector of the 2nd stage of the boot loader on disk
+BOOT2_SIZE              equ 0x20                                        ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
-ORG BOOT1_START
+section .boot
 
 ; The x86 system always starts in the REAL mode
 ; This is the 16-bit mode without any of the protected mode features
@@ -31,6 +23,7 @@ BITS 16
 ; This is where the bootloader starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+global BootStage1
 BootStage1:
 
 	; The 512 B available here are too few to do much in terms of loading an OS
@@ -65,7 +58,7 @@ BootStage1:
 	; First we need to check that these BIOS extensions exist
 	; For that we need to call the INT 0x13, AH=0x41 routine
 	; This routine takes the following inputs :
-	; - DL : Drive ID
+	; - DL : Drive ID (Note : BIOS stores the drive ID in DL when control is transferred to the boot loader)
 	; - BX : 0x55AA
 	; - AH : 0x41
 	; Its results are :
@@ -77,8 +70,8 @@ BootStage1:
 	;        2 -> Drive locking and ejecting
 	;        4 -> Enhanced Disk Drive (EDD) support 
 	; If BIOS extension is not usable we fall back to the 'old' BIOS routine that reads from disk using the CHS scheme	
-	
-	mov   dl, HDD_ID
+
+	mov   [Boot_Drive_ID], dl
 	mov   bx, 0x55AA
 	mov   ah, 0x41
 	int   0x13
@@ -93,7 +86,7 @@ BootStage1:
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	mov   dl, HDD_ID
+	mov   dl, BYTE [Boot_Drive_ID]
 	mov   si, Disk_Address_Packet
 	mov   ah, 0x42
 	int   0x13
@@ -124,7 +117,7 @@ BootStage1:
 	xor   ax, ax
 	mov   es, ax
 	mov   di, ax
-	mov   dl, HDD_ID
+	mov   dl, BYTE [Boot_Drive_ID]
 	mov   ah, 0x08
 	int   0x13
 	jc    HaltSystem
@@ -165,7 +158,7 @@ BootStage1:
 	xor   ax, ax
 	mov   es, ax
 	mov   bx, BOOT2_START
-	mov   dl, HDD_ID
+	mov   dl, BYTE [Boot_Drive_ID]
 	mov   al, BOOT2_SIZE
 
 	; Now call INT 0x13, AH=0x02
@@ -177,6 +170,7 @@ BootStage1:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
+	mov   dl, BYTE [Boot_Drive_ID]
 	jmp   BOOT2_START 
 	
 
@@ -209,6 +203,7 @@ BootStage1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Disk_CHS_Geometry:
+Boot_Drive_ID        db 0
 Heads                db 2
 Sectors_Per_Track    db 18
 Sectors_Per_Cylinder dw 18
@@ -223,18 +218,17 @@ DAP_Memory_Segment   dw 0
 DAP_Start_Sector     dq BOOT2_DISK_START
 
 Messages:
-Halt_Message         db 'Unable to read AVOS loader from disk', 0
+Halt_Message         db 'Unable to read AVOS from disk', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times BOOT1_SIZE-2-($-$$) db 0 
+times 512-2-($-$$) db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 
 Boot_Signature:
-
 dw   0xAA55
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -250,20 +244,14 @@ dw   0xAA55
 ; 0x0A0000 - 0x0C0000 : Video memory            
 ; 0x0C0000 - 0x100000 : BIOS            
 
-; We set the top of the stack at 0x7000; it can go down to 0x500 allowing for 26 KB (plenty)
-; 0x000500 - 0x007000
-
-; We allocate 1 KB buffer from 0x7000 to 0x7400; it can extend till 0x7C00 (3 KB) if needed
-; 0x007000 - 0x007C00
+; We set the top of the stack at 0x7000; it can go down to 0x1000 allowing for 24 KB (plenty)
+; 0x001000 - 0x007000
 
 ; The first stage of our boot loader will (rather has to) reside at :
 ; 0x007C00 - 0x007E00
 
-; We use the next 512 bytes to set up a GDT
-; 0x007E00 - 0x008000
-
 ; We will put the second stage of our boot loader at 0x8000 and allocate 32 KB of memory for it 
 ; 0x008000 - 0x010000
 
-; And then any other tables will start from 0x10000
 
+BOOT2_START:

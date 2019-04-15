@@ -2,21 +2,40 @@ BITS 32
 
 section .text
 
-KERNEL_START            equ 0x100000
-KERNEL_STACK_PTR_OFFSET equ 0x6000
+KERNEL_STACK_PTR_OFFSET   equ 0x4000
+KERNEL_HIGHER_HALF_OFFSET equ 0xC0000000
+
+
+extern Paging_Initialize
+extern Paging_SwitchToHigherHalf
+extern GDT_Initialize
+extern IDT_Initialize
+extern Welcome
+extern AVOS
 
 global Start
 Start:
 
 	cli
+	mov   esp, Start+KERNEL_STACK_PTR_OFFSET-KERNEL_HIGHER_HALF_OFFSET
+	add   ebx, KERNEL_HIGHER_HALF_OFFSET
+	mov   [Boot_Info_Ptr-KERNEL_HIGHER_HALF_OFFSET], ebx
 
-	mov  esp, KERNEL_START+KERNEL_STACK_PTR_OFFSET
+	call  Paging_Initialize
+	call  Paging_SwitchToHigherHalf
+	call  GDT_Initialize
+	call  IDT_Initialize
+	call  Welcome
 
-	extern AVOS_Launch
-	push ebx
-	push eax
-	call AVOS_Launch
-
-	%include "kernel/src/multiboot.asm"
+	jmp   AVOS
 
 	times KERNEL_STACK_PTR_OFFSET-($-$$) db 0
+
+
+
+section .data
+
+	global Boot_Info_Ptr
+	Boot_Info_Ptr:
+	dd 0
+
