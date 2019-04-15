@@ -14,6 +14,6 @@ struct Boot_Info_Entry {
 extern struct Boot_Info_Entry Boot_Info;
 extern struct VBE_Info VBE_Table;
 
-extern bool Boot_Info_Prepare();
+extern bool Boot_Info_Store();
 
 #endif

@@ -38,7 +38,7 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
 	return false;
 }
 
-uintptr_t RAM_StoreMap(uintptr_t addr) {
+uintptr_t RAM_StoreInfo(uintptr_t addr) {
 	size_t table_size  = 0;
 	struct RAM_Table_Entry* table_ptr = (struct RAM_Table_Entry*)(addr);
 	table_ptr->pointer = 0;

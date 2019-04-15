@@ -85,6 +85,7 @@ BITS 16
 	mov   ebp, [BIOS_Regs16.ebp]
 
 	push  ds
+
 	lidt  [IDT_Desc]
 
 	cmp   WORD [BIOS_Int_ID], 0x10

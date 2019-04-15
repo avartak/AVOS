@@ -19,7 +19,7 @@ SEG32_DATA              equ 0x10                                        ; 32-bit
 
 extern A20_Enable
 extern DiskIO_ReadFromDisk
-extern Boot_Info_Prepare
+extern Boot_Info_Store
 
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
@@ -109,7 +109,7 @@ BITS 32
 	
 	; Store boot information
 
-	call Boot_Info_Prepare
+	call Boot_Info_Store
 	test al, al
 	jz   HaltSystem32
 
@@ -156,6 +156,8 @@ GDT_Desc:
 	dd GDT
 	dw 0
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 section .bss

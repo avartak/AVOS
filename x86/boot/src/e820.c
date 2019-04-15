@@ -4,7 +4,7 @@
 size_t E820_Table_size = 0;
 struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
 
-uintptr_t E820_StoreMap(uintptr_t addr) {
+uintptr_t E820_StoreInfo(uintptr_t addr) {
 
 	E820_Table = (struct E820_Table_Entry*)addr;
 	struct E820_Table_Entry* current_entry = E820_Table;

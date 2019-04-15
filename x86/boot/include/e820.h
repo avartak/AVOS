@@ -13,6 +13,6 @@ struct E820_Table_Entry {
 extern size_t E820_Table_size;
 extern struct E820_Table_Entry* E820_Table;
 
-extern uintptr_t E820_StoreMap(uintptr_t addr);
+extern uintptr_t E820_StoreInfo(uintptr_t addr);
 
 #endif

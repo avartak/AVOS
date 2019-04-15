@@ -9,7 +9,12 @@ uint8_t  Dispensary_pagemap[DISPENSARY_SIZE];
 uint32_t Dispensary_pagetable[0x400]__attribute__((aligned(0x1000)));
 struct   Memory_NodeDispenser* Dispensary_nodepot = MEMORY_NULL_PTR;
 
-extern uint32_t* Boot_Info_Ptr;
+struct Boot_Info_Entry {
+    uintptr_t address;
+    uint32_t  size;
+}__attribute__((packed));
+
+extern struct Boot_Info_Entry* Boot_Info_Ptr;
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {
     uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -358,12 +363,10 @@ struct Memory_Node* Memory_Map_Get(struct Memory_Map* stack, uintptr_t node_ptr)
 }
 
 void Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end) {
-	size_t last_idx = 0;
-	while (Boot_Info_Ptr[last_idx] != 0xFFFFFFFF) last_idx++;
-
-    struct Memory_RAM_Table_Entry* table_ptr = (struct Memory_RAM_Table_Entry*)(Boot_Info_Ptr[last_idx-2]+KERNEL_HIGHER_HALF_OFFSET);
+    struct Memory_RAM_Table_Entry* table_ptr = (struct Memory_RAM_Table_Entry*)(Boot_Info_Ptr[BOOT_INFO_RAM_MAP_INDEX].address+KERNEL_HIGHER_HALF_OFFSET);
     if (mem_start < table_ptr[0].pointer) return;
-    for (size_t i = 0; i < Boot_Info_Ptr[last_idx-1]/sizeof(struct Memory_RAM_Table_Entry) && table_ptr[i].pointer < mem_end; i++) {
+
+    for (size_t i = 0; i < Boot_Info_Ptr[BOOT_INFO_RAM_MAP_INDEX].size/sizeof(struct Memory_RAM_Table_Entry) && table_ptr[i].pointer < mem_end; i++) {
         struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
         if (node == MEMORY_NULL_PTR) return;
         node->pointer = table_ptr[i].pointer;
