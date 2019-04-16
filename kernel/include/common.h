@@ -11,8 +11,14 @@
 
 #define KERNEL_HIGHER_HALF_OFFSET 0xC0000000
 
-#define BOOT_INFO_VBE_MAP_INDEX   0
-#define BOOT_INFO_RAM_MAP_INDEX   2
+#define BOOTINFO_ENTRY_VBE        0
+#define BOOTINFO_ENTRY_E820       1
+#define BOOTINFO_ENTRY_RAM        2
+
+struct Info_Entry {
+    uintptr_t address;
+    size_t    size;
+}__attribute__((packed));
 
 typedef uint32_t clock_t;
 

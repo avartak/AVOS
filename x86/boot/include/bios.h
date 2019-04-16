@@ -19,6 +19,7 @@ struct BIOS_Registers {
 }__attribute__((packed));
 
 extern void BIOS_Interrupt(uint32_t interrupt, struct BIOS_Registers* regs);
+extern void BIOS_ClearRegistry(struct BIOS_Registers* regs);
 
 #endif
 

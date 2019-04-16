@@ -1,6 +1,8 @@
 #include <kernel/include/memory.h>
 #include <kernel/include/paging.h>
 
+extern struct Info_Entry* BootInfo_Ptr;
+
 struct Memory_Map Memory_Physical_free;
 struct Memory_Map Memory_Virtual_free;
 struct Memory_Map Memory_Virtual_inuse;
@@ -8,13 +10,6 @@ struct Memory_Map Memory_Virtual_inuse;
 uint8_t  Dispensary_pagemap[DISPENSARY_SIZE];
 uint32_t Dispensary_pagetable[0x400]__attribute__((aligned(0x1000)));
 struct   Memory_NodeDispenser* Dispensary_nodepot = MEMORY_NULL_PTR;
-
-struct Boot_Info_Entry {
-    uintptr_t address;
-    uint32_t  size;
-}__attribute__((packed));
-
-extern struct Boot_Info_Entry* Boot_Info_Ptr;
 
 size_t Memory_Node_GetBaseSize(uint32_t attrib) {
     uint8_t  base_size_attrib =  (uint8_t)((attrib & 0xFF00) >> 8);
@@ -363,14 +358,14 @@ struct Memory_Node* Memory_Map_Get(struct Memory_Map* stack, uintptr_t node_ptr)
 }
 
 void Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end) {
-    struct Memory_RAM_Table_Entry* table_ptr = (struct Memory_RAM_Table_Entry*)(Boot_Info_Ptr[BOOT_INFO_RAM_MAP_INDEX].address+KERNEL_HIGHER_HALF_OFFSET);
-    if (mem_start < table_ptr[0].pointer) return;
+    struct Info_Entry* table_ptr = (struct Info_Entry*)(BootInfo_Ptr[BOOTINFO_ENTRY_RAM].address+KERNEL_HIGHER_HALF_OFFSET);
+    if (mem_start < table_ptr[0].address) return;
 
-    for (size_t i = 0; i < Boot_Info_Ptr[BOOT_INFO_RAM_MAP_INDEX].size/sizeof(struct Memory_RAM_Table_Entry) && table_ptr[i].pointer < mem_end; i++) {
+    for (size_t i = 0; i < BootInfo_Ptr[BOOTINFO_ENTRY_RAM].size/sizeof(struct Info_Entry) && table_ptr[i].address < mem_end; i++) {
         struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
         if (node == MEMORY_NULL_PTR) return;
-        node->pointer = table_ptr[i].pointer;
-        node->size    = (mem_end > table_ptr[i].pointer + table_ptr[i].size ? table_ptr[i].size : mem_end - table_ptr[i].pointer) / MEMORY_SIZE_PAGE;
+        node->pointer = table_ptr[i].address;
+        node->size    = (mem_end > table_ptr[i].address + table_ptr[i].size ? table_ptr[i].size : mem_end - table_ptr[i].address) / MEMORY_SIZE_PAGE;
         node->attrib  = mem_map->attrib;
         node->next    = MEMORY_NULL_PTR;
         Memory_Map_Insert(mem_map, node, true);

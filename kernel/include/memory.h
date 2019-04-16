@@ -36,11 +36,6 @@ Bits  8-15  : Node size
 #define DISPENSER_FROM_NODE(node)      ((struct Memory_NodeDispenser*)((uintptr_t)node & (~0xFFF)))
 #define DISPENSER_FIRST_NODE(disp)     ((uintptr_t)disp + sizeof(struct Memory_NodeDispenser))
 
-struct Memory_RAM_Table_Entry {
-	uintptr_t pointer;
-	size_t    size;
-}__attribute__((packed));
-
 struct Memory_Node {
     uintptr_t pointer;
     size_t    size;

@@ -2,11 +2,7 @@
 
 This is where the action really starts!
 
-The first thing the kernel does is to perform low-level initialization of the system
-This low level initialization will be done by the Kinit() function 
-Since this initialization is architecture specific, the code resides in the x86 folder
-
-As of now, the kernel performs Kinit() and goes into a sleep loop.
+The kernel performs system initialization and goes into a sleep loop.
 The sleep loop is basically a halt instruction followed by a jump to the halt instruction. Why not just a halt ?
 Lets assume we got to the point of the sleep loop. At that point the system is in an idle state
 The only thing that will wake it up is an interrupt -- for example, lets say you press a key

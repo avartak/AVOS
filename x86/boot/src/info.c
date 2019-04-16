@@ -1,11 +1,15 @@
-#include <x86/boot/include/bootinfo.h>
+#include <x86/boot/include/info.h>
 
-bool Boot_Info_Store() {
+extern uint8_t Boot_Tables;
 
-	struct Boot_Info_Entry* binfo = &Boot_Info;
+bool BootInfo_Store() {
 
-	binfo[0].address = (uintptr_t)(&VBE_Table);
-	uintptr_t next = VBE_StoreInfo(binfo[0].address);
+	struct Info_Entry* binfo = &BootInfo_Table;
+
+	uintptr_t next = (uintptr_t)(&Boot_Tables);
+
+	binfo[0].address = next;
+	next = VBE_StoreInfo(next);
 	if (next == 0) return false;
 	binfo[0].size = next - binfo[0].address;
 

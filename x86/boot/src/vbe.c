@@ -9,22 +9,14 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 	(vinfo->signature)[2] = 'E';
 	(vinfo->signature)[3] = '2';
 
-    if (addr > 0xFFFFF) return 0;
+    if (addr > 0xA0000) return 0;
 
     struct BIOS_Registers BIOS_regs;
+	BIOS_ClearRegistry(&BIOS_regs);
 
     BIOS_regs.eax   = 0x00004F00;
-    BIOS_regs.ebx   = 0x00000000;
-    BIOS_regs.ecx   = 0x00000000;
-    BIOS_regs.edx   = 0x00000000;
-    BIOS_regs.esi   = 0x00000000;
     BIOS_regs.edi   = (addr & 0xF);
-    BIOS_regs.ebp   = 0x00000000;
-    BIOS_regs.esp   = 0x00000000;
-    BIOS_regs.ds    = 0x0000;
     BIOS_regs.es    = (addr >> 4);
-    BIOS_regs.ss    = 0x0000;
-    BIOS_regs.flags = 0x0000;
 
 	BIOS_Interrupt(0x10, &BIOS_regs);
 

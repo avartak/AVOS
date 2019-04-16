@@ -10,9 +10,6 @@ struct E820_Table_Entry {
     uint32_t acpi3;
 }__attribute__((packed));
 
-extern size_t E820_Table_size;
-extern struct E820_Table_Entry* E820_Table;
-
 extern uintptr_t E820_StoreInfo(uintptr_t addr);
 
 #endif

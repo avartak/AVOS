@@ -1,8 +1,10 @@
 KERNEL_HIGHER_HALF_OFFSET equ 0xC0000000
 
+extern Paging_directory
+
 section .text
 
-extern Paging_directory
+BITS 32
 
 global Paging_Enable
 Paging_Enable:
