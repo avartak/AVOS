@@ -10,8 +10,12 @@
 
 #define GDT_TSS_SEG_TYPE_ACCESS   0x89
 
-#define GDT_SEG_GRANULARITY       0x0C
-#define GDT_TSS_GRANULARITY       0x00
+#define GDT_1MB_SEGMENTSIZE       0x00
+#define GDT_4GB_SEGMENTSIZE       0x08
+#define GDT_16BIT_PMODE           0x00
+#define GDT_32BIT_PMODE           0x04
+
+#define GDT_TSS_FLAGS             0x00
 
 #define GDT_KERN_CODE_SEG         0x08
 #define GDT_KERN_DATA_SEG         0x10
