@@ -70,7 +70,7 @@ BootStage1:
 	;        4 -> Enhanced Disk Drive (EDD) support 
 	; If BIOS extension is not usable we fall back to the 'old' BIOS routine that reads from disk using the CHS scheme	
 
-	mov   [Boot_Drive_ID], dl
+	mov   [Drive_ID], dl
 	mov   bx, 0x55AA
 	mov   ah, 0x41
 	int   0x13
@@ -85,7 +85,7 @@ BootStage1:
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	mov   dl, BYTE [Boot_Drive_ID]
+	mov   dl, BYTE [Drive_ID]
 	mov   si, Disk_Address_Packet
 	mov   ah, 0x42
 	int   0x13
@@ -116,7 +116,7 @@ BootStage1:
 	xor   ax, ax
 	mov   es, ax
 	mov   di, ax
-	mov   dl, BYTE [Boot_Drive_ID]
+	mov   dl, BYTE [Drive_ID]
 	mov   ah, 0x08
 	int   0x13
 	jc    HaltSystem
@@ -157,7 +157,7 @@ BootStage1:
 	xor   ax, ax
 	mov   es, ax
 	mov   bx, BOOT2_START
-	mov   dl, BYTE [Boot_Drive_ID]
+	mov   dl, BYTE [Drive_ID]
 	mov   al, BOOT2_SIZE
 
 	; Now call INT 0x13, AH=0x02
@@ -169,7 +169,7 @@ BootStage1:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
-	mov   dl, BYTE [Boot_Drive_ID]
+	mov   dl, BYTE [Drive_ID]
 	jmp   BOOT2_START 
 	
 
@@ -202,7 +202,7 @@ BootStage1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Disk_CHS_Geometry:
-Boot_Drive_ID        db 0
+Drive_ID             db 0
 Heads                db 2
 Sectors_Per_Track    db 18
 Sectors_Per_Cylinder dw 18

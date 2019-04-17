@@ -3,7 +3,7 @@
 
 #include <kernel/include/common.h>
 
-#define SCRATCH 0x7000
+#define DISKIO_SCRATCH 0x7000
 
 struct DiskIO_DAP {
 	uint8_t  size;

@@ -6,8 +6,6 @@
 #include <x86/boot/include/e820.h>
 #include <x86/boot/include/ram.h>
 
-extern struct Info_Entry BootInfo_Table;
-
-extern bool BootInfo_Store();
+extern void BootInfo_Store(uintptr_t tables_addr);
 
 #endif

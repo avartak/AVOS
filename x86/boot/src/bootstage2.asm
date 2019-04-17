@@ -14,11 +14,14 @@ KERNEL_DISK_START       equ 0x40                                        ; Starti
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
+MEMORY_ADDRESS_CHECK    equ 0x00C00000                                  ; Check if the system has usable RAM from 1 MB to this value 
+
 ; These are the externally defined functions and variables we need
 
 extern A20_Enable
 extern DiskIO_ReadFromDisk
 extern BootInfo_Store
+extern RAM_IsMemoryPresent
 
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
@@ -58,6 +61,7 @@ BootStage2:
 
 	call A20_Enable
 	test al, al
+    mov  si, ErrStr_A20
 	jz   HaltSystem16
 
 	; Load a valid GDT
@@ -77,6 +81,17 @@ BootStage2:
 	; Halt the system in case of trouble
 
 	HaltSystem16:
+    mov   ax, 0xB800
+    mov   es, ax
+    mov   di, 80*23*2
+    .printchar:
+        lodsb
+        test  al, al
+        jz    .printdone
+        mov   ah, 0x04
+        stosw
+        jmp   .printchar
+    .printdone:
 	cli
 	hlt
 	jmp  HaltSystem16
@@ -105,12 +120,21 @@ BITS 32
 	push DWORD [Boot_DriveID]
 	call DiskIO_ReadFromDisk
 	test al, al
+	mov  esi, ErrStr_DiskIO
 	jz   HaltSystem32
 	
 	; Store boot information
 
+	push Boot_Tables
 	call BootInfo_Store
+
+	; Check if the system has 1-12 MB of usable address space 
+
+	push MEMORY_ADDRESS_CHECK 
+	push KERNEL_START
+	call RAM_IsMemoryPresent
 	test al, al
+	mov  esi, ErrStr_Memory
 	jz   HaltSystem32
 
 	; Store the pointer to the boot information table
@@ -122,6 +146,15 @@ BITS 32
 	jmp  KERNEL_START
 
     HaltSystem32:
+    mov   edi, 0xB8000+80*23*2
+    .printchar:
+        lodsb
+        test  al, al
+        jz    .printdone
+        mov   ah, 0x04
+        stosw
+        jmp   .printchar
+    .printdone:
     cli
     hlt
     jmp  HaltSystem32
@@ -130,6 +163,13 @@ BITS 32
 
 
 section .data
+
+; Error strings in case the boot loader runs into trouble
+
+Messages: 
+ErrStr_A20     db 'A20 line could not be enabled', 0
+ErrStr_DiskIO  db 'Unable to read kernel image from disk', 0
+ErrStr_Memory  db 'Insufficient memory available', 0
 
 ; GDT with 32-bit (0x08, 0x10) and 16-bit (0x18, 0x20) entries
 
@@ -162,9 +202,5 @@ BootInfo_Table  resq 0x20
 
 ; This is where the boot information tables start
 
-global Boot_Tables
 Boot_Tables:
-
-
-
 

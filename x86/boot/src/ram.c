@@ -75,7 +75,5 @@ uintptr_t RAM_StoreInfo(uintptr_t addr) {
 	}
 	table_size *= sizeof(struct Info_Entry);
 
-	if (!RAM_IsMemoryPresent(0x00100000, 0x01000000)) return 0;
-
 	return addr + table_size;
 }

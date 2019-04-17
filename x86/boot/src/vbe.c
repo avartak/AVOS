@@ -9,8 +9,6 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 	(vinfo->signature)[2] = 'E';
 	(vinfo->signature)[3] = '2';
 
-    if (addr > 0xA0000) return 0;
-
     struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 
@@ -20,8 +18,8 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 
 	BIOS_Interrupt(0x10, &BIOS_regs);
 
-	if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return 0;
-	if ((vinfo->signature)[0] != 'V' || (vinfo->signature)[1] != 'E' || (vinfo->signature)[2] != 'S' || (vinfo->signature)[3] != 'A') return 0;
+	if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return addr;
+	if ((vinfo->signature)[0] != 'V' || (vinfo->signature)[1] != 'E' || (vinfo->signature)[2] != 'S' || (vinfo->signature)[3] != 'A') return addr;
 
 	uintptr_t vmodes = (uintptr_t)(vinfo->video_modes);
 	uint16_t* video_modes = (uint16_t*)(((vmodes >> 16) << 4) + (vmodes & 0xFFFF));
@@ -34,7 +32,7 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
     	BIOS_regs.es  = ((addr+0x200) >> 4);
 
 		BIOS_Interrupt(0x10, &BIOS_regs);
-		if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return 0;
+		if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return addr+0x100;
 		vmodeinfo++;
 	}
 	vmodeinfo++;

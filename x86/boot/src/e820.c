@@ -5,8 +5,6 @@ uintptr_t E820_StoreInfo(uintptr_t addr) {
 
 	struct E820_Table_Entry* current_entry = (struct E820_Table_Entry*)addr;
 
-	if (addr > 0xA0000) return 0;
-
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 
@@ -29,8 +27,6 @@ uintptr_t E820_StoreInfo(uintptr_t addr) {
         	current_entry++;
     	}
 	}
-
-	if (BIOS_regs.esi == 0) return 0;
 
 	return addr + BIOS_regs.esi;
 
