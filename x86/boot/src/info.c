@@ -1,10 +1,8 @@
 #include <x86/boot/include/info.h>
 
-extern struct Info_Entry BootInfo_Table;
+void BootInfo_Store(uintptr_t info_ptr, uintptr_t tables_addr) {
 
-void BootInfo_Store(uintptr_t tables_addr) {
-
-	struct Info_Entry* binfo = &BootInfo_Table;
+	struct Info_Entry* binfo = (struct Info_Entry*)info_ptr ;
 	uintptr_t next = tables_addr;
 
 	binfo[0].address = next;

@@ -97,7 +97,9 @@ BootStage2:
 	jmp  HaltSystem16
 
 	
-	; We are now firmly 32-bit protected mode territory
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	; We are now in 32-bit protected mode
 
 BITS 32
 
@@ -119,6 +121,7 @@ BITS 32
 	push KERNEL_START
 	push DWORD [Boot_DriveID]
 	call DiskIO_ReadFromDisk
+	add  esp, 0x10
 	test al, al
 	mov  esi, ErrStr_DiskIO
 	jz   HaltSystem32
@@ -126,13 +129,16 @@ BITS 32
 	; Store boot information
 
 	push Boot_Tables
+	push BootInfo_Table
 	call BootInfo_Store
+	add  esp, 0x8
 
 	; Check if the system has 1-12 MB of usable address space 
 
 	push MEMORY_ADDRESS_CHECK 
 	push KERNEL_START
 	call RAM_IsMemoryPresent
+	add  esp, 0x8
 	test al, al
 	mov  esi, ErrStr_Memory
 	jz   HaltSystem32

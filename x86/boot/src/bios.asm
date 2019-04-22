@@ -19,62 +19,62 @@ BIOS_Interrupt:
 	mov   [BIOS_Regs32.ebp], ebp
 	mov   [BIOS_Regs32.esp], esp
 
-	mov   ebx, [esp+4]
-	mov   [BIOS_Int_ID], ebx
+	mov   edx, [esp+4]
+	mov   [BIOS_Int_ID], edx
 
 	mov   eax, [esp+8]
-	mov   ebx, [eax+0x00]
-	mov   [BIOS_Regs16.eax], ebx
-	mov   ebx, [eax+0x04]
-	mov   [BIOS_Regs16.ebx], ebx
-	mov   ebx, [eax+0x08]
-	mov   [BIOS_Regs16.ecx], ebx
-	mov   ebx, [eax+0x0C]
-	mov   [BIOS_Regs16.edx], ebx
-	mov   ebx, [eax+0x10]
-	mov   [BIOS_Regs16.esi], ebx
-	mov   ebx, [eax+0x14]
-	mov   [BIOS_Regs16.edi], ebx
-	mov   ebx, [eax+0x18]
-	mov   [BIOS_Regs16.ebp], ebx
-	mov   ebx, [eax+0x1C]
-	mov   [BIOS_Regs16.esp], ebx
+	mov   edx, [eax+0x00]
+	mov   [BIOS_Regs16.eax], edx
+	mov   edx, [eax+0x04]
+	mov   [BIOS_Regs16.ebx], edx
+	mov   edx, [eax+0x08]
+	mov   [BIOS_Regs16.ecx], edx
+	mov   edx, [eax+0x0C]
+	mov   [BIOS_Regs16.edx], edx
+	mov   edx, [eax+0x10]
+	mov   [BIOS_Regs16.esi], edx
+	mov   edx, [eax+0x14]
+	mov   [BIOS_Regs16.edi], edx
+	mov   edx, [eax+0x18]
+	mov   [BIOS_Regs16.ebp], edx
+	mov   edx, [eax+0x1C]
+	mov   [BIOS_Regs16.esp], edx
 
-	mov   bx , [eax+0x20]
-	mov   [BIOS_Regs16.ds], bx
-	mov   bx , [eax+0x22]
-	mov   [BIOS_Regs16.es], bx
-	mov   bx , [eax+0x24]
-	mov   [BIOS_Regs16.ss], bx
+	mov   dx , [eax+0x20]
+	mov   [BIOS_Regs16.ds], dx
+	mov   dx , [eax+0x22]
+	mov   [BIOS_Regs16.es], dx
+	mov   dx , [eax+0x24]
+	mov   [BIOS_Regs16.ss], dx
 
 	jmp   SEG16_CODE:BIOS_Interrupt.PMode16
 
 BITS 16
 
 	.PMode16:
-	mov   ax, SEG16_DATA
-	mov   ds, ax
-	mov   es, ax
-	mov   fs, ax
-	mov   gs, ax
-	mov   ss, ax
+	mov   dx, SEG16_DATA
+	mov   ds, dx
+	mov   es, dx
+	mov   fs, dx
+	mov   gs, dx
+	mov   ss, dx
 
-	mov   eax, cr0
-	and   al , 0xFE
-	mov   cr0, eax
+	mov   edx, cr0
+	and   dl , 0xFE
+	mov   cr0, edx
 
 	jmp   0:BIOS_Interrupt.RMode
 
 	.RMode:
-	mov   ax, 0
-	mov   ds, ax
-	mov   es, ax
-	mov   fs, ax
-	mov   gs, ax
-	mov   ss, ax
+	mov   dx, 0
+	mov   ds, dx
+	mov   es, dx
+	mov   fs, dx
+	mov   gs, dx
+	mov   ss, dx
 
-	mov   ax, [BIOS_Regs16.es]
-	mov   es, ax
+	mov   dx, [BIOS_Regs16.es]
+	mov   es, dx
 
 	mov   eax, [BIOS_Regs16.eax]
 	mov   ebx, [BIOS_Regs16.ebx]
@@ -98,26 +98,26 @@ BITS 16
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x10:
-	push  ax
-	mov   ax, [BIOS_Regs16.ds]
-	mov   ds, ax
-	pop   ax
+	push  dx
+	mov   dx, [BIOS_Regs16.ds]
+	mov   ds, dx
+	pop   dx
 	int   0x10
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x13:
-	push  ax
-	mov   ax, [BIOS_Regs16.ds]
-	mov   ds, ax
-	pop   ax
+	push  dx
+	mov   dx, [BIOS_Regs16.ds]
+	mov   ds, dx
+	pop   dx
 	int   0x13
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x15:
-	push  ax
-	mov   ax, [BIOS_Regs16.ds]
-	mov   ds, ax
-	pop   ax
+	push  dx
+	mov   dx, [BIOS_Regs16.ds]
+	mov   ds, dx
+	pop   dx
 	int   0x15
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
@@ -133,17 +133,17 @@ BITS 16
 	mov   [BIOS_Regs16.esp], esp	
 
 	pushfd
-	pop   eax
-	mov   [BIOS_Regs16.flags], ax
+	pop   edx
+	mov   [BIOS_Regs16.flags], dx
 
-	mov   ax, ds
-	mov   [BIOS_Regs16.ds], ax	
-	mov   ax, es
-	mov   [BIOS_Regs16.es], ax	
+	mov   dx, ds
+	mov   [BIOS_Regs16.ds], dx	
+	mov   dx, es
+	mov   [BIOS_Regs16.es], dx	
 
-    mov   eax, cr0
-    or    al , 1
-    mov   cr0, eax
+    mov   edx, cr0
+    or    dl , 1
+    mov   cr0, edx
 
     jmp   SEG32_CODE:BIOS_Interrupt.PMode32
 
@@ -151,40 +151,40 @@ BITS 32
 
 	.PMode32:
 
-	mov   ax, SEG32_DATA
-	mov   ds, ax
-	mov   es, ax
-	mov   fs, ax
-	mov   gs, ax
-	mov   ss, ax
+	mov   dx, SEG32_DATA
+	mov   ds, dx
+	mov   es, dx
+	mov   fs, dx
+	mov   gs, dx
+	mov   ss, dx
 	mov   esp, [BIOS_Regs32.esp]	
 
     mov   eax, [esp+8]
-    mov   ebx, [BIOS_Regs16.eax]
-    mov   [eax+0x00], ebx
-    mov   ebx, [BIOS_Regs16.ebx]
-    mov   [eax+0x04], ebx
-    mov   ebx, [BIOS_Regs16.ecx]
-    mov   [eax+0x08], ebx
-    mov   ebx, [BIOS_Regs16.edx]
-    mov   [eax+0x0C], ebx
-    mov   ebx, [BIOS_Regs16.esi]
-    mov   [eax+0x10], ebx
-    mov   ebx, [BIOS_Regs16.edi]
-    mov   [eax+0x14], ebx
-    mov   ebx, [BIOS_Regs16.ebp]
-    mov   [eax+0x18], ebx
-    mov   ebx, [BIOS_Regs16.esp]
-    mov   [eax+0x1C], ebx
+    mov   edx, [BIOS_Regs16.eax]
+    mov   [eax+0x00], edx
+    mov   edx, [BIOS_Regs16.ebx]
+    mov   [eax+0x04], edx
+    mov   edx, [BIOS_Regs16.ecx]
+    mov   [eax+0x08], edx
+    mov   edx, [BIOS_Regs16.edx]
+    mov   [eax+0x0C], edx
+    mov   edx, [BIOS_Regs16.esi]
+    mov   [eax+0x10], edx
+    mov   edx, [BIOS_Regs16.edi]
+    mov   [eax+0x14], edx
+    mov   edx, [BIOS_Regs16.ebp]
+    mov   [eax+0x18], edx
+    mov   edx, [BIOS_Regs16.esp]
+    mov   [eax+0x1C], edx
 
-    mov   bx , [BIOS_Regs16.ds]
-    mov   [eax+0x20], bx
-    mov   bx , [BIOS_Regs16.es]
-    mov   [eax+0x22], bx
-    mov   bx , [BIOS_Regs16.ss]
-    mov   [eax+0x24], bx
-    mov   bx , [BIOS_Regs16.flags]
-    mov   [eax+0x26], bx
+    mov   dx , [BIOS_Regs16.ds]
+    mov   [eax+0x20], dx
+    mov   dx , [BIOS_Regs16.es]
+    mov   [eax+0x22], dx
+    mov   dx , [BIOS_Regs16.ss]
+    mov   [eax+0x24], dx
+    mov   dx , [BIOS_Regs16.flags]
+    mov   [eax+0x26], dx
 
 	mov   eax, [BIOS_Regs32.eax]	
 	mov   ebx, [BIOS_Regs32.ebx]	

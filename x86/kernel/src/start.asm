@@ -1,4 +1,3 @@
-
 KERNEL_STACK_PTR_OFFSET   equ 0x6000
 KERNEL_HIGHER_HALF_OFFSET equ 0xC0000000
 
@@ -38,4 +37,3 @@ section .data
 	global BootInfo_Ptr
 	BootInfo_Ptr:
 	dd 0
-

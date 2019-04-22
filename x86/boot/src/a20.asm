@@ -63,7 +63,9 @@ A20_Enable:
 
 
 A20_IsEnabled:
-	push ds                                           ; Push the data segments as well
+	push di                                           ; Save SI and DI registers
+	push si
+	push ds                                           ; Save DS and ES registers
 	push es
 	
 	xor  ax, ax                                       ; ax = 0x0000
@@ -96,8 +98,10 @@ A20_IsEnabled:
 	mov  al, 1
 	
 	.end:
-	pop  es                                           ; Reload the data segments
+	pop  es                                           ; Restore the DS and ES registers
 	pop  ds
+	pop  si                                           ; Restore the SI and DI registers
+	pop  di
 	ret
 
 
@@ -108,8 +112,10 @@ A20_IsEnabled:
 ; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
 A20_EnableWithBIOS:
-	mov ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
-	int 0x15
+	push ax
+	mov  ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
+	int  0x15
+	pop  ax
 	ret
 
 
@@ -136,6 +142,9 @@ TEST_8042_WRITE_ACCESS        equ 0x02                ; We always test if the 2n
 A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data from the PS/2 controller output port drives the A20 gate
 
 A20_EnableWithKeyboard:
+	
+	; Save the contents of AX
+	push ax
 
 	; Disbale PS/2 port 1
 	call A20_WriteWaitFor8042                      
@@ -178,23 +187,35 @@ A20_EnableWithKeyboard:
 	mov  al, COMD_8042_ENABLE_PS2_PORT2      
 	out  IOPORT_8042_COMD, al
 	
+	; Restore the contents of AX
+	pop  ax
 	ret
  
 
 ; A20_ReadWaitFor8042 : Function to poll the 8042 status register to check if we have read access to the data port 
 
 A20_ReadWaitFor8042:
+	push ax
+
+	.readwaitloop:
 	in   al, IOPORT_8042_COMD
 	test al, TEST_8042_READ_ACCESS
-	jz   A20_ReadWaitFor8042
+	jz   .readwaitloop
+
+	pop  ax
 	ret
 
 ; A20_WriteWaitFor8042 : Function to poll the 8042 status register to check if we have write access to the data and command ports 
 
 A20_WriteWaitFor8042:
+	push ax
+
+	.writewaitloop:
 	in   al, IOPORT_8042_COMD
 	test al, TEST_8042_WRITE_ACCESS
-	jnz  A20_WriteWaitFor8042
+	jnz  .writewaitloop
+
+	pop  ax
 	ret
 
 
@@ -202,9 +223,14 @@ A20_WriteWaitFor8042:
 ; A20_EnableWithFastGate : Enable the A20 line using the 'Fast A20 Gate'
 
 A20_EnableWithFastGate:
+	push ax
+
 	in   al, 0x92
 	or   al, 2
 	out  0x92, al	
+
+	pop  ax
+	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

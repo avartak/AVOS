@@ -2,8 +2,8 @@ section .text
 
 global IDT_Load
 IDT_Load:
-	mov eax, [esp+4]
-	lidt [eax]	
+	mov edx, [esp+4]
+	lidt [edx]	
 
 	ret
 

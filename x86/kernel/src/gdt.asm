@@ -5,15 +5,15 @@ section .text
 
 global GDT_Load
 GDT_Load:
-	mov   eax, [esp+4]
-	lgdt [eax]	
+	mov   edx, [esp+4]
+	lgdt [edx]	
 
 	ret
 
 global TSS_LoadTaskRegister
 TSS_LoadTaskRegister:
-	mov  eax, [esp+4]
-	ltr  ax
+	mov  edx, [esp+4]
+	ltr  dx
 
 	ret
 
@@ -21,12 +21,12 @@ global GDT_LoadKernelSegments
 GDT_LoadKernelSegments:
 	jmp  GDT_KERN_CODE_SEG:GDT_LoadKernelSegments.reloadCS
 	.reloadCS:
-	mov  ax, GDT_KERN_DATA_SEG
-	mov  ds, ax
-	mov  es, ax
-	mov  fs, ax
-	mov  gs, ax
-	mov  ss, ax
+	mov  dx, GDT_KERN_DATA_SEG
+	mov  ds, dx
+	mov  es, dx
+	mov  fs, dx
+	mov  gs, dx
+	mov  ss, dx
 
 	ret
 
