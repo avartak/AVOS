@@ -40,11 +40,6 @@ A20_Enable:
 	
 	call A20_EnableWithFastGate                       ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
 	call A20_IsEnabled                                ; Check again and print the A20 line status
-	test al, al                                       ; Check again
-	jnz  .end
-	
-	.retfalse:
-	mov  al, 0
 	
 	.end:	
 	ret
@@ -112,10 +107,12 @@ A20_IsEnabled:
 ; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
 A20_EnableWithBIOS:
-	push ax
+	pusha
+
 	mov  ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
 	int  0x15
-	pop  ax
+
+	popa
 	ret
 
 

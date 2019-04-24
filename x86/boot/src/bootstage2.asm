@@ -3,7 +3,7 @@
 ; This code is loaded at memory location 0x7E00 right after the 512 B of the boot sector code
 ; It will switch to PROTECED mode and then copy the kernel at 1 MB
 
-; First let us include some definitions of constants (the constants themselves are described in comments)
+; First let us include some definitions of constants
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 
@@ -189,8 +189,6 @@ GDT:
 GDT_Desc:
 	dw GDT_Desc - GDT - 1
 	dd GDT
-	dw 0
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

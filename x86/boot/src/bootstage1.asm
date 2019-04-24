@@ -169,7 +169,7 @@ BootStage1:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
-	mov   dl, BYTE [Drive_ID]
+	mov   dl, [Drive_ID]
 	jmp   BOOT2_START 
 	
 

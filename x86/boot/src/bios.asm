@@ -232,6 +232,5 @@ BIOS_Int_ID dd 0
 IDT_Desc:
     dw 0x400 - 1
     dd 0
-    dw 0
 
 
