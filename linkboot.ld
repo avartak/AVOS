@@ -4,9 +4,6 @@ ENTRY(BootStage1)
 /* Output format */
 OUTPUT_FORMAT("binary")
 
-/* Output file */
-OUTPUT(bootloader.bin)
- 
 /* Various sections in the final kernel image. */
 SECTIONS
 {
