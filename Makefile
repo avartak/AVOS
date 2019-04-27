@@ -25,7 +25,8 @@ $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/ram.c.o  \
 $(X86_BOOT)/e820.c.o \
 $(X86_BOOT)/vbe.c.o  \
-$(X86_BOOT)/info.c.o 
+$(X86_BOOT)/info.c.o \
+$(X86_BOOT)/elf.c.o 
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o

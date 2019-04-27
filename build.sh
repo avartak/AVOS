@@ -46,6 +46,7 @@ $CC $CFLAGS -o ram.o    -c x86/boot/src/ram.c
 $CC $CFLAGS -o e820.o   -c x86/boot/src/e820.c
 $CC $CFLAGS -o vbe.o    -c x86/boot/src/vbe.c
 $CC $CFLAGS -o info.o   -c x86/boot/src/info.c
+$CC $CFLAGS -o elf.o    -c x86/boot/src/elf.c
 
 $LD $LDFLAGS_BOOT -o bootloader.bin *.o
 

@@ -1,9 +1,6 @@
 /* The designated entry point. */
 ENTRY(Start)
 
-/* Output format */
-OUTPUT_FORMAT("binary")
-
 /* Various sections in the final kernel image. */
 SECTIONS
 {

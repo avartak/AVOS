@@ -7,7 +7,8 @@
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 
-KERNEL_START            equ 0x100000                                    ; Kernel is loaded at physical memory location of 1 MB
+KERNEL_IMAGE_START      equ 0x400000                                    ; Kernel ELF executable is loaded at physical memory location of 4 MB
+KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
 KERNEL_SIZE             equ 0x100000/0x200                              ; Assumed size of the kernel binary in terms of number of sectors
 KERNEL_DISK_START       equ 0x40                                        ; Starting sector of the kernel
 
@@ -16,12 +17,15 @@ SEG32_DATA              equ 0x10                                        ; 32-bit
 
 MEMORY_ADDRESS_CHECK    equ 0x00C00000                                  ; Check if the system has usable RAM from 1 MB to this value 
 
+SECTOR_SIZE             equ 0x200
+
 ; These are the externally defined functions and variables we need
 
 extern A20_Enable
 extern DiskIO_ReadFromDisk
 extern BootInfo_Store
 extern RAM_IsMemoryPresent
+extern Elf32_LoadStaticExecutable
 
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
@@ -114,18 +118,6 @@ BITS 32
 	mov  gs, ax
 	mov  ss, ax
 
-	; Copy kernel from disk to high memory
-
-	push KERNEL_SIZE
-	push KERNEL_DISK_START
-	push KERNEL_START
-	push DWORD [Boot_DriveID]
-	call DiskIO_ReadFromDisk
-	add  esp, 0x10
-	test al, al
-	mov  esi, ErrStr_DiskIO
-	jz   HaltSystem32
-	
 	; Store boot information
 
 	push Boot_Tables
@@ -141,6 +133,28 @@ BITS 32
 	add  esp, 0x8
 	test al, al
 	mov  esi, ErrStr_Memory
+	jz   HaltSystem32
+
+	; Copy kernel ELF executable from disk to high memory
+
+	push KERNEL_SIZE
+	push KERNEL_DISK_START
+	push KERNEL_IMAGE_START
+	push DWORD [Boot_DriveID]
+	call DiskIO_ReadFromDisk
+	add  esp, 0x10
+	test al, al
+	mov  esi, ErrStr_DiskIO
+	jz   HaltSystem32
+	
+	; Extract and load the kernel binary from the ELF executable
+
+	push KERNEL_START
+	push KERNEL_SIZE*SECTOR_SIZE
+	push KERNEL_IMAGE_START
+	call Elf32_LoadStaticExecutable
+	test al, al
+	mov  esi, ErrStr_LoadELF
 	jz   HaltSystem32
 
 	; Store the pointer to the boot information table
@@ -176,6 +190,7 @@ Messages:
 ErrStr_A20     db 'A20 line could not be enabled', 0
 ErrStr_DiskIO  db 'Unable to read kernel image from disk', 0
 ErrStr_Memory  db 'Insufficient memory available', 0
+ErrStr_LoadELF db 'Unable to load kernel from ELF image', 0
 
 ; GDT with 32-bit (0x08, 0x10) and 16-bit (0x18, 0x20) entries
 
