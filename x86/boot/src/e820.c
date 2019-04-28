@@ -8,8 +8,8 @@ uintptr_t E820_StoreInfo(uintptr_t addr) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 
-	BIOS_regs.edi   = (addr & 0xF);
-	BIOS_regs.es    = (addr >> 4);			
+	BIOS_regs.edi = (addr & 0xF);
+	BIOS_regs.es  = (addr >> 4);			
 
 	while (true) {
 		BIOS_regs.eax = 0x0000E820;
