@@ -3,8 +3,6 @@
 
 #include <kernel/include/common.h>
 
-#define DISKIO_SCRATCH 0x7000
-
 struct DiskIO_DAP {
 	uint8_t  size;
 	uint8_t  unused1;
@@ -21,6 +19,8 @@ struct DiskIO_Geometry {
     uint8_t  sectors_per_track;
     uint16_t sectors_per_cylinder;
 }__attribute__((packed));
+
+extern uint8_t DiskIO_LowMemoryBuffer[];
 
 extern bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
 extern bool DiskIO_CheckForBIOSExtensions(uint8_t drive);

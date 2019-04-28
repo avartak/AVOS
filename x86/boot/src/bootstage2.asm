@@ -9,7 +9,7 @@ STACK_TOP               equ 0x7000                                      ; Top of
 
 KERNEL_IMAGE_START      equ 0x400000                                    ; Kernel ELF executable is loaded at physical memory location of 4 MB
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
-KERNEL_SIZE             equ 0x100000/0x200                              ; Assumed size of the kernel binary in terms of number of sectors
+KERNEL_SIZE             equ 0x100000/SECTOR_SIZE                        ; Assumed size of the kernel binary in terms of number of sectors
 KERNEL_DISK_START       equ 0x40                                        ; Starting sector of the kernel
 
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment

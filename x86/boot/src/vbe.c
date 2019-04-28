@@ -40,3 +40,4 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 	return (uintptr_t)vmodeinfo;
 
 }
+

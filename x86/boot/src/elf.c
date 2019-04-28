@@ -49,7 +49,7 @@ bool Elf32_IsValidiStaticExecutable(uintptr_t image) {
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 
 	for (size_t i = 0; i < hdr->e_phnum; i++) {
-		if (phdr[i].p_type != PT_NULL && phdr[i].p_type != PT_LOAD) return false;
+		if (phdr[i].p_type == PT_DYNAMIC || phdr[i].p_type == PT_INTERP) return false;
 	}
 
     return true;

@@ -29,17 +29,17 @@ A20_Enable:
 	jnz  .end
 	
 	call A20_EnableWithBIOS                           ; Enable the A20 line using BIOS
-	call A20_IsEnabled                                ; Check again and print the A20 line status
-	test al, al                                       ; Check again
+	call A20_IsEnabled                                ; Check again if the A20 line is enabled
+	test al, al                                       ; 
 	jnz  .end
 	
 	call A20_EnableWithKeyboard                       ; Enable the A20 line using the PS/2 (8042) controller
-	call A20_IsEnabled                                ; Check again and print the A20 line status
-	test al, al                                       ; Check again
+	call A20_IsEnabled                                ; Check again if the A20 line is enabled
+	test al, al                                       ; 
 	jnz  .end
 	
 	call A20_EnableWithFastGate                       ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
-	call A20_IsEnabled                                ; Check again and print the A20 line status
+	call A20_IsEnabled                                ; Check again if the A20 line is enabled
 	
 	.end:	
 	ret
@@ -50,7 +50,6 @@ A20_Enable:
 ; A20_IsEnabled : Check the status of the A20 line in a completely self-contained state-preserving way.
 ; The function can be modified as necessary by removing push's at the beginning and their
 ; respective pop's at the end if complete self-containment is not required.
-;
 ; Returns: 
 ; 0 in ax if the A20 line is disabled (memory wraps around)
 ; 1 in ax if the A20 line is enabled (memory does not wrap around)

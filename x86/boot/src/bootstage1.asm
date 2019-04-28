@@ -49,6 +49,17 @@ BootStage1:
 	mov   ss, ax
 	mov   sp, STACK_TOP 
 	
+	; BIOS stores the drive ID in DL when control is transferred to the boot loader. Store this value
+
+	mov   [Drive_ID], dl
+
+	; Set the video mode to 80x25 characters, 16/8 colors 
+
+	mov   ah, 0
+	mov   al, 3
+	int   0x10
+	mov   sp, STACK_TOP
+
 	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
 	; So we need some code that does the reading from disk
 	; We don't have enough space to write a disk driver here, so we will simply use routines provided by the BIOS
@@ -57,7 +68,7 @@ BootStage1:
 	; First we need to check that these BIOS extensions exist
 	; For that we need to call the INT 0x13, AH=0x41 routine
 	; This routine takes the following inputs :
-	; - DL : Drive ID (Note : BIOS stores the drive ID in DL when control is transferred to the boot loader)
+	; - DL : Drive ID 
 	; - BX : 0x55AA
 	; - AH : 0x41
 	; Its results are :
@@ -70,7 +81,6 @@ BootStage1:
 	;        4 -> Enhanced Disk Drive (EDD) support 
 	; If BIOS extension is not usable we fall back to the 'old' BIOS routine that reads from disk using the CHS scheme	
 
-	mov   [Drive_ID], dl
 	mov   bx, 0x55AA
 	mov   ah, 0x41
 	int   0x13
@@ -186,7 +196,7 @@ BootStage1:
 	mov   ax, 0xB800         
 	mov   es, ax             
 	mov   di, 80*23*2        
-	mov   si, Halt_Message   
+	mov   si, ErrStr_DiskIO   
 	.printchar:
 		lodsb                
 		test  al, al        
@@ -217,7 +227,7 @@ DAP_Memory_Segment   dw 0
 DAP_Start_Sector     dq BOOT2_DISK_START
 
 Messages:
-Halt_Message         db 'Unable to read AVOS from disk', 0
+ErrStr_DiskIO        db 'Unable to read AVOS from disk', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

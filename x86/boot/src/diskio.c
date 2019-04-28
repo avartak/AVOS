@@ -1,6 +1,8 @@
 #include <x86/boot/include/diskio.h>
 #include <x86/boot/include/bios.h>
 
+uint8_t DiskIO_LowMemoryBuffer[0x200];
+
 bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 
     struct BIOS_Registers BIOS_regs;
@@ -50,8 +52,8 @@ bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_
 	dap.unused1 = 0;
 	dap.sectors = 1;
 	dap.unused2 = 0;
-	dap.memory_offset   = DISKIO_SCRATCH & 0xF;
-	dap.memory_segment  = DISKIO_SCRATCH >> 4;
+	dap.memory_offset   = (uintptr_t)DiskIO_LowMemoryBuffer & 0xF;
+	dap.memory_segment  = (uintptr_t)DiskIO_LowMemoryBuffer >> 4;
 	dap.start_sector_lo = kernel_disk_start;
 	dap.start_sector_hi = 0;
 
@@ -65,7 +67,7 @@ bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_
 
     	BIOS_Interrupt(0x13, &BIOS_regs);
 		if ((BIOS_regs.flags & 1) == 1) break;
-		uint8_t* src = (uint8_t*)DISKIO_SCRATCH;
+		uint8_t* src = DiskIO_LowMemoryBuffer;
 		uint8_t* dst = (uint8_t*)kernel_pos;
 		for (size_t j = 0; j < 0x200; j++) dst[j] = src[j];
 
@@ -93,9 +95,9 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_
 
     for (size_t i = 0; i < kernel_size; i++) {
         BIOS_regs.eax = 0x0201;
-        BIOS_regs.ebx = DISKIO_SCRATCH & 0xF;
+        BIOS_regs.ebx = (uintptr_t)DiskIO_LowMemoryBuffer & 0xF;
         BIOS_regs.edx = drive;
-        BIOS_regs.es  = DISKIO_SCRATCH >> 4;
+        BIOS_regs.es  = (uintptr_t)DiskIO_LowMemoryBuffer >> 4;
 
 		uint16_t sector   = (read_sector % geometry.sectors_per_track) + 1;
 		uint16_t cylinder =  read_sector / geometry.sectors_per_cylinder;
@@ -108,7 +110,7 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_
 
         BIOS_Interrupt(0x13, &BIOS_regs);
         if ((BIOS_regs.flags & 1) == 1 || (BIOS_regs.eax & 0xFF) != 1) break;
-        uint8_t* src = (uint8_t*)DISKIO_SCRATCH;
+        uint8_t* src = DiskIO_LowMemoryBuffer;
         uint8_t* dst = (uint8_t*)kernel_pos;
         for (size_t j = 0; j < 0x200; j++) dst[j] = src[j];
 
