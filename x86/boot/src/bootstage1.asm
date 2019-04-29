@@ -58,7 +58,6 @@ BootStage1:
 	mov   ah, 0
 	mov   al, 3
 	int   0x10
-	mov   sp, STACK_TOP
 
 	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
 	; So we need some code that does the reading from disk

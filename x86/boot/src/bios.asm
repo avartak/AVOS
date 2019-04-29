@@ -21,6 +21,10 @@ BIOS_Interrupt:
 	mov   [BIOS_Regs32.ebp], ebp
 	mov   [BIOS_Regs32.esp], esp
 
+	; We then save the IDT descriptor
+
+	sidt  [Save_IDT_Desc]
+
 	; We then copy the interrupt vector index to the EDX register
 
 	mov   edx, [esp+4]
@@ -107,11 +111,15 @@ BITS 16
 	mov   edi, [fs:BIOS_Regs16.edi]
 	mov   ebp, [fs:BIOS_Regs16.ebp]
 
+	; Save the stack pointer in case the BIOS routine trashes it
+
+	mov   [fs:BIOS_Regs16.esp], esp
+
 	; Load the real mode IDT so that we can call the BIOS interrupts
 	; In general, we should save the 32-bit IDT descriptor so that we can use it after switching back to protected mode 
 	; But we don't have it set up in the boot loader anyways
 
-	lidt  [fs:IDT_Desc]
+	lidt  [fs:BIOS_IDT_Desc]
 
 	; Trigger the appropriate BIOS interrupt
 	; It is at this stage that we will change the DS register to the designated value
@@ -126,28 +134,23 @@ BITS 16
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x10:
-	mov   [fs:BIOS_Regs16.esp], esp
 	int   0x10
-	mov   esp, [fs:BIOS_Regs16.esp]
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x13:
-    mov   [fs:BIOS_Regs16.esp], esp
     int   0x13
-    mov   esp, [fs:BIOS_Regs16.esp]
     jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x15:
-    mov   [fs:BIOS_Regs16.esp], esp
     int   0x15
-    mov   esp, [fs:BIOS_Regs16.esp]
     jmp   BIOS_Interrupt.SwitchToPMode32
 
 
 	; We are done with the BIOS routine; now we have to switch back to the protected mode
-	; First we store the register values (these represent the state immediately after the BIOS call) in the BIOS_Regs16 structure
+	; First we restore the stack pointer and store the register values (these represent the state immediately after the BIOS call) in the BIOS_Regs16 structure
 
 	.SwitchToPMode32:
+    mov   esp, [fs:BIOS_Regs16.esp]
 	mov   [fs:BIOS_Regs16.eax], eax	
 	mov   [fs:BIOS_Regs16.ebx], ebx	
 	mov   [fs:BIOS_Regs16.ecx], ecx	
@@ -227,6 +230,10 @@ BITS 32
 	mov   ebp, [BIOS_Regs32.ebp]	
 	mov   esp, [BIOS_Regs32.esp]	
 
+	; Restore the IDT that we started out with 
+
+	lidt  [Save_IDT_Desc]
+
 	; Return 
 
 	ret
@@ -263,7 +270,12 @@ BIOS_Regs16:
 BIOS_Int_ID dd 0
 
 
-IDT_Desc:
+BIOS_IDT_Desc:
+    dw 0x400 - 1
+    dd 0
+
+
+Save_IDT_Desc:
     dw 0x400 - 1
     dd 0
 

@@ -118,6 +118,8 @@ BITS 32
 	mov  gs, ax
 	mov  ss, ax
 
+	mov  esp, STACK_TOP
+
 	; Store boot information
 
 	push Boot_Tables
