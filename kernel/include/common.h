@@ -11,9 +11,9 @@
 
 #define KERNEL_HIGHER_HALF_OFFSET 0xC0000000
 
-#define BOOTINFO_ENTRY_VBE        0
-#define BOOTINFO_ENTRY_E820       1
-#define BOOTINFO_ENTRY_RAM        2
+#define BOOTINFO_ENTRY_E820       0
+#define BOOTINFO_ENTRY_RAM        1
+#define BOOTINFO_ENTRY_VBE        2
 
 struct Info_Entry {
     uintptr_t address;

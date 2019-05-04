@@ -21,12 +21,14 @@ $(X86_BOOT)/bootstage2.s.o \
 $(X86_BOOT)/a20.s.o \
 $(X86_BOOT)/bios.s.o \
 $(X86_BOOT)/bios.c.o \
+$(X86_BOOT)/diskio.s.o \
 $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/ram.c.o  \
 $(X86_BOOT)/e820.c.o \
+$(X86_BOOT)/vbe.s.o  \
 $(X86_BOOT)/vbe.c.o  \
-$(X86_BOOT)/info.c.o \
-$(X86_BOOT)/elf.c.o 
+$(X86_BOOT)/elf.c.o  \
+$(X86_BOOT)/multiboot.c.o 
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
@@ -70,8 +72,8 @@ avos.iso: kernel.bin bootloader.bin
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=64
 	dd conv=notrunc if=bootloader.bin of=avos.iso
 
-bootloader.bin: $(X86_BOOT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin  $(X86_BOOT_OBJS)
+bootloader.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
 
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)

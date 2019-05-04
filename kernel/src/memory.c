@@ -1,7 +1,8 @@
 #include <kernel/include/memory.h>
 #include <kernel/include/paging.h>
+#include <kernel/include/multiboot.h>
 
-extern struct Info_Entry* BootInfo_Ptr;
+extern struct Multiboot_Info_Start* BootInfo_Ptr;
 
 struct Memory_Map Memory_Physical_free;
 struct Memory_Map Memory_Virtual_free;
@@ -358,10 +359,21 @@ struct Memory_Node* Memory_Map_Get(struct Memory_Map* stack, uintptr_t node_ptr)
 }
 
 void Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, uintptr_t mem_end) {
-    struct Info_Entry* table_ptr = (struct Info_Entry*)(BootInfo_Ptr[BOOTINFO_ENTRY_RAM].address+KERNEL_HIGHER_HALF_OFFSET);
-    if (mem_start < table_ptr[0].address) return;
 
-    for (size_t i = 0; i < BootInfo_Ptr[BOOTINFO_ENTRY_RAM].size/sizeof(struct Info_Entry) && table_ptr[i].address < mem_end; i++) {
+    struct Info_Entry* table_ptr = MEMORY_NULL_PTR;
+	size_t table_size = 0;
+
+    struct Multiboot_Info_Tag* mbi_tag;
+    uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
+    for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
+        if (mbi_tag->type != 0x80) continue;
+        table_size = (mbi_tag->size - 16)/sizeof(struct Info_Entry);
+        table_ptr  = (struct Info_Entry*)(16 + (uintptr_t)mbi_tag);
+    }
+
+	if (table_ptr == MEMORY_NULL_PTR) return;
+    if (mem_start < table_ptr[0].address) return;
+    for (size_t i = 0; i < table_size && table_ptr[i].address < mem_end; i++) {
         struct Memory_Node* node = Memory_NodeDispenser_Dispense(mem_map->node_dispenser);
         if (node == MEMORY_NULL_PTR) return;
         node->pointer = table_ptr[i].address;

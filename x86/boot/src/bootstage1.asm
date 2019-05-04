@@ -7,7 +7,7 @@
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 BOOT2_DISK_START        equ 1                                           ; Starting sector of the 2nd stage of the boot loader on disk
-BOOT2_SIZE              equ 0x20 - 1                                    ; Size of the 2nd stage of the boot loader in sectors (512 B)
+BOOT2_SIZE              equ 0x40 - 1                                    ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -52,12 +52,6 @@ BootStage1:
 	; BIOS stores the drive ID in DL when control is transferred to the boot loader. Store this value
 
 	mov   [Drive_ID], dl
-
-	; Set the video mode to 80x25 characters, 16/8 colors 
-
-	mov   ah, 0
-	mov   al, 3
-	int   0x10
 
 	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
 	; So we need some code that does the reading from disk

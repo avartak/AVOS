@@ -1,17 +1,26 @@
 #include <x86/boot/include/ram.h>
 #include <x86/boot/include/e820.h>
+#include <x86/boot/include/multiboot.h>
 
-extern struct Info_Entry BootInfo_Table;
+extern struct Multiboot_Info_Start Multiboot_Information_start;
 
 uintptr_t RAM_MaxPresentMemoryAddress() {
-	struct Info_Entry* BootInfo_Ptr = &BootInfo_Table;
-	struct E820_Table_Entry* E820_Table = (struct E820_Table_Entry*)BootInfo_Ptr[BOOTINFO_ENTRY_E820].address;
-	size_t E820_Table_size = BootInfo_Ptr[BOOTINFO_ENTRY_E820].size;
+
+	struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
+	size_t E820_Table_size = 0;
+
+	struct Multiboot_Info_Tag* mbi_tag;
+	uintptr_t mbi_addr = (uintptr_t)(&Multiboot_Information_start);
+	for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
+		if (mbi_tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
+		E820_Table_size = (mbi_tag->size - 16)/sizeof(struct E820_Table_Entry);
+		E820_Table = (struct E820_Table_Entry*)(16 + (uintptr_t)mbi_tag);
+	}
 
 	uintptr_t mem_max = 0;
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem_max;
 	for (size_t i = 0; i < E820_Table_size; i++) {
-		if (E820_Table[i].acpi3 != 1 || E820_Table[i].type != 1) continue;
+		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 		if (E820_Table[i].base + E820_Table[i].size < mem_max) continue;
 		mem_max = E820_Table[i].base + E820_Table[i].size;
 	}
@@ -19,9 +28,17 @@ uintptr_t RAM_MaxPresentMemoryAddress() {
 }
 
 bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
-	struct Info_Entry* BootInfo_Ptr = &BootInfo_Table;
-	struct E820_Table_Entry* E820_Table = (struct E820_Table_Entry*)BootInfo_Ptr[BOOTINFO_ENTRY_E820].address;
-	size_t E820_Table_size = BootInfo_Ptr[BOOTINFO_ENTRY_E820].size;
+
+    struct E820_Table_Entry* E820_Table = MEMORY_NULL_PTR;
+    size_t E820_Table_size = 0;
+
+    struct Multiboot_Info_Tag* mbi_tag;
+    uintptr_t mbi_addr = (uintptr_t)(&Multiboot_Information_start);
+    for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
+        if (mbi_tag->type != MULTIBOOT_TAG_TYPE_MMAP) continue;
+        E820_Table_size = (mbi_tag->size - 16)/sizeof(struct E820_Table_Entry);
+        E820_Table = (struct E820_Table_Entry*)(16 + (uintptr_t)mbi_tag);
+    }
 
 	if (min >= max) return false;
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return false;
@@ -30,12 +47,12 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max) {
 	if (min >= mem_max || max > mem_max) return false;
 	
 	for (size_t i = 0; i < E820_Table_size; i++) {
-		if (E820_Table[i].acpi3 != 1 || E820_Table[i].type != 1) continue;
+		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 		if (E820_Table[i].base <= min && E820_Table[i].base + E820_Table[i].size >= max) return true;
 	}
 	
 	for (size_t i = 0; i < E820_Table_size; i++) {
-		if (E820_Table[i].acpi3 != 1 || E820_Table[i].type != 1) continue;
+		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 		uint8_t fit = 0;
 		if (E820_Table[i].base <= min && E820_Table[i].base + E820_Table[i].size > min) fit += 1;
 		if (E820_Table[i].base + E820_Table[i].size >= max && E820_Table[i].base < max) fit += 2;

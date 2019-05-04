@@ -56,6 +56,20 @@ struct VBE_Mode_Info {
 	uint8_t  reserved1[206];
 }__attribute__((packed));
 
-extern uintptr_t VBE_StoreInfo(uintptr_t addr);
+struct VBE_PMode_Info {
+    uint16_t segment;
+    uint16_t offset;
+    uint16_t length;
+}__attribute__((packed));
+
+extern struct VBE_Mode_Info VBE_ModeBuffer;
+
+extern uintptr_t VBE_StoreInfo     (uintptr_t addr);
+extern uintptr_t VBE_StorePModeInfo(uintptr_t addr);
+extern uint16_t  VBE_GetCurrentMode();
+extern uint16_t  VBE_GetTextMode   (uint16_t* video_modes, uint32_t width, uint32_t height);
+extern uint16_t  VBE_GetMode       (uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth);
+extern bool      VBE_GetModeInfo   (uint16_t mode, uintptr_t addr);
+extern bool      VBE_SetMode       (uint16_t mode);
 
 #endif

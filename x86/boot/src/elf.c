@@ -1,4 +1,5 @@
 #include <x86/boot/include/elf.h>
+#include <csupport/include/string.h>
 
 #define ELF_RELOC_ERR  0xFFFFFFFF
 
@@ -55,22 +56,19 @@ bool Elf32_IsValidiStaticExecutable(uintptr_t image) {
     return true;
 }
 
-bool Elf32_LoadStaticExecutable(uintptr_t image, size_t size, uintptr_t start_addr) {
+size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
 
-	if (!Elf32_IsValidiStaticExecutable(image)) return false;
+	size_t load_size = 0;
+
+	if (!Elf32_IsValidiStaticExecutable(image)) return load_size;
 
     Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
-    Elf32_Phdr* phdr = (Elf32_Phdr *)(image + hdr->e_phoff);
+    Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 
-	uintptr_t start = 0;
-	uintptr_t mem_size = 0;
     for (size_t i = 0; i < hdr->e_phnum; i++) {
         if (phdr[i].p_type != PT_LOAD) continue;
-		if (start == 0 || phdr[i].p_paddr < start) start = phdr[i].p_paddr;
-		mem_size += phdr[i].p_memsz;
+		if (phdr[i].p_paddr != start_addr) return load_size;
 	}
-	if (start != start_addr) return false;
-	if (start_addr + mem_size >= image) return false;
 
     for (size_t i = 0; i < hdr->e_phnum; i++) {
         if (phdr[i].p_type != PT_LOAD) continue;
@@ -81,33 +79,58 @@ bool Elf32_LoadStaticExecutable(uintptr_t image, size_t size, uintptr_t start_ad
         size_t  p_img_size = phdr[i].p_filesz;
         size_t  p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
 
-        for (size_t i = 0         ; i < p_img_size; i++) p_mem_addr[i] = p_img_addr[i];
-        for (size_t i = p_img_size; i < p_pad_size; i++) p_mem_addr[i] = 0;
+		memmove(p_mem_addr, p_img_addr, p_img_size);
+		memset(p_mem_addr, 0, p_pad_size);
+		load_size += p_img_size + p_pad_size;
     }
 	
-	uint8_t* image_ptr = (uint8_t*)image;
-	for (size_t i = 0; i < size; i++) image_ptr[i] = 0;
-
-    return true;
+    return load_size;
 
 }
 
-bool Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
-
-	if (!Elf32_IsValidELF(image)) return false;
+size_t Elf32_LoadSectionHeaderTable(uintptr_t image, uintptr_t start_addr, bool load_extra) {
 
     Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
-	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
+    Elf32_Shdr *shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
+
+	if (load_extra) {
+    	if (!Elf32_IsValidELF(image)) return 8;
+		uint16_t* shinfo = (uint16_t*)start_addr;
+		shinfo[0] = hdr->e_shnum;
+		shinfo[1] = hdr->e_shentsize;
+		shinfo[2] = hdr->e_shstrndx;
+		shinfo[3] = 0;
+
+		memmove((uint8_t*)(8+start_addr), (uint8_t*)shdr, hdr->e_shnum * hdr->e_shentsize);
+    	return 8 + hdr->e_shnum * hdr->e_shentsize;
+	}
+	else {
+    	if (!Elf32_IsValidELF(image)) return 0;
+		memmove((uint8_t*)(8+start_addr), (uint8_t*)shdr, hdr->e_shnum * hdr->e_shentsize);
+    	return hdr->e_shnum * hdr->e_shentsize;
+	}
+}
+
+size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
+
+	if (!Elf32_IsValidELF(image)) return 0;
+
+    Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
+	Elf32_Shdr *shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
  
+	size_t bss_size = 0;
+	uint8_t* mem = (uint8_t*)start_addr;
 	for (size_t i = 0; i < hdr->e_shnum; i++) {
 		if(shdr[i].sh_type == SHT_NOBITS && (shdr[i].sh_flags & SHF_ALLOC) && shdr[i].sh_size > 0) {
-			uint8_t* mem = (uint8_t*)start_addr;
+			memset(mem, 0, shdr[i].sh_size);
+			mem      += shdr[i].sh_size;
+			bss_size += shdr[i].sh_size;
 			for (size_t j = 0; j < shdr[i].sh_size; j++) mem[i] = 0;
-			shdr[i].sh_offset = start_addr - image;
+			shdr[i].sh_offset = (uintptr_t)mem - image;
 		}
 	}
 
-	return true;
+	return bss_size;
 
 }
 

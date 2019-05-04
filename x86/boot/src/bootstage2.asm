@@ -7,7 +7,7 @@
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 
-KERNEL_IMAGE_START      equ 0x400000                                    ; Kernel ELF executable is loaded at physical memory location of 4 MB
+KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel ELF executable is loaded at physical memory location of 4 MB
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
 KERNEL_SIZE             equ 0x100000/SECTOR_SIZE                        ; Assumed size of the kernel binary in terms of number of sectors
 KERNEL_DISK_START       equ 0x40                                        ; Starting sector of the kernel
@@ -15,7 +15,8 @@ KERNEL_DISK_START       equ 0x40                                        ; Starti
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
-MEMORY_ADDRESS_CHECK    equ 0x00C00000                                  ; Check if the system has usable RAM from 1 MB to this value 
+MEMORY_CHECK_START      equ 0x00100000                                  ; Check if the system has usable RAM in this range
+MEMORY_CHECK_END        equ 0x00C00000
 
 SECTOR_SIZE             equ 0x200
 
@@ -23,9 +24,15 @@ SECTOR_SIZE             equ 0x200
 
 extern A20_Enable
 extern DiskIO_ReadFromDisk
-extern BootInfo_Store
 extern RAM_IsMemoryPresent
-extern Elf32_LoadStaticExecutable
+extern Multiboot_CreateMBI
+extern Multiboot_SaveBootLoaderInfo
+extern Multiboot_SaveMemoryInfo
+extern Multiboot_LoadKernel
+extern Multiboot_GetHeader 
+extern Multiboot_GetKernelEntry
+extern Multiboot_SaveGraphicsInfo
+extern Multiboot_CheckForSupportFailure
 
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
@@ -120,21 +127,41 @@ BITS 32
 
 	mov  esp, STACK_TOP
 
-	; Store boot information
+	; Create an empty multiboot information (MBI) record
 
-	push Boot_Tables
-	push BootInfo_Table
-	call BootInfo_Store
-	add  esp, 0x8
+	push Multiboot_Information_start
+	call Multiboot_CreateMBI
+	add  esp, 0x4
+	test al, al
+	mov  esi, ErrStr_MBI
+	jz   HaltSystem32
+
+	; Save boot loader name in MBI
+
+	push Multiboot_Information_start
+	call Multiboot_SaveBootLoaderInfo
+	add  esp, 0x4
+	test al, al
+	mov  esi, ErrStr_MBI
+	jz   HaltSystem32
+
+	; Save memory information in MBI
+
+	push Multiboot_Information_start
+	call Multiboot_SaveMemoryInfo
+	add  esp, 0x4
+	test al, al
+	mov  esi, ErrStr_Memory
+	jz   HaltSystem32
 
 	; Check if the system has 1-12 MB of usable address space 
 
-	push MEMORY_ADDRESS_CHECK 
-	push KERNEL_START
+	push MEMORY_CHECK_END 
+	push MEMORY_CHECK_START
 	call RAM_IsMemoryPresent
 	add  esp, 0x8
 	test al, al
-	mov  esi, ErrStr_Memory
+	mov  esi, ErrStr_LowMem
 	jz   HaltSystem32
 
 	; Copy kernel ELF executable from disk to high memory
@@ -148,24 +175,69 @@ BITS 32
 	test al, al
 	mov  esi, ErrStr_DiskIO
 	jz   HaltSystem32
-	
+
 	; Extract and load the kernel binary from the ELF executable
 
+	push Multiboot_Information_start
 	push KERNEL_START
 	push KERNEL_SIZE*SECTOR_SIZE
 	push KERNEL_IMAGE_START
-	call Elf32_LoadStaticExecutable
-	test al, al
+	call Multiboot_LoadKernel
+	add  esp, 0x10
+	test eax, eax
 	mov  esi, ErrStr_LoadELF
 	jz   HaltSystem32
+	mov  [Kernel_size], eax
 
-	; Store the pointer to the boot information table
+	; Get the address of the multiboot header in the kernel
 
-	mov  ebx, BootInfo_Table
+	push DWORD [Kernel_size]
+	push KERNEL_START
+	call Multiboot_GetHeader
+	add  esp, 0x8
+	test eax, eax
+	mov  esi, ErrStr_LoadELF
+	jz   HaltSystem32
+	mov  [Kernel_Multiboot_header], eax
+
+	; Get the kernel entry point
+
+	push DWORD [Kernel_Multiboot_header]
+	push KERNEL_IMAGE_START
+	call Multiboot_GetKernelEntry
+	add  esp, 0x8
+	mov  [Kernel_entry], eax
+
+	; Save graphics information in MBI
+
+	push DWORD [Kernel_Multiboot_header]
+	push Multiboot_Information_start
+	call Multiboot_SaveGraphicsInfo
+	add  esp, 0x8
+	test al, al
+	mov  esi, ErrStr_Graphics
+	jz   HaltSystem32
 	
+	; Check to make sure there are no unsupported tags in the multiboot header that need to be handled
+
+	push DWORD [Kernel_Multiboot_header]
+	call Multiboot_CheckForSupportFailure
+	add  esp, 0x4
+	test al, al
+	mov  esi, ErrStr_MBNoSupport
+	jz   HaltSystem32
+
+	; Store the pointer to the boot information table in EBX
+
+	mov  ebx, Multiboot_Information_start
+
+	; Store the Multiboot2 boot loader magic value in EAX
+
+	mov  eax, 0x36d76289
+
 	; Jump to the kernel
 
-	jmp  KERNEL_START
+	jmp  DWORD [Kernel_entry]
 
     HaltSystem32:
     mov   edi, 0xB8000+80*23*2
@@ -189,10 +261,14 @@ section .data
 ; Error strings in case the boot loader runs into trouble
 
 Messages: 
-ErrStr_A20     db 'A20 line could not be enabled', 0
-ErrStr_DiskIO  db 'Unable to read kernel image from disk', 0
-ErrStr_Memory  db 'Insufficient memory available', 0
-ErrStr_LoadELF db 'Unable to load kernel from ELF image', 0
+ErrStr_A20          db 'A20 line could not be enabled', 0
+ErrStr_MBI          db 'Unable to set up multiboot information record', 0
+ErrStr_Memory       db 'Unable to get memory information', 0
+ErrStr_Graphics     db 'Unable to set up graphics', 0
+ErrStr_DiskIO       db 'Unable to read kernel image from disk', 0
+ErrStr_LowMem       db 'Insufficient memory available', 0
+ErrStr_LoadELF      db 'Unable to load kernel from ELF image', 0
+ErrStr_MBNoSupport  db 'Unable to provide requisite multiboot support', 0
 
 ; GDT with 32-bit (0x08, 0x10) and 16-bit (0x18, 0x20) entries
 
@@ -214,14 +290,20 @@ section .bss
 
 ; Drive ID needed to read from disk using BIOS INT 0x13 routine
 
-Boot_DriveID    resd 1
+Boot_DriveID            resd 1
 
-; Boot information table
+; Kernel loading information
 
-global BootInfo_Table
-BootInfo_Table  resq 0x20
+Kernel_Multiboot_header resd 1
+Kernel_entry            resd 1
+Kernel_size             resd 1
 
-; This is where the boot information tables start
+; AVBL style boot information table
 
-Boot_Tables:
+align 8
+
+; Multiboot information (MBI) table
+
+global Multiboot_Information_start
+Multiboot_Information_start:
 

@@ -39,14 +39,17 @@ $AS $AFLAGS -o bootstage1.asm.o x86/boot/src/bootstage1.asm
 $AS $AFLAGS -o bootstage2.asm.o x86/boot/src/bootstage2.asm 
 $AS $AFLAGS -o a20.asm.o        x86/boot/src/a20.asm
 $AS $AFLAGS -o bios.asm.o       x86/boot/src/bios.asm
+$AS $AFLAGS -o diskio.asm.o     x86/boot/src/diskio.asm
+$AS $AFLAGS -o vbe.asm.o        x86/boot/src/vbe.asm
 
-$CC $CFLAGS -o bios.o   -c x86/boot/src/bios.c
-$CC $CFLAGS -o diskio.o -c x86/boot/src/diskio.c
-$CC $CFLAGS -o ram.o    -c x86/boot/src/ram.c
-$CC $CFLAGS -o e820.o   -c x86/boot/src/e820.c
-$CC $CFLAGS -o vbe.o    -c x86/boot/src/vbe.c
-$CC $CFLAGS -o info.o   -c x86/boot/src/info.c
-$CC $CFLAGS -o elf.o    -c x86/boot/src/elf.c
+$CC $CFLAGS -o string.o    -c csupport/src/string.c
+$CC $CFLAGS -o bios.o      -c x86/boot/src/bios.c
+$CC $CFLAGS -o diskio.o    -c x86/boot/src/diskio.c
+$CC $CFLAGS -o ram.o       -c x86/boot/src/ram.c
+$CC $CFLAGS -o e820.o      -c x86/boot/src/e820.c
+$CC $CFLAGS -o vbe.o       -c x86/boot/src/vbe.c
+$CC $CFLAGS -o elf.o       -c x86/boot/src/elf.c
+$CC $CFLAGS -o multiboot.o -c x86/boot/src/multiboot.c
 
 $LD $LDFLAGS_BOOT -o bootloader.bin *.o
 
