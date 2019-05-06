@@ -16,8 +16,7 @@ LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
 X86_BOOT=x86/boot/src
 X86_BOOT_OBJS=\
-$(X86_BOOT)/bootstage1.s.o \
-$(X86_BOOT)/bootstage2.s.o \
+$(X86_BOOT)/bootload32.s.o \
 $(X86_BOOT)/a20.s.o \
 $(X86_BOOT)/bios.s.o \
 $(X86_BOOT)/bios.c.o \
@@ -69,12 +68,27 @@ CRTI=$(X86_KERNEL)/crti.s.o
 CRTN=$(X86_KERNEL)/crtn.s.o
 CRT0=$(X86_KERNEL)/start.s.o
 
-avos.iso: kernel.bin bootloader.bin
+avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
+	cat bootload16.bin bootload32.bin > bootloader.bin
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=64
-	dd conv=notrunc if=bootloader.bin of=avos.iso
+	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2
+	dd conv=notrunc if=vbr.bin of=avos.iso seek=1
+	dd conv=notrunc if=mbr.bin of=avos.iso
 
-bootloader.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
+mbr.bin: x86/boot/src/mbr.asm
+	$(AS) -f bin -o mbr.bin x86/boot/src/mbr.asm
+
+vbr.bin: x86/boot/src/vbr.asm
+	$(AS) -f bin -o vbr.bin x86/boot/src/vbr.asm
+
+bootloader.bin: bootload16.bin bootload32.bin
+	cat bootload16.bin bootload32.bin > bootloader.bin
+	
+bootload16.bin: x86/boot/src/bootload16.asm
+	$(AS) -f bin -o bootload16.bin x86/boot/src/bootload16.asm
+
+bootload32.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
 
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)

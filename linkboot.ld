@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(BootStage1)
+ENTRY(BootStage3)
 
 /* Output format */
 OUTPUT_FORMAT("binary")
@@ -8,7 +8,7 @@ OUTPUT_FORMAT("binary")
 SECTIONS
 {
 	/* Start of the kernel */
-	. = 0x7C00;
+	. = 0x8000;
 
 	/* Kernel code */	 
 	.text :

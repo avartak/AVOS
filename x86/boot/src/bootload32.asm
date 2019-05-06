@@ -12,12 +12,10 @@ KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel
 KERNEL_IMAGE_SIZE       equ 0x100000                                    ; Size of the kernel image in bytes
 KERNEL_DISK_START       equ 0x40                                        ; Starting sector of the kernel
 
-SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
 ; These are the externally defined functions and variables we need
 
-extern A20_Enable
 extern IO_PrintBanner
 extern IO_MakeCursorInvisible
 extern DiskIO_ReadFromDisk
@@ -30,97 +28,17 @@ extern Multiboot_SaveInfo
 
 section .boot
 
-; We are still in 16-bit real mode
-
-BITS 16
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-BootStage2:
-
-	; To enable the protected mode we will :
-	; - Clear all interrupts
-	; - Switch on the A20 line 
-	; - Create a GDT and load it
-	; - Set the first bit in CR0 to 1
-	
-	cli
-
-	jmp 0x0000:Start
-
-	Start:
-	xor  ax, ax
-	mov  ds, ax	
-	mov  es, ax	
-	mov  ss, ax	
-	mov  sp, STACK_TOP
-
-	; Store information needed to load the kernel
-
-	mov  [Kernel_Info.boot_drive_ID], dl
-
-	mov  eax, KERNEL_DISK_START
-	mov  [Kernel_Info.disk_start], eax
-
-	mov  eax, KERNEL_IMAGE_START
-	mov  [Kernel_Info.image_start], eax
-
-	mov  eax, KERNEL_START
-	mov  [Kernel_Info.start], eax
-
-	mov  eax, KERNEL_IMAGE_SIZE
-	mov  [Kernel_Info.image_size], eax
-
-	; Enable the A20 line
-
-	call A20_Enable
-	test al, al
-    mov  si, ErrStr_A20
-	jz   HaltSystem16
-
-	; Load a valid GDT
-
-	lgdt [GDT_Desc]
-	
-	; Enter protected mode
-
-	mov  eax, cr0                                       
-	or   al , 1
-	mov  cr0, eax
-
-	; Switch CS to protected mode descriptor with a far jump	
-
-	jmp  SEG32_CODE:ProtectedMode
-	
-	; Halt the system in case of trouble
-
-	HaltSystem16:
-    mov   ax, 0xB800
-    mov   es, ax
-    mov   di, 80*23*2
-    .printchar:
-        lodsb
-        test  al, al
-        jz    .printdone
-        mov   ah, 0x04
-        stosw
-        jmp   .printchar
-    .printdone:
-	cli
-	hlt
-	jmp  HaltSystem16
-
-	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-	; We are now in 32-bit protected mode
+; We are now in 32-bit protected mode
 
 BITS 32
 
-	ProtectedMode:
 
-	; Switch the remaining segment registers to protected mode data segment selectors
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+global BootStage3
+BootStage3:
+
+	; Switch the data segment registers to protected mode data selectors
 
 	mov  ax, SEG32_DATA
 	mov  ds, ax
@@ -130,6 +48,23 @@ BITS 32
 	mov  ss, ax
 
 	mov  esp, STACK_TOP
+
+    ; Store information needed to load the kernel
+
+    mov  [Kernel_Info.boot_drive_ID], dl
+
+    mov  eax, KERNEL_DISK_START
+    mov  [Kernel_Info.disk_start], eax
+
+    mov  eax, KERNEL_IMAGE_START
+    mov  [Kernel_Info.image_start], eax
+
+    mov  eax, KERNEL_START
+    mov  [Kernel_Info.start], eax
+
+    mov  eax, KERNEL_IMAGE_SIZE
+    mov  [Kernel_Info.image_size], eax
+
 
 	; Print the AVOS boot loader banner
 
@@ -149,7 +84,7 @@ BITS 32
 	add  esp, 0x4
 	test al, al
 	mov  esi, ErrStr_Memory
-	jz   HaltSystem32
+	jz   HaltSystem
 
 	; Load kernel from disk
 
@@ -159,7 +94,7 @@ BITS 32
 	add   esp, 0x8
 	test  al, al
 	mov   esi, ErrStr_LoadKernel
-	jz    HaltSystem32
+	jz    HaltSystem
 
 	; Store multiboot information
 
@@ -169,7 +104,7 @@ BITS 32
 	add  esp, 0x8
 	test al, al
 	mov  esi, ErrStr_MBI 
-	jz   HaltSystem32
+	jz   HaltSystem
 	
 	; Store the pointer to the boot information table in EBX
 
@@ -183,7 +118,7 @@ BITS 32
 
 	jmp  DWORD [Kernel_Info.entry]
 
-    HaltSystem32:
+    HaltSystem:
     mov   edi, 0xB8000+80*23*2
     .printchar:
         lodsb
@@ -195,7 +130,7 @@ BITS 32
     .printdone:
     cli
     hlt
-    jmp  HaltSystem32
+    jmp  HaltSystem
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

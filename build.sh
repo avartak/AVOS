@@ -35,8 +35,11 @@ CFLAGS_LINK="-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -W
 LDFLAGS_BOOT="-m $LD_EMULATION -T linkboot.ld"
 LDFLAGS_KERN="-m $LD_EMULATION -T linkkern.ld"
 
-$AS $AFLAGS -o bootstage1.asm.o x86/boot/src/bootstage1.asm 
-$AS $AFLAGS -o bootstage2.asm.o x86/boot/src/bootstage2.asm 
+$AS -f bin  -o mbr.bin          x86/boot/src/mbr.asm
+$AS -f bin  -o vbr.bin          x86/boot/src/vbr.asm
+$AS -f bin  -o bootload16.bin   x86/boot/src/bootload16.asm 
+
+$AS $AFLAGS -o bootload32.asm.o x86/boot/src/bootload32.asm 
 $AS $AFLAGS -o a20.asm.o        x86/boot/src/a20.asm
 $AS $AFLAGS -o bios.asm.o       x86/boot/src/bios.asm
 $AS $AFLAGS -o diskio.asm.o     x86/boot/src/diskio.asm
@@ -52,9 +55,10 @@ $CC $CFLAGS -o io.o        -c x86/boot/src/io.c
 $CC $CFLAGS -o discovery.o -c x86/boot/src/discovery.c
 $CC $CFLAGS -o multiboot.o -c x86/boot/src/multiboot.c
 
-$LD $LDFLAGS_BOOT -o bootloader.bin *.o
+$LD $LDFLAGS_BOOT -o bootload32.bin *.o
 
 rm *.o
+cat bootload16.bin bootload32.bin > bootloader.bin
 
 $AS $AFLAGS -o start.asm.o       x86/kernel/src/start.asm
 $AS $AFLAGS -o crti.o            x86/kernel/src/crti.asm
@@ -94,6 +98,8 @@ $CC $CFLAGS_LINK -o kernel.bin $CRT0 $CRTI $CRTB machine.o avos.o memory.o proce
 rm *.o
 
 dd conv=notrunc if=kernel.bin     of=avos.iso seek=64
-dd conv=notrunc if=bootloader.bin of=avos.iso
+dd conv=notrunc if=bootloader.bin of=avos.iso seek=2
+dd conv=notrunc if=vbr.bin        of=avos.iso seek=1
+dd conv=notrunc if=mbr.bin        of=avos.iso
 
 rm *.bin

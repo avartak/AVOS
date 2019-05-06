@@ -6,12 +6,12 @@
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
-BOOT2_DISK_START        equ 1                                           ; Starting sector of the 2nd stage of the boot loader on disk
+BOOT2_DISK_START        equ 2                                           ; Starting sector of the 2nd stage of the boot loader on disk
 BOOT2_SIZE              equ 0x40 - 1                                    ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
-section .boot
+ORG 0x7C00
 
 ; The x86 system always starts in the REAL mode
 ; This is the 16-bit mode without any of the protected mode features
