@@ -13,7 +13,6 @@ SECTIONS
 	/* Kernel code */	 
 	.text :
 	{
-		*(.boot)
 		*(.text)
 	}
  

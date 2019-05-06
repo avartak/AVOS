@@ -1,14 +1,15 @@
 ; This file contains the boot loader code in the master boot record (MBR) of a bootable drive
 ; MBR is the first sector (exactly 512 B) of the boot drive
 ; The last word of this sector has to be 0xAA55 -- this is the boot signature
-; The BIOS will look for this signature, then load this sector at memory location 0x7C00, save the drive ID in DL, and jump to 0x0000:0x7C00 (or sometimes 0x07C0:0x0000)
+; The BIOS will look for this signature, then load this sector at memory location 0x7C00, and jump to 0x0000:0x7C00 (or sometimes 0x07C0:0x0000 -- beware!)
+; The boot drive ID is stored in DL 
 
 ; The MBR contains a partition table with 4 partition table entries (see description below), each 16 bytes in size, from 0x1BE to 0x1FD (0x1FE and 0x1FF contain the boot signature)
 ; The MBR code typically does do the following :
 ; - Relocate to another location (usually 0x0000:0x0600)
 ; - Examine the 7th bit of the first byte of each partition table entry : If this byte is set then the partition is marked as "active"
 ; - If exactly one partition has the active bit set, take this partition as the active partition
-; - If no partition is active : hang or ask the use to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
+; - If no partition is active : hang or ask the user to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
 ; - If multiple partitions are marked as active : hang or take the first one as "the" active partition or ask the user to select one
 ; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memort address 0x0000:0x7C00
 ; - Save the BIOS boot drive ID in DL
@@ -48,7 +49,6 @@ BITS 16
 ; This is where the bootloader starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-global MBR
 MBR:
 
 	; We don't want any interrupts right now.
@@ -56,7 +56,7 @@ MBR:
 	cli
 	
 	; Physical address given by reg:add combination is : [reg] x 0x10 + add
-	; We should initialize the segment registers to the base address values that we want to use (and we use 0x0000)
+	; We should initialize the segment registers to the base address values that we want to use (we use 0x0000)
 	; We should not assume the segment registers to be initialized in a certain way when we are handed control
 	; The segment registers in 16-bit environment are : CS, DS, ES, SS. We will set all of them to 0
 	
@@ -107,10 +107,8 @@ MBR:
 	mov   ax, [bx+0x0A]
 	mov   [DAP.Start_Sector+0x02], ax
 
-	; The first stage of the boot loader needs to load the second stage from disk to memory and jump to it
-	; So we need some code that does the reading from disk
-	; We don't have enough space to write a disk driver here, so we will simply use routines provided by the BIOS
-	; We will first try the 'extended' BIOS routines to read from disk using the LBA scheme
+	; We don't have enough space to write a disk driver to load the VBR, so we will simply use routines provided by the BIOS
+	; We will first try the 'extended' INT 0x13 BIOS routines to read from disk using the LBA scheme
 	; In the LBA scheme the disk sectors are numbered sequentially as in an array
 	; First we need to check that these BIOS extensions exist
 	; For that we need to call the INT 0x13, AH=0x41 routine
@@ -126,7 +124,8 @@ MBR:
 	;        1 -> Device access using the packet structure (this is what's relevant for us)
 	;        2 -> Drive locking and ejecting
 	;        4 -> Enhanced Disk Drive (EDD) support 
-	; If BIOS extension is not usable we fall back to the 'old' BIOS routine that reads from disk using the CHS scheme	
+	; If BIOS extensions are supported we will use the INT 0x13, AH=0x42 BIOS routine to read sectors from disk using the LBA scheme 
+	; If BIOS extensions are not usable we fall back to the 'old' BIOS routine INT 0x13 AH=0x02 that reads from disk using the CHS scheme	
 
 	mov   bx, 0x55AA
 	mov   ah, 0x41
@@ -137,8 +136,7 @@ MBR:
 	test  cx, 1
 	jz    DiskReadUsingCHS
 	
-	; We will use the INT 0x13, AH=0x42 BIOS routine to read sectors from disk using the LBA scheme
-	; We need to provide this routine a data structure containing information about what sectors to read, and where to put the read data in memory
+	; We need to provide INT 0x13 AH=0x02 a data structure containing information about what sectors to read, and where to put the read data in memory
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
@@ -148,7 +146,7 @@ MBR:
 	int   0x13
 	jnc   LaunchStage2
 	
-	; If BIOS extensions do not exist we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
+	; BIOS extensions do not exist or didn't work, and so we need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	; This routine should exist even on older BIOSes
 	; However, it has some limitations, most notably the fact that it cannot access very large disks
 

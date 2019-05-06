@@ -26,7 +26,7 @@ extern Multiboot_SaveInfo
 
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
-section .boot
+section .text
 
 ; We are now in 32-bit protected mode
 
