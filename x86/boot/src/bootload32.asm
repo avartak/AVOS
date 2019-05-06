@@ -35,8 +35,8 @@ BITS 32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-global BootStage3
-BootStage3:
+global Bootload32
+Bootload32:
 
 	; Switch the data segment registers to protected mode data selectors
 

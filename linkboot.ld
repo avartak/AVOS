@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(BootStage3)
+ENTRY(Bootload32)
 
 /* Output format */
 OUTPUT_FORMAT("binary")

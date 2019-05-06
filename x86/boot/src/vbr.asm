@@ -6,8 +6,8 @@
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
-BOOT2_DISK_START        equ 2                                           ; Starting sector of the 2nd stage of the boot loader on disk
-BOOT2_SIZE              equ 0x40 - 1                                    ; Size of the 2nd stage of the boot loader in sectors (512 B)
+BOOTLOADER_DISK_START   equ 2                                           ; Starting sector of the 2nd stage of the boot loader on disk
+BOOTLOADER_SIZE         equ 0x40 - 1                                    ; Size of the 2nd stage of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -22,8 +22,7 @@ BITS 16
 ; This is where the bootloader starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-global BootStage1
-BootStage1:
+VBR:
 
 	; The 512 B available here are too few to do much in terms of loading an OS
 	; The code in the boot sector will simply load the 2nd stage from disk to the memory location 0x8000
@@ -136,7 +135,7 @@ BootStage1:
 	; Look at the translation formulas above to understand what's being done
 	; Note that : Sectors_Per_Cylinder = Heads * Sectors_Per_Track
 	
-	mov   eax, BOOT2_DISK_START
+	mov   eax, BOOTLOADER_DISK_START
 	mov   edx, 0
 	movzx ebx, WORD [Sectors_Per_Cylinder]
 	div   ebx 
@@ -159,9 +158,9 @@ BootStage1:
 
 	xor   ax, ax
 	mov   es, ax
-	mov   bx, BOOT2_START
+	mov   bx, BOOTLOADER_START
 	mov   dl, BYTE [Drive_ID]
-	mov   al, BOOT2_SIZE
+	mov   al, BOOTLOADER_SIZE
 
 	; Now call INT 0x13, AH=0x02
 	
@@ -173,7 +172,7 @@ BootStage1:
 	
 	LaunchStage2:
 	mov   dl, [Drive_ID]
-	jmp   BOOT2_START 
+	jmp   BOOTLOADER_START 
 	
 
 
@@ -213,11 +212,11 @@ Sectors_Per_Cylinder dw 18
 Disk_Address_Packet:
 DAP_Size             db 0x10
 DAP_Unused1          db 0
-DAP_Sectors_Count    db BOOT2_SIZE
+DAP_Sectors_Count    db BOOTLOADER_SIZE
 DAP_Unused2          db 0
-DAP_Memory_Offset    dw BOOT2_START
+DAP_Memory_Offset    dw BOOTLOADER_START
 DAP_Memory_Segment   dw 0
-DAP_Start_Sector     dq BOOT2_DISK_START
+DAP_Start_Sector     dq BOOTLOADER_DISK_START
 
 Messages:
 ErrStr_DiskIO        db 'Unable to read AVOS from disk', 0
@@ -256,4 +255,4 @@ dw   0xAA55
 ; 0x008000 - 0x010000
 
 
-BOOT2_START:
+BOOTLOADER_START:

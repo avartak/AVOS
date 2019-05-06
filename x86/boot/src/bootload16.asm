@@ -19,7 +19,7 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-BootStage2:
+Bootload16:
 
 	; To enable the protected mode we will :
 	; - Clear all interrupts
