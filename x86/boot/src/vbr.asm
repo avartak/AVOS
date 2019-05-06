@@ -175,6 +175,13 @@ Messages:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Padding of zeroes till offset 446 (location of the partition table in the MBR). We will keep this space empty
+
+times 446-($-$$) db 0
+
+Volume_Partition_Table:
+times 64 db 0
+
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
 times 512-2-($-$$) db 0 
