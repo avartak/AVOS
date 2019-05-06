@@ -345,6 +345,29 @@ bool Multiboot_SaveBasicMemoryInfo(uintptr_t mbi_addr) {
     return true;
 }
 
+bool Multiboot_SaveBootDeviceInfo(uintptr_t mbi_addr, uint32_t biosdev, uint32_t partition, uint32_t sub_partition) {
+
+    struct Multiboot_Info_BootDevice* mbi_bootdev = (struct Multiboot_Info_BootDevice*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_BOOTDEV);
+	if (mbi_bootdev == MEMORY_NULL_PTR || mbi_bootdev->type != 0) return false;
+
+	uint16_t* part = (uint16_t*)partition;
+	for (size_t i = 0; i < 5; i++) {
+		if (part[0] == 0xAA55) break;
+		part += 8;
+	}
+	if (part[0] != 0xAA55) return false;
+
+	mbi_bootdev->type = MULTIBOOT_TAG_TYPE_BOOTDEV;
+	mbi_bootdev->size = 24;
+	mbi_bootdev->biosdev = biosdev;
+	mbi_bootdev->partition = 4 - ((uint32_t)part - partition)/16;
+	mbi_bootdev->sub_partition = sub_partition;
+
+    Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_bootdev);
+
+	return true;
+}
+
 bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, uintptr_t base_addr) {
 
     struct Multiboot_Info_LoadBaseAddress* mbi_mem_base = (struct Multiboot_Info_LoadBaseAddress*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
@@ -573,7 +596,6 @@ bool Multiboot_CheckForSupportFailure(uintptr_t multiboot_header_ptr) {
 			size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
 			for (size_t i = 0; i < nrequests; i++) {
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_MODULE  ) return false;
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOTDEV ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32   ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64   ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_NETWORK ) return false;
@@ -610,6 +632,7 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Multiboot_Kernel_Info* kernel
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_CMDLINE         ) Multiboot_SaveBootCommand(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME) Multiboot_SaveBootLoaderInfo(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO   ) Multiboot_SaveBasicMemoryInfo(mbi_addr);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOTDEV         ) Multiboot_SaveBootDeviceInfo(mbi_addr, kernel_info->boot_drive_ID, kernel_info->boot_partition, 0xFFFFFFFF);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_APM             ) Multiboot_SaveAPMInfo(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_SMBIOS          ) Multiboot_SaveSMBIOSInfo(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_OLD        ) Multiboot_SaveACPIInfo(mbi_addr, true);

@@ -7,6 +7,7 @@
 
 struct Multiboot_Kernel_Info {
 	uint32_t  boot_drive_ID;
+	uint32_t  boot_partition;
 	size_t    image_size;
 	uintptr_t image_start;
 	uintptr_t disk_start;
@@ -14,6 +15,7 @@ struct Multiboot_Kernel_Info {
 	uintptr_t multiboot_header;
 	uintptr_t entry;
 	size_t    size;
+	uint32_t  reserved;
 }__attribute__((packed));
 
 extern uintptr_t Multiboot_GetHeader             (uintptr_t start_addr, size_t size);
@@ -27,6 +29,7 @@ extern bool      Multiboot_SaveBootLoaderInfo    (uintptr_t mbi_addr);
 extern bool      Multiboot_SaveBootCommand       (uintptr_t mbi_addr);
 extern bool      Multiboot_SaveMemoryMaps        (uintptr_t mbi_addr);
 extern bool      Multiboot_SaveBasicMemoryInfo   (uintptr_t mbi_addr);
+extern bool      Multiboot_SaveBootDeviceInfo    (uintptr_t mbi_addr, uint32_t biosdev, uint32_t partition, uint32_t sub_partition);
 extern bool      Multiboot_SaveGraphicsInfo      (uintptr_t mbi_addr, uintptr_t multiboot_header_addr);
 extern bool      Multiboot_SaveELFSectionHeaders (uintptr_t mbi_addr, uintptr_t image);
 extern bool      Multiboot_SaveAPMInfo           (uintptr_t mbi_addr);

@@ -32,9 +32,12 @@
 
 STACK_TOP               equ 0x1000                ; Top of the stack used by the boot loader code
 SECTOR_SIZE             equ 0x200                 ; Size of a sector (or size of MBR, VBR)
+
 BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded
 RELOC_ADDRESS           equ 0x0600                ; This is where the relocated boot sector code/data is placed
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
+
+SCREEN_TEXT_BUFFER      equ 0xB800                ; Video buffer for the 80x25 VBE text mode
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x0600 in the binary code
 
@@ -54,19 +57,24 @@ MBR:
 	; We don't want any interrupts right now.
 	
 	cli
-	
-	; Physical address given by reg:add combination is : [reg] x 0x10 + add
-	; We should initialize the segment registers to the base address values that we want to use (we use 0x0000)
-	; We should not assume the segment registers to be initialized in a certain way when we are handed control
-	; The segment registers in 16-bit environment are : CS, DS, ES, SS. We will set all of them to 0
-	
-	; First we set DS, ES and SS to 0, and the stack pointer (SP) at 0x1000
-	
+
+	; We first set up a usable stack at 0x1000
+
 	xor   ax, ax
-	mov   ds, ax
-	mov   es, ax
 	mov   ss, ax
 	mov   sp, STACK_TOP 
+
+	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
+	
+	push  dx                 ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
+	push  es                 ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
+	push  di
+
+	; We should initialize the segment registers to the base address values that we want to use (we use 0x0000)
+	; First we set DS, ES to 0
+	
+	mov   ds, ax
+	mov   es, ax
 	
 	; Then, we relocate the MBR code/data to memory location 0x0000:0x0600
 
@@ -80,9 +88,6 @@ MBR:
 
 	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
 
-	push  dx                 ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
-	push  es                 ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
-	push  di
 	mov   [Drive_ID], dl     ; Save the boot drive ID, we will need it when trying to read the VBR from disk
 
 	; Identify the active partition
@@ -189,20 +194,21 @@ MBR:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
-	mov   ax, 0xB800         
+	mov   ax, SCREEN_TEXT_BUFFER
 	mov   es, ax             
-	mov   di, 80*23*2        
+	mov   di, 80*23*2
+	mov   cx, 0
 	.printchar:
 		lodsb                
 		test  al, al        
-		jz    .printdone    
+		jz    .printdone
 		mov   ah, 0x04      
-		stosw                   
-		jmp   .printchar 
-	.printdone:	
+		stosw
+		jmp   .printchar
+	.printdone:
 	cli
 	hlt
-	jmp   HaltSystem
+	jmp   .printdone
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

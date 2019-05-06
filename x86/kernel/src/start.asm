@@ -26,6 +26,7 @@ Multiboot2_Header_tag1:
 	.mbi_tag_type1  dd    1
 	.mbi_tag_type2  dd    2
 	.mbi_tag_type4  dd    4
+	.mbi_tag_type5  dd    5
 	.mbi_tag_type6  dd    6
 	.mbi_tag_type7  dd    7
 	.mbi_tag_type8  dd    8

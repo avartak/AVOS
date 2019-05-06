@@ -8,6 +8,8 @@
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 
+SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode
+
 ; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
 
 ORG 0x7E00
@@ -29,25 +31,39 @@ Bootload16:
 	
 	cli
 
-	jmp 0x0000:Start
+	jmp   0x0000:Start
 
 	Start:
-	xor  ax, ax
-	mov  ds, ax	
-	mov  es, ax	
-	mov  ss, ax	
-	mov  sp, STACK_TOP
+	xor   ax, ax
+	mov   ds, ax	
+	mov   es, ax	
+	mov   ss, ax	
+	mov   sp, STACK_TOP
 
-	; Store the boot drive ID
+	; Save the boot drive ID and active partition entry location on the stack
 
-	push dx
+	push  dx
+	push  bx
+	push  si
 
 	; Enable the A20 line
 
-	call A20_Enable
-	test al, al
-    mov  si, ErrStr_A20
-	jz   HaltSystem
+	call  A20_Enable
+	test  al, al
+    mov   si, ErrStr_A20
+	jz    HaltSystem
+
+	; Save the boot drive ID and the active partition entry location in DL, ESI respectively
+
+	mov   sp, STACK_TOP
+	sub   sp, 0x6
+	mov   eax, 0
+	mov   esi, 0
+	pop   ax
+	pop   si
+	pop   dx
+	shl   esi, 4
+	add   esi, eax
 
 	; Load a valid GDT
 
@@ -55,21 +71,18 @@ Bootload16:
 	
 	; Enter protected mode
 
-	mov  eax, cr0                                       
-	or   al , 1
-	mov  cr0, eax
+	mov   eax, cr0                                       
+	or    al , 1
+	mov   cr0, eax
 
 	; Switch CS to protected mode descriptor with a far jump	
 
-	mov  sp, STACK_TOP
-	sub  sp, 2
-	pop  dx
-	jmp  SEG32_CODE:ProtectedMode
+	jmp   SEG32_CODE:ProtectedMode
 	
 	; Halt the system in case of trouble
 
 	HaltSystem:
-    mov   ax, 0xB800
+    mov   ax, SCREEN_TEXT_BUFFER
     mov   es, ax
     mov   di, 80*23*2
     .printchar:
@@ -82,7 +95,7 @@ Bootload16:
     .printdone:
 	cli
 	hlt
-	jmp  HaltSystem
+	jmp  .printdone
 
 
 

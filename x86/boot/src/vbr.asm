@@ -8,8 +8,11 @@
 ; First let us include some definitions of constants (the constants themselves are described in comments)
 
 STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+
 BOOTLOADER_DISK_START   equ 2                                           ; Starting sector of the boot loader on disk
 BOOTLOADER_SIZE         equ 0x40 - 1                                    ; Size of the boot loader in sectors (512 B)
+
+SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -30,17 +33,27 @@ VBR:
 	
 	cli
 	
+	; We first set up a usable stack at 0x7000
+
+	xor   ax, ax
+	mov   ss, ax
+	mov   sp, STACK_TOP 
+
+	; BIOS stores the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+	; Save these registers on the stack
+
+	push  dx
+	push  ds
+	push  si
+	
 	; The MBR is expected to make a jump to 0x0000:0x7C00 (as opposed to 0x07C0:0x0000 or something else) but we should not assume this
 	; We should initialize the segment registers to the base address values that we want to use (0x0000)
 	
 	jmp   0x0000:Start
 	Start:
 	
-	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
-	mov   ss, ax
-	mov   sp, STACK_TOP 
 	
 	; MBR retains the drive ID in DL when control is transferred to the VBR. Store this value
 
@@ -125,7 +138,11 @@ VBR:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
-	mov   dl, [Drive_ID]
+	mov   sp, STACK_TOP
+	sub   sp, 0x6
+	pop   si
+	pop   bx
+	pop   dx
 	jmp   BOOTLOADER_START 
 	
 	; If we did not read what we wanted to we halt
@@ -137,7 +154,7 @@ VBR:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
-	mov   ax, 0xB800         
+	mov   ax, SCREEN_TEXT_BUFFER
 	mov   es, ax             
 	mov   di, 80*23*2        
 	mov   si, Messages.DiskIOErr   
@@ -151,7 +168,7 @@ VBR:
 	.printdone:	
 	cli
 	hlt
-	jmp   HaltSystem
+	jmp   .printdone
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -332,4 +332,13 @@ struct Multiboot_Info_LoadBaseAddress {
 	uint32_t reserved;
 }__attribute__((packed));
 
+struct Multiboot_Info_BootDevice {
+    uint32_t type;
+    uint32_t size;
+    uint32_t biosdev;
+    uint32_t partition;
+    uint32_t sub_partition;
+    uint32_t reserved;
+}__attribute__((packed));
+
 #endif

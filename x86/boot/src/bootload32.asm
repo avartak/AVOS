@@ -14,6 +14,8 @@ KERNEL_DISK_START       equ 0x40                                        ; Starti
 
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
+SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video buffer for the 80x25 VBE text mode
+
 ; These are the externally defined functions and variables we need
 
 extern IO_PrintBanner
@@ -52,6 +54,8 @@ Bootload32:
     ; Store information needed to load the kernel
 
     mov  [Kernel_Info.boot_drive_ID], dl
+
+    mov  [Kernel_Info.boot_partition], esi
 
     mov  eax, KERNEL_DISK_START
     mov  [Kernel_Info.disk_start], eax
@@ -119,7 +123,7 @@ Bootload32:
 	jmp  DWORD [Kernel_Info.entry]
 
     HaltSystem:
-    mov   edi, 0xB8000+80*23*2
+    mov   edi, SCREEN_TEXT_BUFFER+80*23*2
     .printchar:
         lodsb
         test  al, al
@@ -130,7 +134,7 @@ Bootload32:
     .printdone:
     cli
     hlt
-    jmp  HaltSystem
+    jmp  .printdone
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,6 +174,7 @@ align 8
 global Kernel_Info
 Kernel_Info:
 	.boot_drive_ID     resd 1
+	.boot_partition    resd 1
 	.image_size        resd 1
 	.image_start       resd 1
 	.disk_start        resd 1
@@ -177,10 +182,9 @@ Kernel_Info:
 	.multiboot_header  resd 1
 	.entry             resd 1
 	.size              resd 1
+	.reserved          resd 1
 
 ; Multiboot information (MBI) table
-
-align 8
 
 global Multiboot_Information_start
 Multiboot_Information_start:
