@@ -2,9 +2,12 @@
 #define X86_BOOT_RAM_H
 
 #include <kernel/include/common.h>
+#include <kernel/include/multiboot.h>
 
-extern uintptr_t RAM_MaxPresentMemoryAddress();
-extern bool      RAM_IsMemoryPresent(uintptr_t min, uintptr_t max);
-extern uintptr_t RAM_StoreInfo(uintptr_t addr);
+extern uintptr_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size);
+extern bool      RAM_IsMemoryPresent(uintptr_t min, uintptr_t max, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size);
+extern uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size);
+extern uintptr_t RAM_StoreE820Info(uintptr_t addr);
+extern uintptr_t RAM_StoreBasicInfo(uintptr_t addr);
 
 #endif

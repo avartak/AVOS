@@ -56,6 +56,33 @@ bool Elf32_IsValidiStaticExecutable(uintptr_t image) {
     return true;
 }
 
+size_t Elf32_StaticExecutableLoadSize(uintptr_t image) {
+
+    size_t load_size = 0;
+
+    if (!Elf32_IsValidiStaticExecutable(image)) return load_size;
+
+    Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
+    Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
+
+    for (size_t i = 0; i < hdr->e_phnum; i++) {
+        if (phdr[i].p_type != PT_LOAD) continue;
+    }
+
+    for (size_t i = 0; i < hdr->e_phnum; i++) {
+        if (phdr[i].p_type != PT_LOAD) continue;
+
+        size_t  p_img_size = phdr[i].p_filesz;
+        size_t  p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
+
+        load_size += p_img_size + p_pad_size;
+    }
+
+    return load_size;
+
+}
+
+
 size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
 
 	size_t load_size = 0;

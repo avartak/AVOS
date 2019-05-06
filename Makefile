@@ -24,10 +24,11 @@ $(X86_BOOT)/bios.c.o \
 $(X86_BOOT)/diskio.s.o \
 $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/ram.c.o  \
-$(X86_BOOT)/e820.c.o \
 $(X86_BOOT)/vbe.s.o  \
 $(X86_BOOT)/vbe.c.o  \
 $(X86_BOOT)/elf.c.o  \
+$(X86_BOOT)/io.c.o  \
+$(X86_BOOT)/discovery.c.o  \
 $(X86_BOOT)/multiboot.c.o 
 
 CSUPPORT=csupport/src

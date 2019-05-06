@@ -126,23 +126,40 @@ BITS 16
 
 	cmp   WORD [fs:BIOS_Int_ID], 0x10
 	je    BIOS_Interrupt.Int0x10
+	cmp   WORD [fs:BIOS_Int_ID], 0x12
+	je    BIOS_Interrupt.Int0x12
 	cmp   WORD [fs:BIOS_Int_ID], 0x13
 	je    BIOS_Interrupt.Int0x13
 	cmp   WORD [fs:BIOS_Int_ID], 0x15
 	je    BIOS_Interrupt.Int0x15
+	cmp   WORD [fs:BIOS_Int_ID], 0x16
+	je    BIOS_Interrupt.Int0x16
 
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x10:
+	clc
 	int   0x10
 	jmp   BIOS_Interrupt.SwitchToPMode32
 
+	.Int0x12:
+	clc
+	int   0x12
+	jmp   BIOS_Interrupt.SwitchToPMode32
+
 	.Int0x13:
+	clc
     int   0x13
     jmp   BIOS_Interrupt.SwitchToPMode32
 
 	.Int0x15:
+	clc
     int   0x15
+    jmp   BIOS_Interrupt.SwitchToPMode32
+
+	.Int0x16:
+	clc
+    int   0x16
     jmp   BIOS_Interrupt.SwitchToPMode32
 
 

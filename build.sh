@@ -46,9 +46,10 @@ $CC $CFLAGS -o string.o    -c csupport/src/string.c
 $CC $CFLAGS -o bios.o      -c x86/boot/src/bios.c
 $CC $CFLAGS -o diskio.o    -c x86/boot/src/diskio.c
 $CC $CFLAGS -o ram.o       -c x86/boot/src/ram.c
-$CC $CFLAGS -o e820.o      -c x86/boot/src/e820.c
 $CC $CFLAGS -o vbe.o       -c x86/boot/src/vbe.c
 $CC $CFLAGS -o elf.o       -c x86/boot/src/elf.c
+$CC $CFLAGS -o io.o        -c x86/boot/src/io.c
+$CC $CFLAGS -o discovery.o -c x86/boot/src/discovery.c
 $CC $CFLAGS -o multiboot.o -c x86/boot/src/multiboot.c
 
 $LD $LDFLAGS_BOOT -o bootloader.bin *.o

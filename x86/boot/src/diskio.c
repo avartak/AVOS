@@ -119,9 +119,12 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
     return true;
 }
 
-bool DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
-	bool lba_worked =       DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector, num_sectors);
-	if (!lba_worked) return DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector, num_sectors);	
-	else return true;
+size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
+	bool lba_worked = DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector, num_sectors);
+	if (!lba_worked) {
+		lba_worked  = DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector, num_sectors);
+	}
+	if (!lba_worked) return 0;
+	return num_sectors * DISKIO_SECTOR_SIZE;
 }
 

@@ -3,6 +3,8 @@
 
 #include <kernel/include/common.h>
 
+#define DISKIO_SECTOR_SIZE 0x200
+
 struct DiskIO_DAP {
 	uint8_t  size;
 	uint8_t  unused1;
@@ -22,11 +24,11 @@ struct DiskIO_Geometry {
 
 extern uint8_t DiskIO_LowMemoryBuffer[];
 
-extern bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
-extern bool DiskIO_CheckForBIOSExtensions(uint8_t drive);
-extern bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
-extern bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
-extern bool DiskIO_ReadFromDisk(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
+extern bool   DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
+extern bool   DiskIO_CheckForBIOSExtensions(uint8_t drive);
+extern bool   DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
+extern bool   DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
+extern size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start, size_t kernel_size);
 
 
 #endif
