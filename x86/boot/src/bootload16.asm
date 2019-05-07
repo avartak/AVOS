@@ -53,6 +53,11 @@ Bootload16:
     mov   si, ErrStr_A20
 	jz    HaltSystem
 
+	; Set video to 80x25 text mode
+
+	mov   ax, 0x0003
+	int   0x10
+
 	; Save the boot drive ID and the active partition entry location in DL, ESI respectively
 
 	mov   sp, STACK_TOP

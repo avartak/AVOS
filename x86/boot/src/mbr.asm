@@ -194,6 +194,8 @@ MBR:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
+	mov   ax, 0x0003
+	int   0x10
 	mov   ax, SCREEN_TEXT_BUFFER
 	mov   es, ax             
 	mov   di, 80*23*2
