@@ -5,7 +5,7 @@
 ; The boot drive ID is stored in DL 
 
 ; The MBR contains a partition table with 4 partition table entries (see description below), each 16 bytes in size, from 0x1BE to 0x1FD (0x1FE and 0x1FF contain the boot signature)
-; The MBR code typically does do the following :
+; The MBR code typically does the following :
 ; - Relocate to another location (usually 0x0000:0x0600)
 ; - Examine the 7th bit of the first byte of each partition table entry : If this byte is set then the partition is marked as "active"
 ; - If exactly one partition has the active bit set, take this partition as the active partition
