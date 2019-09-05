@@ -11,7 +11,7 @@
 ; - If exactly one partition has the active bit set, take this partition as the active partition
 ; - If no partition is active : hang or ask the user to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
 ; - If multiple partitions are marked as active : hang or take the first one as "the" active partition or ask the user to select one
-; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memort address 0x0000:0x7C00
+; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memory address 0x0000:0x7C00
 ; - Save the BIOS boot drive ID in DL
 ; - Save the pointer to the active partition in the relocated MBR in DS:SI
 ; - Make a far jump to 0x0000:0x7C00 
