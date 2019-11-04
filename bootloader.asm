@@ -1,5 +1,5 @@
 ; We are creating a very simple operating system - AVOS v0.0.1 
-; This size of this OS is just a few bytes
+; This size of this OS is exactly 512 bytes
 ; It's aim in life is to print a welcome message and then halt the system
 ; In reality this is a bootloader - and a very basic one at that
 ; Let us recall how we get here :
@@ -24,22 +24,22 @@ Kernel:
 
 	; The following code can be thought of as a code module that prints a string to screen
 	; We will use the BIOS interrupt service routine 0x10 to do the printing
-
-	mov si, Welcome_Message	                  ; Load the string pointer into the SI register
-	mov ah, 0Eh		                  ; We want a teletype output - printing basic characters to the screen 
+	
+	mov si, Welcome_Message                   ; Load the string pointer into the SI register
+	mov ah, 0Eh                               ; We want a teletype output - printing basic characters to the screen 
 	.printchar:                               ; We set up a loop here to print every single character
-		lodsb			          ; Load the byte from the address in SI into AL, then increment the address in SI
-		cmp al, 0                         ; Have we reached the end of the string ?
-		je .done		          ; If so, break out of the loop
-		int 10h                           ; Call the BIOS routine 0x10 to print the character stored in AL 
-		jmp .printchar                    ; Continue the printing loop
-
+		lodsb                                 ; Load the byte from the address in SI into AL, then increment the address in SI
+		cmp al, 0                             ; Have we reached the end of the string ?
+		je .done                              ; If so, break out of the loop
+		int 10h                               ; Call the BIOS routine 0x10 to print the character stored in AL 
+		jmp .printchar                        ; Continue the printing loop	
 	.done:                                    ; Printing is done
-
+	
 	; The OS has performed its goal in life
-
+	
 	cli                                       ; Clear all interrupts so that we won't be disturbed            
 	hlt                                       ; Halt the system	
+	jmp .done                                 ; In case the OS wakes up put it back to sleep
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
