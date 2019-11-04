@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export PATH="$HOME/AVOS/CrossCompiler/Install/bin:$PATH"
-
 TARGET="i686-elf"
 INCDIR="$PWD"
 ARCH=32
