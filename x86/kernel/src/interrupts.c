@@ -8,7 +8,7 @@ int screenpos = 2;
 
 void Interrupt_Handler(uint32_t interrupt) {
 
-    if (interrupt >= 0x00 && interrupt < 0x20) {
+    if (interrupt < 0x20) {
 		IRQTest("CPU has raised an exception", 0x04);
     }
 
