@@ -6,7 +6,7 @@ nasm -f elf32 -o a20.o             x86/boot/src/a20.asm
 nasm -f elf32 -o bios_asm.o        x86/boot/src/bios.asm
 
 CC=/Users/avartak/AVOS/Compiler/Target-i686-elf/bin/i686-elf-gcc
-LD=/Users/avartak/AVOS/Compiler/Target-i686-elf/bin/i686-elf-ld
+LINK=/Users/avartak/AVOS/Compiler/Target-i686-elf/bin/i686-elf-ld
 
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c x86/boot/src/bios.c
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c x86/boot/src/diskio.c
@@ -15,7 +15,7 @@ CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protec
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c x86/boot/src/vbe.c
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c x86/boot/src/info.c
 
-LD -m elf_i386 -T linkboot.ld -o bootloader.bin bootstage1.o bootstage2.o a20.o bios.o bios_asm.o vbe.o e820.o ram.o diskio.o info.o
+LINK -m elf_i386 -T linkboot.ld -o bootloader.bin bootstage1.o bootstage2.o a20.o bios.o bios_asm.o vbe.o e820.o ram.o diskio.o info.o
 
 rm *.o
 
@@ -44,7 +44,7 @@ CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protec
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c kernel/src/drivers.c
 CC --target=i386-jos-elf -ffreestanding -nostdlib -fno-builtin -fno-stack-protector -nodefaultlibs -Wall -Wextra -Werror -std=c99 -I /Users/avartak/AVOS/AVOS -c kernel/src/ioports.c
 
-LD -m elf_i386 -T linkkern.ld -o kernel.bin start.o machine.o avos.o memory.o process.o paging_asm.o paging_x86.o paging.o gdt.o gdt_asm.o idt.o idt_asm.o interrupts_asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o
+LINK -m elf_i386 -T linkkern.ld -o kernel.bin start.o machine.o avos.o memory.o process.o paging_asm.o paging_x86.o paging.o gdt.o gdt_asm.o idt.o idt_asm.o interrupts_asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o
 
 rm *.o
 
