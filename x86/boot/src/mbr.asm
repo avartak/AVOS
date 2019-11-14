@@ -268,8 +268,8 @@ Partition_Table:
 
 Partition_Table_Entry1:
 .Status              db 0x80                      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
-.Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition (not used by us)
-.Sector_Start        db 0
+.Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition
+.Sector_Start        db 2
 .Cylinder_Start      db 0
 .Type                db 0                         ; Partition type - set to 0 in our case
 .Head_End            db 0                         ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
