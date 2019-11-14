@@ -154,7 +154,7 @@ MBR:
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
-	jnc   LaunchVBR
+	jnc   CheckVBR
 	
 	; BIOS extensions do not exist or didn't work, and so we need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	; This routine should exist even on older BIOSes
@@ -179,12 +179,22 @@ MBR:
 	mov   al, 1
 	mov   ah, 0x02
 	int   0x13
-	jnc   LaunchVBR
+	jnc   CheckVBR
 	mov   si, Messages.DiskReadErr
 	jmp   HaltSystem
 	
 	; We reach here if the disk read was successful 
+	; Now check if the loaded VBR has the boot signature at the end
 	
+	CheckVBR:
+	mov   ax, [BOOT_ADDRESS+510]
+	cmp   ax, 0xAA55
+	je    LaunchVBR
+	mov   si, Messages.InvalidVBR
+	jmp   HaltSystem
+
+	; We are all set to launch into the VBR
+
 	LaunchVBR:
 	mov   sp, STACK_TOP-6 
 	pop   di
@@ -251,6 +261,7 @@ DAP:
 Messages:
 .NoActivePart        db 'No active partition found', 0
 .DiskReadErr         db 'Unable to load volume boot record from disk', 0
+.InvalidVBR          db 'Invalid volume boot record', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
