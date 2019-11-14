@@ -154,7 +154,7 @@ MBR:
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
-	jnc   LaunchStage2
+	jnc   LaunchVBR
 	
 	; BIOS extensions do not exist or didn't work, and so we need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	; This routine should exist even on older BIOSes
@@ -179,13 +179,13 @@ MBR:
 	mov   al, 1
 	mov   ah, 0x02
 	int   0x13
-	jnc   LaunchStage2
+	jnc   LaunchVBR
 	mov   si, Messages.DiskReadErr
 	jmp   HaltSystem
 	
 	; We reach here if the disk read was successful 
 	
-	LaunchStage2:
+	LaunchVBR:
 	mov   sp, STACK_TOP-6 
 	pop   di
 	pop   es
