@@ -1,8 +1,8 @@
-; This file contains the boot loader code in the master boot record (MBR) of a bootable drive
+; This file contains the code residing in the master boot record (MBR) of a fixed disk or removable drive that is deemed bootable [boot drive]
 ; MBR is the first sector (exactly 512 B) of the boot drive
 ; The last word of this sector has to be 0xAA55 -- this is the boot signature
-; The BIOS will look for this signature, then load this sector at memory location 0x7C00, and jump to 0x0000:0x7C00 (or sometimes 0x07C0:0x0000 -- beware!)
-; The boot drive ID is stored in DL 
+; The BIOS will look for this signature, then load this sector at memory address 0x7C00, and jump to 0x0000:0x7C00 (or sometimes 0x07C0:0x0000 -- beware!)
+; The boot drive ID is stored in DL --> typically (but not always!) 0x80, 0x81, ... for fixed disks or removable drives ; 0x00, 0x01, ... for floppies ; 0x7E, 0x7F are reserved
 
 ; The MBR contains a partition table with 4 partition table entries (see description below), each 16 bytes in size, from 0x1BE to 0x1FD (0x1FE and 0x1FF contain the boot signature)
 ; The MBR code typically does the following :
@@ -12,7 +12,8 @@
 ; - If no partition is active : hang or ask the user to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
 ; - If multiple partitions are marked as active : hang or take the first one as "the" active partition or ask the user to select one
 ; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memory address 0x0000:0x7C00
-; - Save the BIOS boot drive ID in DL
+; - Preserve the BIOS boot drive ID in DL
+; - Preserve the contents of DH (flag for device supported through INT 0x13) and ES:DI ("$PnP" installation check structure) --> These may be needed by the OS downstream
 ; - Save the pointer to the active partition in the relocated MBR in DS:SI
 ; - Make a far jump to 0x0000:0x7C00 
 
@@ -28,18 +29,18 @@
 ;| 0x0C    | 4            | Number of sectors in partition                    |
 ;------------------------------------------------------------------------------
 
-; First let us include some definitions of constants (the constants themselves are described in comments)
+; First let us include some definitions of constants
 
 STACK_TOP               equ 0x1000                ; Top of the stack used by the boot loader code
-SECTOR_SIZE             equ 0x200                 ; Size of a sector (or size of MBR, VBR)
+SECTOR_SIZE             equ 0x200                 ; Size of a sector (or size of the MBR, VBR)
 
-BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded
-RELOC_ADDRESS           equ 0x0600                ; This is where the relocated boot sector code/data is placed
+BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
+RELOC_ADDRESS           equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at BOOT_ADDRESS
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
 
-SCREEN_TEXT_BUFFER      equ 0xB800                ; Video buffer for the 80x25 VBE text mode
+SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode
 
-; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x0600 in the binary code
+; We need to tell the assembler that all labels need to be resolved relative to RELOC_ADDRESS in the binary code
 
 ORG RELOC_ADDRESS
 
@@ -58,6 +59,10 @@ MBR:
 	
 	cli
 
+	; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
+
+	cld
+
 	; We first set up a usable stack at 0x1000
 
 	xor   ax, ax
@@ -66,8 +71,8 @@ MBR:
 
 	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
 	
-	push  dx                 ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
-	push  es                 ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
+	push  dx                                      ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
+	push  es                                      ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
 	push  di
 
 	; We should initialize the segment registers to the base address values that we want to use (we use 0x0000)
@@ -88,13 +93,13 @@ MBR:
 
 	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
 
-	mov   [Drive_ID], dl     ; Save the boot drive ID, we will need it when trying to read the VBR from disk
+	mov   [Drive_ID], dl                          ; Save the boot drive ID, we will need it when trying to read the VBR from disk
 
 	; Identify the active partition
 
-	GetActivePartition:
 	mov   cx, 4
 	mov   bx, MBR+PARTITION_TABLE_OFFSET
+	GetActivePartition:
 	mov   ax, [bx]
 	test  ax, 0x80
 	jnz   LoadVBR
@@ -105,9 +110,9 @@ MBR:
 	jmp   HaltSystem
 
 	LoadVBR:
-	mov   [Active_Partition], bx
+	mov   [Active_Partition], bx                  ; Save the start address of the active partition in the relocated MBR. This will eventually be passed on through DS:SI 
 
-	mov   ax, [bx+0x08]
+	mov   ax, [bx+0x08]                           ; Save the LBA address of the start sector of the active partition in the Disk Address Packet used by extended INT 0x13 
 	mov   [DAP.Start_Sector], ax
 	mov   ax, [bx+0x0A]
 	mov   [DAP.Start_Sector+0x02], ax
@@ -141,11 +146,11 @@ MBR:
 	test  cx, 1
 	jz    DiskReadUsingCHS
 	
-	; We need to provide INT 0x13 AH=0x02 a data structure containing information about what sectors to read, and where to put the read data in memory
+	; We need to provide INT 0x13 AH=0x42 a data structure containing information about what sectors to read, and where to put the read data in memory
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	mov   dl, BYTE [Drive_ID]
+	mov   dl, [Drive_ID]
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
@@ -154,15 +159,22 @@ MBR:
 	; BIOS extensions do not exist or didn't work, and so we need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	; This routine should exist even on older BIOSes
 	; However, it has some limitations, most notably the fact that it cannot access very large disks
+	; It takes as input
+	; - Drive ID in DL
+	; - Start sector number ranging between 1-63 (6-bits) in CL (bits 0 to 5)
+	; - Start cylinder number ranging between 0-1023 (10-bits) in CH and CL (bits 8,9 of cylinder number go in bits 6,7 of CL)
+	; - Start head number in DH
+	; - Number of sectors to read in AL
+	; - Memory address to load into is stored in ES:BX
+	; - AH contains return code of the read routine ; AL contains the actual number of sectors that got read ; Carry flag is clear if the read was successful  
 
 	DiskReadUsingCHS:	
-	mov   bx, [Active_Partition]
 	mov   dl, [Drive_ID]
 	mov   dh, [bx+1]
 	mov   cl, [bx+2]
 	mov   ch, [bx+3]
-	mov   bx, 0
-	mov   es, bx
+	xor   ax, ax
+	mov   es, ax
 	mov   bx, BOOT_ADDRESS
 	mov   al, 1
 	mov   ah, 0x02
@@ -174,14 +186,13 @@ MBR:
 	; We reach here if the disk read was successful 
 	
 	LaunchStage2:
-	mov   sp, STACK_TOP 
-	sub   sp, 6
+	mov   sp, STACK_TOP-6 
 	pop   di
 	pop   es
 	pop   dx
 	mov   dl, [Drive_ID]
-	mov   si, 0
-	mov   ds, si
+	xor   ax, ax
+	mov   ds, ax
 	mov   si, [Active_Partition]
 	jmp   BOOT_ADDRESS 
 
@@ -220,24 +231,26 @@ times 218-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Disk_Time_Stamp: 
-times 8              db 0
+times 2              db 0                         ; Saving 0x0000 word (no specific reason)
+Original_Drive_ID    db 0x80                      ; Save the ID of the original drive on which the MBR is written
+Disk_Time_Stamp:                                  ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours)
+times 3              db 0                         
 
 Active_Partition     dw 0
 Drive_ID             db 0
 
 DAP:
-.Size                db 0x10
-.Unused1             db 0
-.Sectors_Count       db 1
-.Unused2             db 0
-.Memory_Offset       dw BOOT_ADDRESS
-.Memory_Segment      dw 0
-.Start_Sector        dq 1
+.Size                db 0x10                      ; Size of the DAP - this should always be 0x10
+.Unused1             db 0                         ; Reserved
+.Sectors_Count       db 1                         ; Number of sectors to read (we need to read just the one sector containing the VBR)
+.Unused2             db 0                         ; Reserved
+.Memory_Offset       dw BOOT_ADDRESS              ; Offset of the memory location where the data from disk will be copied to 
+.Memory_Segment      dw 0                         ; Segment address corresponding to the memory location where the data from disk will be copied to 
+.Start_Sector        dq 1                         ; Starting sector (in LBA) on disk for read
 
 Messages:
 .NoActivePart        db 'No active partition found', 0
-.DiskReadErr         db 'Unable to load VBR from disk', 0
+.DiskReadErr         db 'Unable to load volume boot record from disk', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,22 +261,22 @@ times 440-($-$$)     db 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Disk_Signature:
-.UID                 dd 0xADADADAD
-.Protection          dw 0
+.UID                 dd 0xADADADAD                ; unique disk ID
+.Protection          dw 0                         ; 0x5A5A if copy protected, else 0x0000
 
 Partition_Table:
 
 Partition_Table_Entry1:
-.Status              db 0x80
-.Head_Start          db 0
+.Status              db 0x80                      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
+.Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition (not used by us)
 .Sector_Start        db 0
 .Cylinder_Start      db 0
-.Type                db 0
-.Head_End            db 0
+.Type                db 0                         ; Partition type - set to 0 in our case
+.Head_End            db 0                         ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
 .Sector_End          db 0
 .Cylinder_End        db 0
-.LBA_Start           dd 1
-.LBA_Sectors         dd 0x1000-1
+.LBA_Start           dd 1                         ; LBA of the starting sector
+.LBA_Sectors         dd 0x1000-1                  ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0
