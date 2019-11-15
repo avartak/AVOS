@@ -1,3 +1,7 @@
+; What follows is a *traditional* master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC. 
+; - This will not run through the Unified Extensible Firmware Interface (UEFI)
+; - Traditional partitions ; no GUID Partition Table (GPT) or support for it 
+
 ; This file contains the code residing in the master boot record (MBR) of a fixed disk or removable drive that is deemed bootable [boot drive]
 ; MBR is the first sector (exactly 512 B) of the boot drive
 ; The last word of this sector has to be 0xAA55 -- this is the boot signature
@@ -11,7 +15,7 @@
 ; - If exactly one partition has the active bit set, take this partition as the active partition
 ; - If no partition is active : hang or ask the user to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
 ; - If multiple partitions are marked as active : hang or take the first one as "the" active partition or ask the user to select one
-; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memory address 0x0000:0x7C00
+; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memory address 0x0000:0x7C00 [VBR is a more OS-specific first stage boot loader]
 ; - Preserve the BIOS boot drive ID in DL
 ; - Preserve the contents of DH (flag for device supported through INT 0x13) and ES:DI ("$PnP" installation check structure) --> These may be needed by the OS downstream
 ; - Save the pointer to the active partition in the relocated MBR in DS:SI
@@ -31,13 +35,11 @@
 
 ; First let us include some definitions of constants
 
-STACK_TOP               equ 0x1000                ; Top of the stack used by the boot loader code
-SECTOR_SIZE             equ 0x200                 ; Size of a sector (or size of the MBR, VBR)
-
+SECTOR_SIZE             equ 0x0200                ; Size of a sector (or size of the MBR, VBR)
 BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
 RELOC_ADDRESS           equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at BOOT_ADDRESS
+STACK_TOP               equ 0x0600                ; Top of the stack used by the MBR
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
-
 SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode
 
 ; We need to tell the assembler that all labels need to be resolved relative to RELOC_ADDRESS in the binary code
@@ -242,8 +244,8 @@ times 218-($-$$)     db 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 times 2              db 0                         ; Saving 0x0000 word (no specific reason)
-Original_Drive_ID    db 0x80                      ; Save the ID of the original drive on which the MBR is written
-Disk_Time_Stamp:                                  ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours)
+Original_Drive_ID    db 0x80                      ; Save the ID of the original drive on which the MBR is written [To be edited by MBR software]
+Disk_Time_Stamp:                                  ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours) [To be edited by MBR software]
 times 3              db 0                         
 
 Active_Partition     dw 0
@@ -272,10 +274,10 @@ times 440-($-$$)     db 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Disk_Signature:
-.UID                 dd 0xADADADAD                ; unique disk ID
-.Protection          dw 0                         ; 0x5A5A if copy protected, else 0x0000
+.UID                 dd 0                         ; unique disk ID [To be edited by MBR software]
+.Protection          dw 0                         ; 0x5A5A if copy protected, else 0x0000 [To be edited by MBR software]
 
-Partition_Table:
+Partition_Table:                                  ; [Everything below to be edited by MBR software]
 
 Partition_Table_Entry1:
 .Status              db 0x80                      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
@@ -287,7 +289,7 @@ Partition_Table_Entry1:
 .Sector_End          db 0
 .Cylinder_End        db 0
 .LBA_Start           dd 1                         ; LBA of the starting sector
-.LBA_Sectors         dd 0x1000-1                  ; Number of sectors in the partition
+.LBA_Sectors         dd 0x2000                    ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0

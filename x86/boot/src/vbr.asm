@@ -2,7 +2,7 @@
 ; This is a single sector (512 B) located at the start of an active partition of a bootable drive
 ; It is loaded at 0x0000:0x7C00 by the master boot record (MBR)
 ; It also has the boot signature word at its end, just like the MBR
-; The VBR does not contain a partition table, and so has a few more bytes of code at its disposal, but this is still not much
+; The VBR does not need to contain a partition table, and so has a few more bytes of code at its disposal, but this is still not much
 ; It loads the boot loader into memory and transfers control to it. The boot loader then loads the OS
 
 ; First let us include some definitions of constants (the constants themselves are described in comments)
@@ -100,7 +100,7 @@ VBR:
 	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax
 	
 	; This is the code that converts the address of the starting sector from the LBA scheme to the CHS scheme 
-	; It stores the C,H,S values is appropriate registers and then calls INT 0x13, AH=0x42
+	; It stores the C,H,S values in appropriate registers and then calls INT 0x13, AH=0x42
 
 	mov   eax, BOOTLOADER_DISK_START
 	mov   edx, 0
