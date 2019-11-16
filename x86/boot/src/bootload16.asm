@@ -20,8 +20,8 @@
 
 ; First let us include some definitions of constants
 
-START_ADDRESS           equ 0x7E00                                      ; The Volume Boot Record (VBR) puts this code right after it in memory 
-STACK_TOP               equ 0x7C00                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+START_ADDRESS           equ 0x7E00                                      ; The Volume Boot Record (VBR) puts this code right after it in memory (so 0x7C00 + 0x200)
+STACK_TOP               equ 0x7C00                                      ; Top of the stack
 SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode (for displaying error messages)
 SEG32_CODE              equ 0x08                                        ; 32-bit kernel code segment
 

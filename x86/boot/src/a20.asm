@@ -2,12 +2,12 @@ BITS 16
 
 ; Physical address given by reg:add combination is : [reg] x 0x10 + add
 ; This allows us to address a memory range starting from 0 to 0xFFFF0+0xFFFF
-; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus can physically access
+; If you do the math you will find that this range exceeds the 1 MB address space that a 20-bit address bus (on the original 8086/8088) can physically access
 ; By default the addresses beyond the 1 MB mark get looped back to 0
 ; However, in reality we now have processors capable of physically accessing addresses beyond 1 MB
 ; To enable access to this >1MB address space, we need to enable the A20 line
 
-; SwitchOnA20 : Enable the A20 line. 
+; A20_Enable : Enable the A20 line. 
 ; First the code checks if the line is already enabled
 ; If the line is enabled it returns
 ; Otherwise it tries to enable it using BIOS
@@ -30,12 +30,12 @@ A20_Enable:
 	
 	call A20_EnableWithBIOS                           ; Enable the A20 line using BIOS
 	call A20_IsEnabled                                ; Check again if the A20 line is enabled
-	test al, al                                       ; 
+	test al, al                                       
 	jnz  .end
 	
-	call A20_EnableWithKeyboard                       ; Enable the A20 line using the PS/2 (8042) controller
+	call A20_EnableWithPS2Keyboard                    ; Enable the A20 line using the PS/2 (8042) controller
 	call A20_IsEnabled                                ; Check again if the A20 line is enabled
-	test al, al                                       ; 
+	test al, al                                        
 	jnz  .end
 	
 	call A20_EnableWithFastGate                       ; Enable the A20 line using the Fast A20 Gate -- enable bit 2 on port 0x92
@@ -102,20 +102,20 @@ A20_IsEnabled:
 
 
 
-; A20_EnableWithBIOS : Enable the A20 line using INT 15H
+; A20_EnableWithBIOS : Enable the A20 line using INT 0x15
 ; There are several options to try in case this does not work. We will stick with this one for now, and develop further later on. 
 
 A20_EnableWithBIOS:
 	pusha
 
-	mov  ax, 0x2401                                    ; This is the parameter to INT 15H to enable the A20 line. 
+	mov  ax, 0x2401                                    ; This is the parameter to INT 0x15 to enable the A20 line. 
 	int  0x15
 
 	popa
 	ret
 
 
-; A20_EnableWithKeyboard : Enable the A20 line the 8042 controller for the PS/2 keyboard
+; A20_EnableWithPS2Keyboard : Enable the A20 line the 8042 controller for the PS/2 keyboard
 ; The first byte of the PS/2 controller output controls the A20 gate
 ; We will need to enable this bit
 ; First we disable the PS/2 ports (this operation does not have anything to do with the PS/2 ports)
@@ -132,12 +132,12 @@ COMD_8042_ENABLE_PS2_PORT2    equ 0xA8                ; Command for enabling  th
 COMD_8042_READ_CONT_OUT_PORT  equ 0xD0                ; Command to read out the PS/2 controller output port
 COMD_8042_WRITE_CONT_OUT_PORT equ 0xD1                ; Command to write to the PS/2 controller output port
 
-TEST_8042_READ_ACCESS         equ 0x01                ; We always test if the 1st bit of the byte read out from the PS/2 controller command port is 1 -- this tells we have  read access to the PS/2 data port
-TEST_8042_WRITE_ACCESS        equ 0x02                ; We always test if the 2nd bit of the byte read out from the PS/2 controller command port is 0 -- this tells we have write access to the PS/2 ports
+TEST_8042_READ_ACCESS         equ 0x01                ; Test if the 1st bit of the byte read out from the PS/2 controller command port is 1 -- we have  read access to the PS/2 data port
+TEST_8042_WRITE_ACCESS        equ 0x02                ; Test if the 2nd bit of the byte read out from the PS/2 controller command port is 0 -- we have write access to the PS/2 ports
 
 A20_BIT_ENABLE                equ 0x02                ; The 2nd bit of the data from the PS/2 controller output port drives the A20 gate
 
-A20_EnableWithKeyboard:
+A20_EnableWithPS2Keyboard:
 	
 	; Save the contents of AX
 	push ax
