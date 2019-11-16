@@ -93,6 +93,11 @@ MBR:
 
 	Start:
 
+	; Set video to 80x25 text mode
+
+	mov   ax, 0x0003
+	int   0x10
+
 	mov   [Drive_ID], dl                          ; Save the boot drive ID, we will need it when trying to read the VBR from disk
 
 	; Identify the active partition

@@ -1,37 +1,18 @@
 #!/bin/bash
 
-TARGET="i686-elf"
-INCDIR="$PWD"
-ARCH=32
+TARGET=i686-elf
+INCDIR=$(eval pwd)
 
-AS=$(eval which nasm)
 CC=$(eval which $TARGET-gcc)
 LD=$(eval which $TARGET-ld)
+AS=$(eval which nasm)
 
-NASM_OUTPUT_FORMAT=elf
-LD_EMULATION=elf_i386
-if [ $TARGET == "i686-elf" ]
-then 
-	NASM_OUTPUT_FORMAT="$NASM_OUTPUT_FORMAT$ARCH"
-fi
-
-if [ $TARGET == "x86_64-elf" ]
-then
-	if [ $ARCH -eq 32 ]
-	then 
-    	NASM_OUTPUT_FORMAT="$NASM_OUTPUT_FORMATx$ARCH"
-		LD_EMULATION="elf32_x86_64"
-	fi
-	if [ $ARCH -eq 64 ]
-	then 
-    	NASM_OUTPUT_FORMAT="$NASM_OUTPUT_FORMAT$ARCH"
-		LD_EMULATION="elf_x86_64"
-	fi
-fi
+ARCH=32
+NASM_OUTPUT_FORMAT="elf$ARCH"
+LD_EMULATION="elf_i386"
 
 AFLAGS="-f $NASM_OUTPUT_FORMAT"
-CFLAGS="-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra -Werror -std=c99 -I $INCDIR"
-CFLAGS_LINK="-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra -Werror -std=c99 -I $INCDIR -m$ARCH -T linkkern.ld -lgcc"
+CFLAGS="-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra -Werror -std=c99 -I $INCDIR -m$ARCH -T linkkern.ld -lgcc"
 LDFLAGS_BOOT="-m $LD_EMULATION -T linkboot.ld"
 LDFLAGS_KERN="-m $LD_EMULATION -T linkkern.ld"
 
@@ -45,15 +26,15 @@ $AS $AFLAGS -o bios.asm.o       x86/boot/src/bios.asm
 $AS $AFLAGS -o diskio.asm.o     x86/boot/src/diskio.asm
 $AS $AFLAGS -o vbe.asm.o        x86/boot/src/vbe.asm
 
-$CC $CFLAGS -o string.o    -c csupport/src/string.c
-$CC $CFLAGS -o bios.o      -c x86/boot/src/bios.c
-$CC $CFLAGS -o diskio.o    -c x86/boot/src/diskio.c
-$CC $CFLAGS -o ram.o       -c x86/boot/src/ram.c
-$CC $CFLAGS -o vbe.o       -c x86/boot/src/vbe.c
-$CC $CFLAGS -o elf.o       -c x86/boot/src/elf.c
-$CC $CFLAGS -o io.o        -c x86/boot/src/io.c
-$CC $CFLAGS -o discovery.o -c x86/boot/src/discovery.c
-$CC $CFLAGS -o multiboot.o -c x86/boot/src/multiboot.c
+$CC $CFLAGS -o bios.o      -c   x86/boot/src/bios.c
+$CC $CFLAGS -o diskio.o    -c   x86/boot/src/diskio.c
+$CC $CFLAGS -o ram.o       -c   x86/boot/src/ram.c
+$CC $CFLAGS -o vbe.o       -c   x86/boot/src/vbe.c
+$CC $CFLAGS -o elf.o       -c   x86/boot/src/elf.c
+$CC $CFLAGS -o io.o        -c   x86/boot/src/io.c
+$CC $CFLAGS -o discovery.o -c   x86/boot/src/discovery.c
+$CC $CFLAGS -o multiboot.o -c   x86/boot/src/multiboot.c
+$CC $CFLAGS -o string.o    -c   csupport/src/string.c
 
 $LD $LDFLAGS_BOOT -o bootload32.bin *.o
 
@@ -93,7 +74,7 @@ CRTI=crti.o
 CRTN=crtn.o
 CRT0=start.asm.o
 
-$CC $CFLAGS_LINK -o kernel.bin $CRT0 $CRTI $CRTB machine.o avos.o memory.o process.o paging.asm.o paging_x86.o paging.o gdt.o gdt.asm.o idt.o idt.asm.o interrupts.asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o $CRTE $CRTN
+$CC $CFLAGS -o kernel.bin $CRT0 $CRTI $CRTB machine.o avos.o memory.o process.o paging.asm.o paging_x86.o paging.o gdt.o gdt.asm.o idt.o idt.asm.o interrupts.asm.o interrupts.o pic.o welcome.o pit.o timer.o keyboard.o drivers.o string.o ioports.o $CRTE $CRTN
 
 rm *.o
 

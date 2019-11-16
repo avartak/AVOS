@@ -58,6 +58,11 @@ VBR:
 	
 	Start:
 	
+	; Set video to 80x25 text mode
+
+	mov   ax, 0x0003
+	int   0x10
+
 	mov   [Drive_ID], dl                                ; Save the boot drive ID --> MBR put it in DL
 	mov   [DAP.Start_Sector], ebx                       ; Save the LBA of the start sector of the bootloader in the Disk Address Packet used by extended INT 0x13 
 
