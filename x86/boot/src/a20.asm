@@ -88,7 +88,6 @@ A20_IsEnabled:
 	
 	mov  al, 0                                         
 	je   .end                                         ; If A20 line is disabled store 0 in AX, else store 1 in AX
-	
 	mov  al, 1
 	
 	.end:

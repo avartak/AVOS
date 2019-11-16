@@ -144,7 +144,6 @@ section .data
 ; Error strings in case the boot loader runs into trouble
 
 Messages: 
-ErrStr_A20          db 'A20 line could not be enabled', 0
 ErrStr_Memory       db 'Unable to get memory information', 0
 ErrStr_LoadKernel   db 'Unable to load kernel', 0
 ErrStr_MBI          db 'Unable to save multiboot information', 0
