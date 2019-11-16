@@ -8,7 +8,7 @@
 
 STACK_TOP               equ 0x7C00                      ; Top of the stack
 SCREEN_TEXT_BUFFER      equ 0xB800                      ; Video buffer for the 80x25 VBE text mode (for displaying error messages)
-BOOTLOADER_PART_START   equ 1                           ; Starting sector of the boot loader on disk
+BOOTLOADER_PART_START   equ 4                           ; Starting sector of the boot loader on disk
 BOOTLOADER_SIZE         equ 0x40 - 1                    ; Size of the boot loader in sectors (512 B)
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code

@@ -98,7 +98,7 @@ $CC $CFLAGS_LINK -o kernel.bin $CRT0 $CRTI $CRTB machine.o avos.o memory.o proce
 rm *.o
 
 dd conv=notrunc if=kernel.bin     of=avos.iso seek=4096
-dd conv=notrunc if=bootloader.bin of=avos.iso seek=2049
+dd conv=notrunc if=bootloader.bin of=avos.iso seek=2052
 dd conv=notrunc if=vbr.bin        of=avos.iso seek=2048
 dd conv=notrunc if=mbr.bin        of=avos.iso
 

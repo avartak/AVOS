@@ -5,7 +5,7 @@
 
 ; First let us include some definitions of constants
 
-STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+STACK_TOP               equ 0x7C00                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
 KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel ELF executable is loaded at physical memory location of 1 MB
