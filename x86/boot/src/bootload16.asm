@@ -3,9 +3,25 @@
 ; This code is loaded at memory location 0x7E00 right after the 512 B of the boot sector code
 ; It will switch to PROTECED mode and transfer control to the 32-bit boot loader that will then copy the kernel at 1 MB
 
+; Some notes about the mapping of the first MB of the physical memory in the PC architecture, and how we use this memory 
+
+; 0x000000 - 0x000400 : Interrupt Vector Table  
+; 0x000400 - 0x000500 : BIOS data area          
+; 0x000500 - 0x007C00 : Free area
+; 0x000600 - 0x000800 : Relocated MBR
+; 0x000800 - 0x001000 : Stack of the relocated MBR
+; 0x001000 - 0x007000 : Stack of the boot loader
+; 0x007C00 - 0x007E00 : VBR             
+; 0x007E00 - 0x09FC00 : Free area
+; 0x007E00 - 0x008000 : 16-bit part of the boot loader code
+; 0x008000 - 0x00FFFF : 32-bit part of the boot loader code     
+; 0x09FC00 - 0x0A0000 : Extended BIOS data area 
+; 0x0A0000 - 0x0C0000 : Video memory            
+; 0x0C0000 - 0x100000 : BIOS            
+
 ; First let us include some definitions of constants
 
-STACK_TOP               equ 0x7000                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
+STACK_TOP               equ 0x7C00                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 
 SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode
@@ -23,28 +39,41 @@ BITS 16
 
 Bootload16:
 
+    ; We don't want any interrupts right now.
+
+    cli
+
+    ; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
+
+    cld
+
+    ; We first set up a usable stack at 0x7000
+
+    xor   ax, ax
+    mov   ss, ax
+    mov   sp, STACK_TOP
+
+    ; The VBR stores the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+    ; Save these registers on the stack
+
+    push  dx
+    push  ds
+    push  si
+
+	; Set all the segment registers to the base address we want (0x0000)
+	
+	xor   ax, ax
+	mov   ds, ax	
+	mov   es, ax	
+	jmp   0x0000:Start
+
 	; To enable the protected mode we will :
 	; - Clear all interrupts
 	; - Switch on the A20 line 
 	; - Create a GDT and load it
 	; - Set the first bit in CR0 to 1
 	
-	cli
-
-	jmp   0x0000:Start
-
 	Start:
-	xor   ax, ax
-	mov   ds, ax	
-	mov   es, ax	
-	mov   ss, ax	
-	mov   sp, STACK_TOP
-
-	; Save the boot drive ID and active partition entry location on the stack
-
-	push  dx
-	push  bx
-	push  si
 
 	; Enable the A20 line
 

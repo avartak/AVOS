@@ -1,4 +1,4 @@
-; What follows is a *traditional* master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC. 
+; What follows is a traditional master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC. 
 ; - This will not run through the Unified Extensible Firmware Interface (UEFI)
 ; - Traditional partitions ; no GUID Partition Table (GPT) or support for it 
 
@@ -40,7 +40,7 @@ BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR i
 RELOC_ADDRESS           equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at BOOT_ADDRESS
 STACK_TOP               equ 0x0600                ; Top of the stack used by the MBR
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
-SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode
+SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
 
 ; We need to tell the assembler that all labels need to be resolved relative to RELOC_ADDRESS in the binary code
 
@@ -65,7 +65,7 @@ MBR:
 
 	cld
 
-	; We first set up a usable stack at 0x1000
+	; First set up a usable stack 
 
 	xor   ax, ax
 	mov   ss, ax
@@ -92,8 +92,6 @@ MBR:
 	jmp   0x0000:Start
 
 	Start:
-
-	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
 
 	mov   [Drive_ID], dl                          ; Save the boot drive ID, we will need it when trying to read the VBR from disk
 
@@ -217,8 +215,6 @@ MBR:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
-	mov   ax, 0x0003
-	int   0x10
 	mov   ax, SCREEN_TEXT_BUFFER
 	mov   es, ax             
 	mov   di, 80*23*2
@@ -243,7 +239,7 @@ times 218-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-times 2              db 0                         ; Saving 0x0000 word (no specific reason)
+times 2              db 0                         ; Saving 0x0000 word (MBR article on wikipedia suggests this for a standard MBR)
 Original_Drive_ID    db 0x80                      ; Save the ID of the original drive on which the MBR is written [To be edited by MBR software]
 Disk_Time_Stamp:                                  ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours) [To be edited by MBR software]
 times 3              db 0                         
@@ -282,14 +278,14 @@ Partition_Table:                                  ; [Everything below to be edit
 Partition_Table_Entry1:
 .Status              db 0x80                      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
 .Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition
-.Sector_Start        db 2
+.Sector_Start        db 0
 .Cylinder_Start      db 0
 .Type                db 0                         ; Partition type - set to 0 in our case
 .Head_End            db 0                         ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
 .Sector_End          db 0
 .Cylinder_End        db 0
-.LBA_Start           dd 1                         ; LBA of the starting sector
-.LBA_Sectors         dd 0x2000                    ; Number of sectors in the partition
+.LBA_Start           dd 0x0800                    ; LBA of the starting sector
+.LBA_Sectors         dd 0xFFFF                    ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0
