@@ -1,19 +1,19 @@
-; This is the code of the 2nd stage of the boot loader
-; We are still in REAL mode
-; This code is loaded at memory location 0x7E00 right after the 512 B of the boot sector code
-; It will switch to PROTECED mode and then copy the kernel at 1 MB
+; This is the code of the 32-bit (REAL mode) part of the bootloader
+; We are now in PROTECTED mode
+; This code is loaded at memory location 0x8000 right after the 512 B of VBR (at 0x7C00) followed by 512 B of the real mode part of the bootloader (at 0x7E00)
+; It prepares the environment for the OS kernel and then loads it from disk into memory location of 1 MB. 
+; The kernel is located on the disk partition at an offset of 1 MB. 
+; We try to make the bootloader and the OS kernel as Multiboot2 compliant as possible. 
+; Multiboot2 specs : https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html
 
 ; First let us include some definitions of constants
 
-STACK_TOP               equ 0x7C00                                      ; Top of the stack - it can extend down till 0x500 without running into the BIOS data area (0x400-0x500)
-
+STACK_TOP               equ 0x7C00                                      ; Top of the stack
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
 KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel ELF executable is loaded at physical memory location of 1 MB
 KERNEL_IMAGE_SIZE       equ 0x100000                                    ; Size of the kernel image in bytes
 KERNEL_PART_START       equ 0x0800                                      ; Starting sector of the kernel on the partition (1 MB offset)
-
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
-
 SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video buffer for the 80x25 VBE text mode
 
 ; These are the externally defined functions and variables we need
@@ -26,7 +26,7 @@ extern Multiboot_SaveMemoryMaps
 extern Multiboot_LoadKernel
 extern Multiboot_SaveInfo
 
-; Starting point of the kernel loader --> in the .boot section, following immediately after the 512 B of the boot sector code
+; Starting point of the 32-bit bootloader code. See linkboot.ld for details on how the code is linked into the bootloader binary
 
 section .text
 
@@ -148,19 +148,6 @@ Messages:
 ErrStr_Memory       db 'Unable to get memory information', 0
 ErrStr_LoadKernel   db 'Unable to load kernel', 0
 ErrStr_MBI          db 'Unable to save multiboot information', 0
-
-; GDT with 32-bit (0x08, 0x10) and 16-bit (0x18, 0x20) entries
-
-GDT: 
-	dq 0
-	dq 0x00CF9A000000FFFF
-	dq 0x00CF92000000FFFF
-	dq 0x000F9A000000FFFF
-	dq 0x000F92000000FFFF
-
-GDT_Desc:
-	dw GDT_Desc - GDT - 1
-	dd GDT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

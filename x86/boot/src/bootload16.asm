@@ -6,12 +6,11 @@
 
 ; 0x000000 - 0x000400 : Interrupt Vector Table  
 ; 0x000400 - 0x000500 : BIOS data area          
-; 0x000500 - 0x007C00 : Free area
+; 0x000500 - 0x007C00 : Usable
 ; 0x000600 - 0x000800 : Relocated MBR (It's stack top is at 0x0600)
-; 0x000800 - 0x001000 : Stack of the relocated MBR
-; 0x001000 - 0x007000 : Stack of the boot loader
+; 0x000800 - 0x007C00 : Free
 ; 0x007C00 - 0x007E00 : VBR (It's stack top is at 0x7C00)
-; 0x007E00 - 0x09FC00 : Free area
+; 0x007E00 - 0x09FC00 : Free
 ; 0x007E00 - 0x008000 : 16-bit part of the boot loader code (It's stack top is at 0x7C00)
 ; 0x008000 - 0x00FFFF : 32-bit part of the boot loader code (It's stack top is at 0x7C00)    
 ; 0x09FC00 - 0x0A0000 : Extended BIOS data area 
@@ -167,10 +166,10 @@ ErrStr_A20 db 'A20 line could not be enabled', 0
 ;
 ; We set up a GDT with 4 entries :
 ; - Null descriptor
-; - Kernel code segment descriptor
-; - Kernel data segment descriptor
-; - User code segment descriptor
-; - User data segment descriptor
+; - 32-bit code segment descriptor
+; - 32-bit data segment descriptor
+; - 16-bit code segment descriptor
+; - 16-bit data segment descriptor
 ; The segment descriptors implement the 'flat' memory model where the entire 32-bit address space is available to each segment
 
 GDT: 

@@ -244,7 +244,7 @@ times 218-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-times 2              db 0                         ; Saving 0x0000 word (MBR article on wikipedia suggests this for a standard MBR)
+times 2              db 0                         ; Saving 0x0000 word (seems to be suggested for a standard MBR)
 Original_Drive_ID    db 0x80                      ; Save the ID of the original drive on which the MBR is written [To be edited by MBR software]
 Disk_Time_Stamp:                                  ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours) [To be edited by MBR software]
 times 3              db 0                         
@@ -290,7 +290,7 @@ Partition_Table_Entry1:
 .Sector_End          db 0
 .Cylinder_End        db 0
 .LBA_Start           dd 0x0800                    ; LBA of the starting sector
-.LBA_Sectors         dd 0xFFFF                    ; Number of sectors in the partition
+.LBA_Sectors         dd 0xFFFFFFFF                ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0
