@@ -10,7 +10,7 @@ STACK_TOP               equ 0x7C00                                      ; Top of
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
 KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel ELF executable is loaded at physical memory location of 1 MB
 KERNEL_IMAGE_SIZE       equ 0x100000                                    ; Size of the kernel image in bytes
-KERNEL_DISK_START       equ 0x1000                                      ; Starting sector of the kernel
+KERNEL_PART_START       equ 0x0800                                      ; Starting sector of the kernel on the partition (1 MB offset)
 
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
@@ -57,7 +57,8 @@ Bootload32:
 
     mov  [Kernel_Info.boot_partition], esi
 
-    mov  eax, KERNEL_DISK_START
+	mov  eax, DWORD [esi+0x08]
+    add  eax, KERNEL_PART_START
     mov  [Kernel_Info.disk_start], eax
 
     mov  eax, KERNEL_IMAGE_START

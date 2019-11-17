@@ -71,7 +71,7 @@ CRT0=$(X86_KERNEL)/start.s.o
 avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
 	cat bootload16.bin bootload32.bin > bootloader.bin
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=4096
-	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2052
+	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2056
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 

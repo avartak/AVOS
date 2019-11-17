@@ -1,6 +1,6 @@
 ; This is the code of the 16-bit (REAL mode) part of the bootloader
 ; We are still in REAL mode
-; It will switch to PROTECTED mode and transfer control to the 32-bit boot loader that will then copy the kernel at 1 MB
+; This code makes the switch to PROTECTED mode and transfers control to the 32-bit boot loader that will then copy the kernel to memory
 
 ; Some notes about the mapping of the first MB of the physical memory in the PC architecture, and how we use this memory 
 
@@ -96,11 +96,11 @@ Bootload16:
 	shl   esi, 4
 	add   esi, eax
 
-	; Load a valid GDT
+	; Load a valid GDT (See the GDT description at the end)
 
 	lgdt [GDT_Desc]
 	
-	; Enter protected mode
+	; Enter protected mode by setting bit 0 of the CR0 register
 
 	mov   eax, cr0                                       
 	or    al , 1
@@ -140,12 +140,49 @@ Bootload16:
 
 ErrStr_A20 db 'A20 line could not be enabled', 0
 
+; Global Descriptor Table (GDT) : Tells the CPU about memory segments
+; It is a table of 8-byte entries, each being a memory segment descriptor. The segment registers themselves point to the descriptors
+; The first 8-bytes are expected to be NULL (0)
+; Bytes 0-1 : 16 least significant bits of the 20-bit limit of the segment (either in units of 1 byte or 4 KB i.e. one page) ; 0xFFFF means the end of the 32-bit addressable space
+; Bytes 2-4 : 24 least significant bits of the base address of the start of the segment
+; Byte  5   : Access byte (description of bit-fields below)
+; Byte  6   : First nibble contains the 4 most significant bits of the 20-bit limit of the segment ; most significant nibble contains page flags (description below)
+; Byte  7   : 6 most significant bits of the base address of the start of the segment
+;
+; Access byte :
+; - Bit 0   --> Set to 0 ; CPU sets this to 1 when the segment is accessed
+; - Bit 1   --> Flag for segment readable (when code segment) and segment writable (when data segment) ; read always allowed for data segments ; write never allowed for code segments
+; - Bit 2   --> Direction/conforming : For data segs 0 means segment grows up, 1 means segment grows down  
+;                                      For code segs 0 means code can only be executed from ring set marked by "priv" bits ; 1 means code can be executed from same or lower privilege
+; - Bit 3   --> Executable : If 1 code in this segment can be executed, i.e. a code selector; 0 for a data selector.
+; - Bit 4   --> Descriptor type : Set for code or data segments ; cleared for system segments (eg. a Task State Segment)
+; - Bit 5-6 --> Privilege (priv) bits : 0 highest privilege (kernel) and 3 lowest (user applications)
+; - Bit 7   --> Present : Must be 1 for all valid selectors   
+;
+; Flag nibble : 
+; - Bit 0   --> Available for software use (set to 0 by default)
+; - Bit 1   --> Long mode (64-bit) segment if set 
+; - Bit 2   --> Size : 0 for 16-bit protected mode of 80286 ; 1 for 32-bit protected mode
+; - Bit 3   --> Granularity : If 0 limit value is in units of 1 byte ; if 1 limit value is in units of 1 page or 4 KB  
+;
+; We set up a GDT with 4 entries :
+; - Null descriptor
+; - Kernel code segment descriptor
+; - Kernel data segment descriptor
+; - User code segment descriptor
+; - User data segment descriptor
+; The segment descriptors implement the 'flat' memory model where the entire 32-bit address space is available to each segment
+
 GDT: 
 	dq 0
 	dq 0x00CF9A000000FFFF
 	dq 0x00CF92000000FFFF
 	dq 0x000F9A000000FFFF
 	dq 0x000F92000000FFFF
+
+; Format of the GDT descriptor (6 bytes)
+; Bytes 0-1 : Size of the GDT - 1
+; Bytes 2-5 : Linear address of the table itself (paging applies)
 
 GDT_Desc:
 	dw GDT_Desc - GDT - 1
