@@ -1,6 +1,7 @@
 ; What follows is a traditional master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC. 
 ; - This will not run through the Unified Extensible Firmware Interface (UEFI)
 ; - Traditional partitions ; no GUID Partition Table (GPT) or support for it 
+; - Certain parts of the MBR (the partition table in particular) are expected to be written/maintained by a partition editor
 
 ; This file contains the code residing in the master boot record (MBR) of a fixed disk or removable drive that is deemed bootable [boot drive]
 ; MBR is the first sector (exactly 512 B) of the boot drive
@@ -36,15 +37,16 @@
 ; First let us include some definitions of constants
 
 SECTOR_SIZE             equ 0x0200                ; Size of a sector (or size of the MBR, VBR)
-BOOT_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
-RELOC_ADDRESS           equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at BOOT_ADDRESS
-STACK_TOP               equ 0x0600                ; Top of the stack used by the MBR
-PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
+LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
+MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at LOAD_ADDRESS
+STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
 SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
 
-; We need to tell the assembler that all labels need to be resolved relative to RELOC_ADDRESS in the binary code
+PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
 
-ORG RELOC_ADDRESS
+; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
+
+ORG MBR_RELOC_ADDRESS
 
 ; The x86 system always starts in the REAL mode
 ; This is the 16-bit mode without any of the protected mode features
@@ -82,12 +84,16 @@ MBR:
 	
 	mov   ds, ax
 	mov   es, ax
+
+	; Lets reenable interrupts now
+
+	sti
 	
-	; Then, we relocate the MBR code/data to memory location 0x0000:0x0600
+	; Then, we relocate the MBR code/data to memory location 0x0000:MBR_RELOC_ADDRESS
 
 	mov   cx, SECTOR_SIZE
-	mov   si, BOOT_ADDRESS
-	mov   di, RELOC_ADDRESS
+	mov   si, LOAD_ADDRESS
+	mov   di, MBR_RELOC_ADDRESS
 	rep   movsb
 	jmp   0x0000:Start
 
@@ -180,7 +186,7 @@ MBR:
 	mov   ch, [bx+3]
 	xor   ax, ax
 	mov   es, ax
-	mov   bx, BOOT_ADDRESS
+	mov   bx, LOAD_ADDRESS
 	mov   al, 1
 	mov   ah, 0x02
 	int   0x13
@@ -192,7 +198,7 @@ MBR:
 	; Now check if the loaded VBR has the boot signature at the end
 	
 	CheckVBR:
-	mov   ax, [BOOT_ADDRESS+510]
+	mov   ax, [LOAD_ADDRESS+510]
 	cmp   ax, 0xAA55
 	je    LaunchVBR
 	mov   si, Messages.InvalidVBR
@@ -209,7 +215,7 @@ MBR:
 	xor   ax, ax
 	mov   ds, ax
 	mov   si, [Active_Partition]
-	jmp   BOOT_ADDRESS 
+	jmp   LOAD_ADDRESS 
 
 	; If the boot strap failed (no active partition or disk read error) then halt the system
 	; Before halting we print an error message on the screen 
@@ -257,7 +263,7 @@ DAP:
 .Unused1             db 0                         ; Reserved
 .Sectors_Count       db 1                         ; Number of sectors to read (we need to read just the one sector containing the VBR)
 .Unused2             db 0                         ; Reserved
-.Memory_Offset       dw BOOT_ADDRESS              ; Offset of the memory location where the data from disk will be copied to 
+.Memory_Offset       dw LOAD_ADDRESS              ; Offset of the memory location where the data from disk will be copied to 
 .Memory_Segment      dw 0                         ; Segment address corresponding to the memory location where the data from disk will be copied to 
 .Start_Sector        dq 1                         ; Starting sector (in LBA) on disk for read
 

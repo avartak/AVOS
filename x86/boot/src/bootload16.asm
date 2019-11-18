@@ -19,14 +19,14 @@
 
 ; First let us include some definitions of constants
 
-START_ADDRESS           equ 0x7E00                                      ; The Volume Boot Record (VBR) puts this code right after it in memory (so 0x7C00 + 0x200)
+BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 STACK_TOP               equ 0x7C00                                      ; Top of the stack
 SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode (for displaying error messages)
 SEG32_CODE              equ 0x08                                        ; 32-bit kernel code segment
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
-ORG START_ADDRESS
+ORG BOOTLOADER_ADDRESS
 
 ; We are still in 16-bit real mode
 

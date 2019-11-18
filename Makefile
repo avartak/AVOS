@@ -69,9 +69,8 @@ CRTN=$(X86_KERNEL)/crtn.s.o
 CRT0=$(X86_KERNEL)/start.s.o
 
 avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
-	cat bootload16.bin bootload32.bin > bootloader.bin
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=4096
-	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2056
+	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2050
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
@@ -81,9 +80,12 @@ mbr.bin: x86/boot/src/mbr.asm
 vbr.bin: x86/boot/src/vbr.asm
 	$(AS) -f bin -o vbr.bin x86/boot/src/vbr.asm
 
-bootloader.bin: bootload16.bin bootload32.bin
-	cat bootload16.bin bootload32.bin > bootloader.bin
+bootloader.bin: bootloadld.bin bootload16.bin bootload32.bin
+	cat bootloadld.bin bootload16.bin bootload32.bin > bootloader.bin
 	
+bootloadld.bin: x86/boot/src/bootloadld.asm
+	$(AS) -f bin -o bootloadld.bin x86/boot/src/bootloadld.asm
+
 bootload16.bin: x86/boot/src/bootload16.asm
 	$(AS) -f bin -o bootload16.bin x86/boot/src/bootload16.asm
 
