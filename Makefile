@@ -17,13 +17,9 @@ LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 X86_BOOT=x86/boot/src
 X86_BOOT_OBJS=\
 $(X86_BOOT)/bootload32.s.o \
-$(X86_BOOT)/a20.s.o \
 $(X86_BOOT)/bios.s.o \
-$(X86_BOOT)/bios.c.o \
-$(X86_BOOT)/diskio.s.o \
 $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/ram.c.o  \
-$(X86_BOOT)/vbe.s.o  \
 $(X86_BOOT)/vbe.c.o  \
 $(X86_BOOT)/elf.c.o  \
 $(X86_BOOT)/io.c.o  \
@@ -70,7 +66,7 @@ CRT0=$(X86_KERNEL)/start.s.o
 
 avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=4096
-	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2050
+	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2056
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
