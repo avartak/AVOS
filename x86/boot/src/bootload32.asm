@@ -37,8 +37,10 @@ BITS 32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-global Bootload32
-Bootload32:
+global AVBL32
+AVBL32:
+
+	cli
 
 	; Switch the data segment registers to protected mode data selectors
 
