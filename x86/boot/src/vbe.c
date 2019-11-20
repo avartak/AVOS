@@ -1,6 +1,8 @@
 #include <x86/boot/include/vbe.h>
 #include <x86/boot/include/bios.h>
 
+struct VBE_Mode_Info VBE_ModeBuffer;
+
 uintptr_t VBE_StoreInfo(uintptr_t addr) {
 
 	struct VBE_Info* vinfo = (struct VBE_Info*)(addr);
