@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(Bootload32)
+ENTRY(AVBL32)
 
 /* Output format */
 OUTPUT_FORMAT("binary")
