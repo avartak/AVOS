@@ -19,9 +19,9 @@
 
 ; First let us include some definitions of constants
 
-BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 STACK_TOP               equ 0x7C00                                      ; Top of the stack
 SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode (for displaying error messages)
+BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit kernel code segment
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
@@ -34,28 +34,18 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Bootload16:
+AVBL16:
 
-    ; We don't want any interrupts right now.
-
-    cli
-
-    ; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
-
-    cld
-
-    ; We first set up a usable stack at 0x7000
-
-    xor   ax, ax
-    mov   ss, ax
-    mov   sp, STACK_TOP
-
-    ; The VBR stores the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+	; Expect the stack to be appropriately set up when control is handed over here
+	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
     ; Save these registers on the stack
 
-    push  dx
-    push  ds
-    push  si
+	push  dx
+	push  es
+	push  di
+	push  ds
+	push  si
 
 	; Set all the segment registers to the base address we want (0x0000)
 	
@@ -71,11 +61,6 @@ Bootload16:
 	
 	Start:
 
-	; Set video to 80x25 text mode
-
-	mov   ax, 0x0003
-	int   0x10
-
 	; Enable the A20 line
 
 	call  A20_Enable
@@ -83,17 +68,24 @@ Bootload16:
     mov   si, ErrStr_A20
 	jz    HaltSystem
 
-	; Save the boot drive ID and the active partition entry location in DL, ESI respectively
+	; Save the boot drive ID in DL, the active partition entry location in ESI, and information about "$PnP" installation check structure in EDI
 
-	mov   sp, STACK_TOP
-	sub   sp, 0x6
 	mov   eax, 0
 	mov   esi, 0
 	pop   ax
 	pop   si
-	pop   dx
 	shl   esi, 4
 	add   esi, eax
+
+	mov   eax, 0
+	mov   edi, 0
+	pop   ax
+	pop   di
+	shl   edi, 4
+	add   edi, eax
+
+	mov   edx, 0
+	pop   dx
 
 	; Load a valid GDT (See the GDT description at the end)
 

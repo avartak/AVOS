@@ -12,6 +12,7 @@ SECTOR_SIZE             equ 0x0200                         ; Size of a sector (o
 LOAD_ADDRESS            equ 0x7C00                         ; This is where the bootloader loader is loaded in memory
 STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
 SCREEN_TEXT_BUFFER      equ 0xB800                         ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
+BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -33,49 +34,41 @@ AVBL:
 
 	AVBL_BlockList:
 
-	; We reserve the next 124 bytes for the blocklist corresponding to the bootloader code on disk
-	; This is basically a table containing (up to) 12 ten-byte entries
+	; We reserve the next 104 bytes for the blocklist corresponding to the bootloader code on disk
+	; This is basically a table containing (up to) 10 ten-byte entries
 	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the bootloader code in memory
 	; Then come the blocklist entries
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
 	; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
+	; Some tool provided by the OS/bootloader should fill this table. Right now it has some defaults put in
 
 	.Load_segment         dw 0
-	.Load_offset          dw 0x7E00
+	.Load_offset          dw BOOTLOADER_ADDRESS
 
-	.Block1_LBA           dq 3
+	.Block1_LBA           dq 9
 	.Block1_num_sectors   dw 0x40-1
 
-	times 124+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
+	times 104+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
 
 	; This is where the VBR code starts
 
 	AVBL_Code:
 
-	; We don't want any interrupts right now.
-	
-	cli
-	
-	; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
-
-	cld
-
-	; We first set up a usable stack at 0x7000
-
-	xor   ax, ax
-	mov   ss, ax
-	mov   sp, STACK_TOP 
-
-	; BIOS stores the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
+	; Expect DL to be 1 if INT 0x13 extensions for disk read using LBA scheme exist, and 0 if we need to resort to CHS addressing
+	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
 	; Save these registers on the stack
 
+	mov   sp, STACK_TOP
 	push  dx
+	push  es
+	push  di
 	push  ds
 	push  si
 	push  bx
 	
-	mov   ebx, DWORD [si+0x08]                             ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
+	mov   ebx, DWORD [si+0x08]                             ; Get the LBA of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
 
 	; Lets initialize the segment registers to the base address values that we want to use (0x0000)
 	
@@ -83,20 +76,16 @@ AVBL:
 	mov   ds, ax
 	mov   es, ax
 
-	; Lets reenable interrupts now
-
-	sti
+	; Save some useful information
 	
-	; Save the LBA of the bootloader start sector in the Disk Address Packet (DAP) used by the extended INT 0x13 
-	
-	mov   [Drive_ID], dl                                   ; Save the boot drive ID --> MBR put it in DL
-	mov   [MBR_Part_Entry_Addr], ebx                       ; Save the LBA (low DWORD) of the start sector of this partition in the DAP
+	mov   [Drive_ID], dl                                   ; Save the boot drive ID --> we expect it in DL
+	mov   [MBR_Part_Entry_Addr], ebx                       ; Save the 32-bit LBA of the start sector of this partition
+	mov   di, AVBL_BlockList+4                             ; Save the starting address of the bootloader blocklist entries
 	pop   bx                                               ; Save the flag (passed by VBR) that indicates if extended INT 0x13 works
-	mov   di, AVBL_BlockList+4
-	mov   [ReadUsingLBA], bl
+	and   bl, 1
+	mov   [DiskReadFlags], bl
 	
-	cmp   bl, 0
-	jne   ReadLoop
+	; Save the CHS disk geometry in case read with LBA scheme fails
 
 	LoadCHSGeometry:
 	pusha
@@ -106,25 +95,28 @@ AVBL:
     mov   dl, BYTE [Drive_ID]
     mov   ah, 0x08
     int   0x13
-    jc    HaltSystem
+	jnc   SaveCHSGeometry
+	mov   bl, [DiskReadFlags]
+	or    bl, 2
+	mov   [DiskReadFlags], bl
+	popa
+	jmp   ReadLoop
 
-    add   dh, 0x1                                          ; Since DH contains number of heads - 1, we add one to get the number of heads
-    mov   [CHS_Geometry.Heads], dh                         ; Save the number of heads in memory
-    and   cl, 0x3F                                         ; First 6 bits of CL contain the number of sectors per track
-    mov   [CHS_Geometry.Sectors_Per_Track], cl             ; Save the number of sectors per track to memory
-    mov   al, cl                                           ; number of sectors per cylinder = number of sectors per track x number of heads
+	SaveCHSGeometry:
+    add   dh, 0x1                                 
+    mov   [CHS_Geometry.Heads], dh                
+    and   cl, 0x3F                                
+    mov   [CHS_Geometry.Sectors_Per_Track], cl    
+    mov   al, cl
     mul   dh
-    mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          ; Save the number of sectors per cylinder in memory
+    mov   [CHS_Geometry.Sectors_Per_Cylinder], ax 
 	popa
 
 	ReadLoop:
-	cmp   WORD [di+0x08], 0
+	cmp   WORD [di+0x08], 0                                ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
 	je    LaunchBootloader
 
 	DiskRead:
-	cmp   BYTE [ReadUsingLBA], 0
-	je    DiskReadUsingCHS
-
 	mov   ebx, DWORD [di]
 	mov   ecx, DWORD [di+0x04]
 
@@ -134,7 +126,7 @@ AVBL:
 	jg    PrepareRead
 	mov   ax, [di+0x08]
 	
-	PrepareRead:
+	PrepareRead:                                           ; Save the necessary information needed by (extended) BIOS routines to read from disk --> Fill the DAP
 	sub   [di+0x08], ax
 	
 	add   DWORD [di], eax
@@ -154,9 +146,10 @@ AVBL:
 
 	push  di
 
-	; BIOS extensions exist. So, we use the INT 0x13, AH=0x42 BIOS routine to read from disk (See MBR code for more details)
-	
 	DiskReadUsingLBA:
+	test  BYTE [DiskReadFlags], 1                           ; Check if we can read the disk using LBA scheme
+	jz    DiskReadUsingCHS
+
 	mov   dl, BYTE [Drive_ID]
 	mov   si, DAP
 	mov   ah, 0x42
@@ -166,7 +159,10 @@ AVBL:
 	; If BIOS extensions do not exist or did not work, we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	
 	DiskReadUsingCHS:
-	mov   eax, DWORD [DAP.Start_Sector+0x04]
+	mov   bl, [DiskReadFlags]
+	test  bl, 2
+	jnz   HaltSystem
+	mov   eax, DWORD [DAP.Start_Sector+0x04]               ; Cannot read sector numbers outside the 32-bit range using CHS
 	or    eax, eax
 	jnz   HaltSystem
 
@@ -178,6 +174,9 @@ AVBL:
 	jg    HaltSystem
 	shl   ax, 0x6                            
 	mov   cx, ax
+	shl   cx, 2
+	mov   cl, ah
+	and   cl, 0xC0
 	
 	mov   ax, dx                                           ; DX contains LBA % sectors per cylinder
 	div   BYTE [CHS_Geometry.Sectors_Per_Track]            ; (LBA % sectors per cylinder) % sectors per track = sector number (starting at 0)
@@ -209,10 +208,12 @@ AVBL:
 	; We reach here if the disk read was successful 
 	
 	LaunchBootloader:
-	mov   sp, STACK_TOP
-	sub   sp, 0x6
+	mov   sp, STACK_TOP-12
+	pop   bx
 	pop   si
 	pop   ds
+	pop   di
+	pop   es
 	pop   dx
 	mov   ax, WORD [AVBL_BlockList]
 	push  ax
@@ -247,10 +248,11 @@ AVBL:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ReadUsingLBA          db 0
+DiskReadFlags         db 0
 MBR_Part_Entry_Addr   dd 0
 
 Drive_ID              db 0
+
 CHS_Geometry:
 .Heads                db 2
 .Sectors_Per_Track    db 18
@@ -266,7 +268,7 @@ DAP:
 .Start_Sector         dq 0
 
 Messages:
-.DiskIOErr            db 'Unable to read AVOS from disk', 0
+.DiskIOErr            db 'Unable to load AVOS', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
