@@ -1,6 +1,8 @@
 #include <x86/boot/include/diskio.h>
 #include <x86/boot/include/bios.h>
 
+uint8_t DiskIO_LowMemoryBuffer[512];
+
 bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 
     struct BIOS_Registers BIOS_regs;
@@ -103,7 +105,7 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 
 		if (head > 255 || cylinder > 1023 || sector > 63) return false;
 
-		BIOS_regs.ecx  = (cylinder << 6) + sector;
+		BIOS_regs.ecx  = (cylinder << 8) + ((cylinder >> 2) & 0xC0) + sector;
 		BIOS_regs.edx +=  head << 8;
 
         BIOS_Interrupt(0x13, &BIOS_regs);
@@ -120,11 +122,11 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 }
 
 size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
-	bool lba_worked = DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector, num_sectors);
-	if (!lba_worked) {
-		lba_worked  = DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector, num_sectors);
+	bool read_success = DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector, num_sectors);
+	if (!read_success) {
+		read_success  = DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector, num_sectors);
 	}
-	if (!lba_worked) return 0;
+	if (!read_success) return 0;
 	return num_sectors * DISKIO_SECTOR_SIZE;
 }
 
