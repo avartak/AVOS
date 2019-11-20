@@ -5,21 +5,78 @@ SEG32_DATA        equ 0x10
 SEG16_CODE        equ 0x18
 SEG16_DATA        equ 0x20
 
+section .text
+
 BITS 32
 
+; The 40-byte "BIOS Registry" structure
+BIOS_Regs16:
+    .eax    dd   0
+    .ebx    dd   0
+    .ecx    dd   0
+    .edx    dd   0
+    .esi    dd   0
+    .edi    dd   0
+    .ebp    dd   0
+    .esp    dd   0
+    .ds     dw   0
+    .es     dw   0
+    .ss     dw   0
+    .flags  dw   0
+
+BIOS_Int_ID dd 0
+
+
+BIOS_IDT_Desc:
+    dw 0x400 - 1
+    dd 0
+
+
+Save_IDT_Desc:
+    dw 0x400 - 1
+    dd 0
+
+global BIOS_ClearRegistry
+; Parameters (in order that is passed when calling the function in C):
+; - Pointer to the BIOS registry structure that needs to be cleared
+BIOS_ClearRegistry:
+	push  ebp
+	mov   ebp, esp
+
+	push  eax
+	push  edi
+	push  ecx
+
+	mov   edi, [ebp+8]
+	mov   eax, 0
+	mov   ecx, 10
+	rep   stosd
+
+	pop   ecx
+	pop   edi
+	pop   eax
+
+	mov   esp, ebp
+	pop   ebp
+	ret
+
 global BIOS_Interrupt
+; Parameters (in order that is passed when calling the function in C):
+; - Interrupt ID as a 32-bit unsigned integer
+; - Pointer to the BIOS registry structure
 BIOS_Interrupt:
 
-	; We start by saving the general registers to memory, in the BIOS_Regs32 structure defined at the end
+	push  ebp
+	mov   ebp, esp
 
-	mov   [BIOS_Regs32.eax], eax
-	mov   [BIOS_Regs32.ebx], ebx
-	mov   [BIOS_Regs32.ecx], ecx
-	mov   [BIOS_Regs32.edx], edx
-	mov   [BIOS_Regs32.esi], esi
-	mov   [BIOS_Regs32.edi], edi
-	mov   [BIOS_Regs32.ebp], ebp
-	mov   [BIOS_Regs32.esp], esp
+	; We start by saving the general registers and the flags register to memory, in the BIOS_Regs32 structure defined at the end
+
+	pushfd
+	pushad
+
+	; Clear interrupts
+
+	cli
 
 	; We then save the IDT descriptor
 
@@ -27,36 +84,16 @@ BIOS_Interrupt:
 
 	; We then copy the interrupt vector index to the EDX register
 
-	mov   edx, [esp+4]
-	mov   [BIOS_Int_ID], edx
-
-	; Next, we copy to EAX the pointer to the structure containing the general purpose register values 
-	; to be used in the real mode when calling some BIOS interrupt
-
-	mov   eax, [esp+8]
+	mov   eax, [ebp+8]
+	mov   [BIOS_Int_ID], eax
 
 	; We store the real mode register values (from the structure pointed to by EAX) into the BIOS_Regs16 structure
 
-	mov   edx, [eax+0x00]
-	mov   [BIOS_Regs16.eax], edx
-	mov   edx, [eax+0x04]
-	mov   [BIOS_Regs16.ebx], edx
-	mov   edx, [eax+0x08]
-	mov   [BIOS_Regs16.ecx], edx
-	mov   edx, [eax+0x0C]
-	mov   [BIOS_Regs16.edx], edx
-	mov   edx, [eax+0x10]
-	mov   [BIOS_Regs16.esi], edx
-	mov   edx, [eax+0x14]
-	mov   [BIOS_Regs16.edi], edx
-	mov   edx, [eax+0x18]
-	mov   [BIOS_Regs16.ebp], edx
-
-	mov   dx , [eax+0x20]
-	mov   [BIOS_Regs16.ds], dx
-	mov   dx , [eax+0x22]
-	mov   [BIOS_Regs16.es], dx
-
+	mov   esi, [ebp+12]
+	mov   edi, BIOS_Regs16
+	mov   ecx, 10
+	rep   movsd
+	
 	; Switch to 16-bit protected mode
 
 	jmp   SEG16_CODE:BIOS_Interrupt.PMode16
@@ -66,18 +103,18 @@ BITS 16
 	; Switch the segment registers to 16-bit protected mode (1 MB address space)
 
 	.PMode16:
-	mov   dx, SEG16_DATA
-	mov   ds, dx
-	mov   es, dx
-	mov   fs, dx
-	mov   gs, dx
-	mov   ss, dx
+	mov   ax, SEG16_DATA
+	mov   ds, ax
+	mov   es, ax
+	mov   fs, ax
+	mov   gs, ax
+	mov   ss, ax
 
 	; Switch to real mode by disabling the PE bit in the CR0 register
 
-	mov   edx, cr0
-	and   dl , 0xFE
-	mov   cr0, edx
+	mov   eax, cr0
+	and   al , 0xFE
+	mov   cr0, eax
 
 	; Switch the code segment register to real mode
 
@@ -86,19 +123,19 @@ BITS 16
 	; Switch the segment registers to real mode
 
 	.RMode:
-	mov   dx, 0
-	mov   ds, dx
-	mov   es, dx
-	mov   fs, dx
-	mov   gs, dx
-	mov   ss, dx
+	mov   ax, 0
+	mov   ds, ax
+	mov   es, ax
+	mov   fs, ax
+	mov   gs, ax
+	mov   ss, ax
 
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
 
-	mov   dx, [fs:BIOS_Regs16.ds]
-	mov   ds, dx
-	mov   dx, [fs:BIOS_Regs16.es]
-	mov   es, dx
+	mov   ax, [fs:BIOS_Regs16.ds]
+	mov   ds, ax
+	mov   ax, [fs:BIOS_Regs16.es]
+	mov   es, ax
 
 	; Store the designated values in the general purpose registers
 	; We do not change the stack pointer ; it could be done but we do not need to do it in the context of our boot loader set up
@@ -178,22 +215,22 @@ BITS 16
 
 	; Also save the flags register
 
-	pushfd
-	pop   edx
-	mov   [fs:BIOS_Regs16.flags], dx
+	pushf
+	pop   ax
+	mov   [fs:BIOS_Regs16.flags], ax
 
 	; Save the segment registers
 
-	mov   dx, ds
-	mov   [fs:BIOS_Regs16.ds], dx	
-	mov   dx, es
-	mov   [fs:BIOS_Regs16.es], dx	
+	mov   ax, ds
+	mov   [fs:BIOS_Regs16.ds], ax	
+	mov   ax, es
+	mov   [fs:BIOS_Regs16.es], ax	
 
 	; Switch to 32-bit protected mode
 
-    mov   edx, cr0
-    or    dl , 1
-    mov   cr0, edx
+    mov   eax, cr0
+    or    al , 1
+    mov   cr0, eax
 
     jmp   SEG32_CODE:BIOS_Interrupt.PMode32
 
@@ -201,51 +238,31 @@ BITS 32
 
 	.PMode32:
 
-	; Switch data segments to the 32-bit protected mode
+	; Switch data segments to the 32-bit protected mode and restore the general purpose registers to their values at the time this function was called
 
-	mov   dx, SEG32_DATA
-	mov   ds, dx
-	mov   es, dx
-	mov   fs, dx
-	mov   gs, dx
-	mov   ss, dx
-	mov   esp, [BIOS_Regs32.esp]	
+	mov   ax, SEG32_DATA
+	mov   ds, ax
+	mov   es, ax
+	mov   fs, ax
+	mov   gs, ax
+	mov   ss, ax
+	popad
+	popfd
 
 	; Save the real mode register values in the structure whose pointer that was passed to this function as an argument
 
-    mov   eax, [esp+8]
-    mov   edx, [BIOS_Regs16.eax]
-    mov   [eax+0x00], edx
-    mov   edx, [BIOS_Regs16.ebx]
-    mov   [eax+0x04], edx
-    mov   edx, [BIOS_Regs16.ecx]
-    mov   [eax+0x08], edx
-    mov   edx, [BIOS_Regs16.edx]
-    mov   [eax+0x0C], edx
-    mov   edx, [BIOS_Regs16.esi]
-    mov   [eax+0x10], edx
-    mov   edx, [BIOS_Regs16.edi]
-    mov   [eax+0x14], edx
-    mov   edx, [BIOS_Regs16.ebp]
-    mov   [eax+0x18], edx
+	push  esi
+	push  edi
+	push  ecx
 
-    mov   dx , [BIOS_Regs16.ds]
-    mov   [eax+0x20], dx
-    mov   dx , [BIOS_Regs16.es]
-    mov   [eax+0x22], dx
-    mov   dx , [BIOS_Regs16.flags]
-    mov   [eax+0x26], dx
-
-	; Restore the general purpose registers to their values at the time this function was called
-
-	mov   eax, [BIOS_Regs32.eax]	
-	mov   ebx, [BIOS_Regs32.ebx]	
-	mov   ecx, [BIOS_Regs32.ecx]	
-	mov   edx, [BIOS_Regs32.edx]	
-	mov   esi, [BIOS_Regs32.esi]	
-	mov   edi, [BIOS_Regs32.edi]	
-	mov   ebp, [BIOS_Regs32.ebp]	
-	mov   esp, [BIOS_Regs32.esp]	
+	mov   esi, BIOS_Regs16
+	mov   edi, [ebp+12]
+	mov   ecx, 10
+	rep   movsd
+	
+	pop   ecx
+	pop   edi
+	pop   esi
 
 	; Restore the IDT that we started out with 
 
@@ -253,47 +270,7 @@ BITS 32
 
 	; Return 
 
+	mov   esp, ebp
+	pop   ebp
 	ret
-
-
-
-section .data
-
-BIOS_Regs32:
-	.eax    dd   0
-	.ebx    dd   0
-	.ecx    dd   0
-	.edx    dd   0
-	.esi    dd   0
-	.edi    dd   0
-	.ebp    dd   0
-	.esp    dd   0
-
-
-BIOS_Regs16:
-	.eax    dd   0
-	.ebx    dd   0
-	.ecx    dd   0
-	.edx    dd   0
-	.esi    dd   0
-	.edi    dd   0
-	.ebp    dd   0
-	.esp    dd   0
-	.flags  dw   0
-	.ds     dw   0
-	.es     dw   0
-	.ss     dw   0
-
-BIOS_Int_ID dd 0
-
-
-BIOS_IDT_Desc:
-    dw 0x400 - 1
-    dd 0
-
-
-Save_IDT_Desc:
-    dw 0x400 - 1
-    dd 0
-
 
