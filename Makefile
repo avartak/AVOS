@@ -71,10 +71,10 @@ avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
 mbr.bin: x86/boot/src/MBR.asm
-	$(AS) -f bin -o mbr.bin x86/boot/src/mbr.asm
+	$(AS) -f bin -o mbr.bin x86/boot/src/MBR.asm
 
 vbr.bin: x86/boot/src/VBR.asm
-	$(AS) -f bin -o vbr.bin x86/boot/src/vbr.asm
+	$(AS) -f bin -o vbr.bin x86/boot/src/VBR.asm
 
 bootloader.bin: bootloadld.bin bootload16.bin bootload32.bin
 	cat bootloadld.bin bootload16.bin bootload32.bin > bootloader.bin

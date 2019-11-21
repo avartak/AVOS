@@ -119,6 +119,22 @@ MBR:
 	add   bx, 0x10
 	loop  GetActivePartition
 
+	; Did not find any active partition
+	; Is this drive partitioned with GPT ?
+	; Look for a GPT partition. If found, halt (the MBR does not currently support booting from a GPT partition)
+
+	mov   cx, 4
+	mov   bx, MBR+PARTITION_TABLE_OFFSET
+	LookForGPTPartition:
+	cmp   BYTE [bx+4], 0xEE
+	je    FoundGPT
+	add   bx, 0x10
+	loop  LookForGPTPartition
+
+	; No active partition or GPT was found
+	; This drive does not seem to be bootable
+	; Halt
+
 	mov   si, Messages.NoActivePart
 	jmp   HaltSystem
 
@@ -219,32 +235,6 @@ MBR:
 	mov   si, [Active_Partition]
 	jmp   LOAD_ADDRESS 
 
-	; If the boot strap failed (no active partition or disk read error) then halt the system
-	; Before halting we print an error message on the screen 
-	; In the PC architecture the video buffer sits at 0xB8000
-	; We put the ES segment at that location
-	; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
-	; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
-	; We will print the error message on the penultimate line, in red
-	
-	HaltSystem:
-	xor   ax, ax
-	mov   ds, ax
-	mov   ax, SCREEN_TEXT_BUFFER
-	mov   es, ax             
-	mov   di, 80*23*2
-	mov   cx, 0
-	.printchar:
-		lodsb                
-		test  al, al        
-		jz    .printdone
-		mov   ah, 0x04      
-		stosw
-		jmp   .printchar
-	.printdone:
-	cli
-	hlt
-	jmp   .printdone
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,6 +251,44 @@ times 3              db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; We reached here because a GPT was detected
+; There is no support for GPT currently
+; So we have to halt with an error message
+
+FoundGPT:
+	mov   si, Messages.GPTDetected
+	jmp   HaltSystem
+
+; If the boot strap failed (no active partition or disk read error) then halt the system
+; Before halting we print an error message on the screen 
+; In the PC architecture the video buffer sits at 0xB8000
+; We put the ES segment at that location
+; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
+; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
+; We will print the error message on the penultimate line, in red
+	
+HaltSystem:
+    xor   ax, ax
+    mov   ds, ax
+    mov   ax, SCREEN_TEXT_BUFFER
+    mov   es, ax
+    mov   di, 80*23*2
+    mov   cx, 0
+    .printchar:
+        lodsb
+        test  al, al
+        jz    .printdone
+        mov   ah, 0x04
+        stosw
+        jmp   .printchar
+    .printdone:
+    cli
+    hlt
+    jmp   .printdone
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 Active_Partition     dw 0
 Drive_ID             db 0
 
@@ -274,9 +302,10 @@ DAP:
 .Start_Sector        dq 0                         ; Starting sector (in LBA) on disk for read
 
 Messages:
-.NoActivePart        db 'No valid active partition found', 0
+.NoActivePart        db 'No bootable partition found', 0
 .DiskReadErr         db 'Unable to load volume boot record', 0
 .InvalidVBR          db 'Invalid volume boot record', 0
+.GPTDetected         db 'GPT partition detected - no support', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
