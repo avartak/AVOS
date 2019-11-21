@@ -34,12 +34,13 @@ BITS 16
 VBR:
 
 	jmp   VBR_Code
+	nop
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	; We reserve the next 128 bytes of the VBR for any filesystem related data structure (e.g. the BIOS Parameter Block in FAT file systems)
 
-	times 128+3-($-$$)    db 0                             ; The 3 accounts for the 3 bytes taken up by the JMP instruction
+	times 128+4-($-$$)    db 0                             ; The 3 accounts for the 3 bytes taken up by the JMP instruction
 
 	Drive_ID              db 0
 
@@ -53,11 +54,10 @@ VBR:
 	.Start_Sector         dq BOOTLOADLD_PART_START
 
 	CHS_Geometry:                                          ; We put the CHS geometry (and a flag byte indicating of CHS access is needed) at an offset of 148 bytes 
-	.Heads                db 2                             ; Software downstream can directly import this information if need be
-	.Sectors_Per_Track    db 18                            ; The VBR is relocated to VBR_RELOC_ADDRESS --> Downstream software will need to know this to be able to access CHS geometry
-	.Sectors_Per_Cylinder dw 18
+	.Sectors_Per_Track    db 18                            ; Software downstream can directly import this information if need be
+	.Sectors_Per_Cylinder dw 36                            ; The VBR is relocated to VBR_RELOC_ADDRESS --> Downstream software will need to know this to be able to access CHS geometry
 
-	ReadUsingLBA          db 0
+	DiskReadFlags         db 0
 
 	Messages:
 	.DiskIOErr            db 'Unable to load AVOS', 0
@@ -140,7 +140,7 @@ VBR:
 	; BIOS extensions exist. So, we use the INT 0x13, AH=0x42 BIOS routine to read from disk (See MBR code for more details)
 	
 	DiskReadUsingLBA:
-	mov   BYTE [ReadUsingLBA], 1                           ; INT 0x13 extension exists. Lets make a note of it
+	mov   BYTE [DiskReadFlags], 1                          ; INT 0x13 extension exists. Lets make a note of it
 	mov   dl, BYTE [Drive_ID]
 	mov   si, DAP
 	mov   ah, 0x42
@@ -150,7 +150,7 @@ VBR:
 	; If BIOS extensions do not exist or did not work, we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	
 	DiskReadUsingCHS:
-	mov   BYTE [ReadUsingLBA], 0                           ; INT 0x13 extension did not work. Lets make a note of it
+	mov   BYTE [DiskReadFlags], 0                          ; INT 0x13 extension did not work. Lets make a note of it
 
 	; First we read the disk geometry using INT 0x13, AH=0x08
 	; - It is recommended to set ES:DI to 0x0000:0x0000 to work around some buggy BIOS
@@ -175,20 +175,22 @@ VBR:
 	mov   si, Messages.DiskIOErr   
 	jc    HaltSystem
 
-	add   dh, 0x1                                          ; Since DH contains number of heads - 1, we add one to get the number of heads
-	mov   [CHS_Geometry.Heads], dh                         ; Save the number of heads in memory
+	movzx ax, dh
+	inc   ax                                               ; Since DH contains number of heads - 1, we add one to get the number of heads (technically can be 256, hence store in a word)
 	and   cl, 0x3F                                         ; First 6 bits of CL contain the number of sectors per track
 	mov   [CHS_Geometry.Sectors_Per_Track], cl             ; Save the number of sectors per track to memory
-	mov   al, cl                                           ; number of sectors per cylinder = number of sectors per track x number of heads
-	mul   dh
+	movzx si, cl
+	mul   si                                               ; number of sectors per cylinder = number of sectors per track x number of heads
 	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          ; Save the number of sectors per cylinder in memory
 	
 	; This is the code that converts the address of the starting sector from the LBA scheme to the CHS scheme 
 	; It stores the C,H,S values in appropriate registers and then calls INT 0x13, AH=0x02
 	; More details on the INT 0x13, AH=0x02 BIOS routine can be found in the MBR code
 
+	mov   eax, DWORD [DAP.Start_Sector+4]
+	or    eax, eax                                         ; Test for a 32-bit LBA (that's the most that can be supported with CHS)
+	jnz   HaltSystem                                       
 	mov   eax, DWORD [DAP.Start_Sector]
-	mov   edx, 0
 	movzx ebx, WORD [CHS_Geometry.Sectors_Per_Cylinder]
 	div   ebx                                              ; LBA / sectors per cylinder = cylinder number
 	cmp   eax, 0x3FF                                       ; cylinder number greater than 1023 is not supported by the BIOS INT 0x13, AH=0x02 routine
@@ -222,7 +224,7 @@ VBR:
 	; We reach here if the disk read was successful 
 	
 	LaunchBootloader:
-	movzx bx, BYTE [ReadUsingLBA]                          ; Store the flag that indicates extended INT 0x13 support in BX 
+	movzx bx, BYTE [DiskReadFlags]                         ; Store the flag that indicates extended INT 0x13 support in BX 
 	mov   sp, STACK_TOP-10 
 	pop   si
 	pop   ds

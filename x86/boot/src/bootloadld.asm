@@ -29,8 +29,9 @@ BITS 16
 AVBL:
 
 	jmp   AVBL_Code
+	nop
 
-	db 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	AVBL_BlockList:
 
@@ -50,6 +51,30 @@ AVBL:
 	.Block1_num_sectors   dw 0x40-1
 
 	times 104+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
+
+	Drive_ID              db 0
+
+	CHS_Geometry:
+	.Sectors_Per_Track    db 18
+	.Sectors_Per_Cylinder dw 36
+
+	DAP:
+	.Size                 db 0x10
+	.Unused1              db 0
+	.Sectors_Count        db 0
+	.Unused2              db 0
+	.Memory_Offset        dw 0
+	.Memory_Segment       dw 0
+	.Start_Sector         dq 0
+
+	DiskReadFlags         db 0
+
+	MBR_Part_Entry_Addr   dd 0
+
+	Messages:
+	.DiskIOErr            db 'Unable to load AVOS', 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	; This is where the VBR code starts
 
@@ -103,13 +128,13 @@ AVBL:
 	jmp   ReadLoop
 
 	SaveCHSGeometry:
-    add   dh, 0x1                                 
-    mov   [CHS_Geometry.Heads], dh                
-    and   cl, 0x3F                                
-    mov   [CHS_Geometry.Sectors_Per_Track], cl    
-    mov   al, cl
-    mul   dh
-    mov   [CHS_Geometry.Sectors_Per_Cylinder], ax 
+    movzx ax, dh
+    inc   ax                                               
+    and   cl, 0x3F                                         
+    mov   [CHS_Geometry.Sectors_Per_Track], cl             
+    movzx si, cl
+    mul   si                                               
+    mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
 	popa
 
 	ReadLoop:
@@ -147,7 +172,7 @@ AVBL:
 	push  di
 
 	DiskReadUsingLBA:
-	test  BYTE [DiskReadFlags], 1                           ; Check if we can read the disk using LBA scheme
+	test  BYTE [DiskReadFlags], 1                          ; Check if we can read the disk using LBA scheme
 	jz    DiskReadUsingCHS
 
 	mov   dl, BYTE [Drive_ID]
@@ -246,29 +271,6 @@ AVBL:
 	hlt
 	jmp   .printdone
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-DiskReadFlags         db 0
-MBR_Part_Entry_Addr   dd 0
-
-Drive_ID              db 0
-
-CHS_Geometry:
-.Heads                db 2
-.Sectors_Per_Track    db 18
-.Sectors_Per_Cylinder dw 18
-
-DAP:
-.Size                 db 0x10
-.Unused1              db 0
-.Sectors_Count        db 0
-.Unused2              db 0
-.Memory_Offset        dw 0
-.Memory_Segment       dw 0
-.Start_Sector         dq 0
-
-Messages:
-.DiskIOErr            db 'Unable to load AVOS', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
