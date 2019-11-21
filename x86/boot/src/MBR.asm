@@ -228,6 +228,8 @@ MBR:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
+	xor   ax, ax
+	mov   ds, ax
 	mov   ax, SCREEN_TEXT_BUFFER
 	mov   es, ax             
 	mov   di, 80*23*2
