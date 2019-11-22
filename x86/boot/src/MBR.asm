@@ -40,7 +40,6 @@ SECTOR_SIZE             equ 0x0200                ; Size of a sector (or size of
 LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
 MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at LOAD_ADDRESS
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
-SCREEN_TEXT_BUFFER      equ 0xB800                ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
 
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
 
@@ -63,10 +62,6 @@ MBR:
 	
 	cli
 
-	; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
-
-	cld
-
 	; First set up a usable stack 
 
 	xor   ax, ax
@@ -85,29 +80,21 @@ MBR:
 	mov   ds, ax
 	mov   es, ax
 
-	; Lets reenable interrupts now
-
-	sti
-	
 	; Then, we relocate the MBR code/data to memory location 0x0000:MBR_RELOC_ADDRESS
 
 	mov   cx, SECTOR_SIZE
 	mov   si, LOAD_ADDRESS
 	mov   di, MBR_RELOC_ADDRESS
+	cld                                           ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
 	rep   movsb
 	jmp   0x0000:Start
 
 	Start:
 
-	; Set video to 80x25 text mode
+	; Lets reenable interrupts now
 
-	mov   ax, 0x0003
-	int   0x10
-
-	; Save the boot drive ID, we will need it when trying to read the VBR from disk
-
-	mov   [Drive_ID], dl
-
+	sti
+	
 	; Identify the active partition
 
 	mov   cx, 4
@@ -119,19 +106,7 @@ MBR:
 	add   bx, 0x10
 	loop  GetActivePartition
 
-	; Did not find any active partition
-	; Is this drive partitioned with GPT ?
-	; Look for a GPT partition. If found, halt (the MBR does not currently support booting from a GPT partition)
-
-	mov   cx, 4
-	mov   bx, MBR+PARTITION_TABLE_OFFSET
-	LookForGPTPartition:
-	cmp   BYTE [bx+4], 0xEE
-	je    FoundGPT
-	add   bx, 0x10
-	loop  LookForGPTPartition
-
-	; No active partition or GPT was found
+	; No active partition was found
 	; This drive does not seem to be bootable
 	; Halt
 
@@ -139,7 +114,7 @@ MBR:
 	jmp   HaltSystem
 
 	LoadVBR:
-	mov   [Active_Partition], bx                  ; Save the start address of the active partition in the relocated MBR. This will eventually be passed on through DS:SI 
+	push  bx                                      ; Save the start address of the active partition in the relocated MBR. This will eventually be passed on through DS:SI
 
 	; We don't have enough space to write a disk driver to load the VBR, so we will simply use routines provided by the BIOS
 	; We will first try the 'extended' INT 0x13 BIOS routines to read from disk using the LBA scheme
@@ -163,7 +138,7 @@ MBR:
 
 	mov   ax, [bx+0x08]                           ; Save the LBA address of the start sector of the active partition in the Disk Address Packet used by extended INT 0x13 
 	mov   [DAP.Start_Sector], ax
-	mov   ax, [bx+0x0A]
+	mov   ax, [bx+0x0A]                           ; We could have just copied the 4 bytes of LBA into EAX and moved them to the DAP
 	mov   [DAP.Start_Sector+0x02], ax
 
 	mov   bx, 0x55AA
@@ -179,7 +154,7 @@ MBR:
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	mov   dl, [Drive_ID]
+	mov   dl, [STACK_TOP-2]
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
@@ -198,7 +173,8 @@ MBR:
 	; - AH contains return code of the read routine ; AL contains the actual number of sectors that got read ; Carry flag is clear if the read was successful  
 
 	DiskReadUsingCHS:	
-	mov   dl, [Drive_ID]
+	mov   dl, [STACK_TOP-2]
+	mov   bx, [STACK_TOP-8]
 	mov   dh, [bx+1]
 	mov   cl, [bx+2]
 	mov   ch, [bx+3]
@@ -225,15 +201,34 @@ MBR:
 	; We are all set to launch into the VBR
 
 	LaunchVBR:
-	mov   sp, STACK_TOP-6 
+	mov   sp, STACK_TOP-8
+	xor   ax, ax
+	mov   ds, ax
+	pop   si
 	pop   di
 	pop   es
 	pop   dx
-	mov   dl, [Drive_ID]
-	xor   ax, ax
-	mov   ds, ax
-	mov   si, [Active_Partition]
 	jmp   LOAD_ADDRESS 
+
+	; If the boot strap failed (no active partition or disk read error) then halt the system
+	; Before halting we print an error message on the screen 
+	; We use INT 0x10 AH=0x0E to print a string to screen character-by-character
+	; The character byte is stored in AL ; BH contains the display page number ; BL contains the display color for the character
+
+	HaltSystem:
+    .printchar:
+    lodsb
+    test  al, al
+    jz    .printdone
+    mov   ah, 0x0E
+    mov   bx, 0x0007
+    int   0x10
+    jmp   .printchar
+
+    .printdone:
+    cli
+    hlt
+    jmp   .printdone
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,47 +246,6 @@ times 3              db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We reached here because a GPT was detected
-; There is no support for GPT currently
-; So we have to halt with an error message
-
-FoundGPT:
-	mov   si, Messages.GPTDetected
-	jmp   HaltSystem
-
-; If the boot strap failed (no active partition or disk read error) then halt the system
-; Before halting we print an error message on the screen 
-; In the PC architecture the video buffer sits at 0xB8000
-; We put the ES segment at that location
-; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
-; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
-; We will print the error message on the penultimate line, in red
-	
-HaltSystem:
-    xor   ax, ax
-    mov   ds, ax
-    mov   ax, SCREEN_TEXT_BUFFER
-    mov   es, ax
-    mov   di, 80*23*2
-    mov   cx, 0
-    .printchar:
-        lodsb
-        test  al, al
-        jz    .printdone
-        mov   ah, 0x04
-        stosw
-        jmp   .printchar
-    .printdone:
-    cli
-    hlt
-    jmp   .printdone
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-Active_Partition     dw 0
-Drive_ID             db 0
-
 DAP:
 .Size                db 0x10                      ; Size of the DAP - this should always be 0x10
 .Unused1             db 0                         ; Reserved
@@ -305,7 +259,6 @@ Messages:
 .NoActivePart        db 'No bootable partition found', 0
 .DiskReadErr         db 'Unable to load volume boot record', 0
 .InvalidVBR          db 'Invalid volume boot record', 0
-.GPTDetected         db 'GPT partition detected - no support', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
