@@ -52,8 +52,6 @@ AVBL:
 
 	times 104+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
 
-	Drive_ID              db 0
-
 	CHS_Geometry:
 	.Sectors_Per_Track    db 18
 	.Sectors_Per_Cylinder dw 36
@@ -66,10 +64,6 @@ AVBL:
 	.Memory_Offset        dw 0
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
-
-	DiskReadFlags         db 0
-
-	MBR_Part_Entry_Addr   dd 0
 
 	Messages:
 	.DiskIOErr            db 'Unable to load AVOS', 0
@@ -91,7 +85,6 @@ AVBL:
 	push  di
 	push  ds
 	push  si
-	push  bx
 	
 	mov   ebx, DWORD [si+0x08]                             ; Get the LBA of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
 
@@ -103,12 +96,7 @@ AVBL:
 
 	; Save some useful information
 	
-	mov   [Drive_ID], dl                                   ; Save the boot drive ID --> we expect it in DL
-	mov   [MBR_Part_Entry_Addr], ebx                       ; Save the 32-bit LBA of the start sector of this partition
 	mov   di, AVBL_BlockList+4                             ; Save the starting address of the bootloader blocklist entries
-	pop   bx                                               ; Save the flag (passed by VBR) that indicates if extended INT 0x13 works
-	and   bl, 1
-	mov   [DiskReadFlags], bl
 	
 	; Save the CHS disk geometry in case read with LBA scheme fails
 
@@ -117,13 +105,11 @@ AVBL:
 	xor   ax, ax
 	mov   es, ax
 	mov   di, ax
-	mov   dl, BYTE [Drive_ID]
+	mov   dl, [STACK_TOP-2]
 	mov   ah, 0x08
 	int   0x13
 	jnc   SaveCHSGeometry
-	mov   bl, [DiskReadFlags]
-	or    bl, 2
-	mov   [DiskReadFlags], bl
+	or    BYTE [STACK_TOP-1], 2
 	popa
 	jmp   ReadLoop
 	
@@ -160,9 +146,10 @@ AVBL:
 	mov   [DAP.Sectors_Count], al
 	mov   [DAP.Start_Sector], ebx
 	mov   [DAP.Start_Sector+0x04], ecx
-	mov   ebx, [MBR_Part_Entry_Addr]
+	mov   ebx, [fs:bp]
 	add   DWORD [DAP.Start_Sector], ebx
-	adc   DWORD [DAP.Start_Sector+0x04], 0
+	mov   ebx, [fs:bp+4]
+	adc   DWORD [DAP.Start_Sector+0x04], ebx
 
 	mov   bx, [AVBL_BlockList]
 	mov   [DAP.Memory_Segment], bx
@@ -172,10 +159,10 @@ AVBL:
 	push  di
 
 	DiskReadUsingLBA:
-	test  BYTE [DiskReadFlags], 1                          ; Check if we can read the disk using LBA scheme
+	test  BYTE [STACK_TOP-1], 1                            ; Check if we can read the disk using LBA scheme
 	jz    DiskReadUsingCHS
 
-	mov   dl, BYTE [Drive_ID]
+	mov   dl, [STACK_TOP-2]
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
@@ -184,8 +171,7 @@ AVBL:
 	; If BIOS extensions do not exist or did not work, we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	
 	DiskReadUsingCHS:
-	mov   bl, [DiskReadFlags]
-	test  bl, 2
+	test  BYTE [STACK_TOP-1], 2
 	jnz   HaltSystem
 	mov   eax, DWORD [DAP.Start_Sector+0x04]               ; Cannot read sector numbers outside the 32-bit range using CHS
 	or    eax, eax
@@ -212,7 +198,7 @@ AVBL:
 
 	mov   es, [DAP.Memory_Segment]                         ; Store the load memory address in ES:BX
 	mov   bx, [DAP.Memory_Offset]
-	mov   dl, BYTE [Drive_ID]                              ; Drive ID is stored in DL
+	mov   dl, [STACK_TOP-2]                                ; Drive ID is stored in DL
 	mov   al, [DAP.Sectors_Count]                          ; Number of sectors to copy are stored in AL
 
 	; Now call INT 0x13, AH=0x02
@@ -233,8 +219,7 @@ AVBL:
 	; We reach here if the disk read was successful 
 	
 	LaunchBootloader:
-	mov   sp, STACK_TOP-12
-	pop   bx
+	mov   sp, STACK_TOP-10
 	pop   si
 	pop   ds
 	pop   di
