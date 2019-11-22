@@ -114,27 +114,27 @@ AVBL:
 
 	LoadCHSGeometry:
 	pusha
-    xor   ax, ax
-    mov   es, ax
-    mov   di, ax
-    mov   dl, BYTE [Drive_ID]
-    mov   ah, 0x08
-    int   0x13
+	xor   ax, ax
+	mov   es, ax
+	mov   di, ax
+	mov   dl, BYTE [Drive_ID]
+	mov   ah, 0x08
+	int   0x13
 	jnc   SaveCHSGeometry
 	mov   bl, [DiskReadFlags]
 	or    bl, 2
 	mov   [DiskReadFlags], bl
 	popa
 	jmp   ReadLoop
-
+	
 	SaveCHSGeometry:
-    movzx ax, dh
-    inc   ax                                               
-    and   cl, 0x3F                                         
-    mov   [CHS_Geometry.Sectors_Per_Track], cl             
-    movzx si, cl
-    mul   si                                               
-    mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
+	movzx ax, dh
+	inc   ax                                               
+	and   cl, 0x3F                                         
+	mov   [CHS_Geometry.Sectors_Per_Track], cl             
+	movzx si, cl
+	mul   si                                               
+	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
 	popa
 
 	ReadLoop:
@@ -255,22 +255,20 @@ AVBL:
 	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
-	mov   ax, SCREEN_TEXT_BUFFER
-	mov   es, ax             
-	mov   di, 80*23*2        
-	mov   si, Messages.DiskIOErr   
+	mov   si, Messages.DiskIOErr
 	.printchar:
-		lodsb                
-		test  al, al        
-		jz    .printdone    
-		mov   ah, 0x04      
-		stosw                   
-		jmp   .printchar 
-	.printdone:	
+	lodsb
+	test  al, al
+	jz    .printdone
+	mov   ah, 0x0E
+	mov   bx, 0x0007
+	int   0x10
+	jmp   .printchar
+	
+	.printdone:
 	cli
 	hlt
 	jmp   .printdone
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,4 +277,5 @@ AVBL:
 times 512-($-$$) db 0 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 

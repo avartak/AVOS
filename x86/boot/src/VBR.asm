@@ -8,6 +8,12 @@
 ; - The VBR first relocates itself to another location in memory 
 ; - The VBR then loads exactly 1 sector (512 B) of bootloader code that bootstraps the loading of the entire bootloader from disk to memory
 ; - This keeps the VBR simple : it only needs to know the sector number (or even just the sector offset from the start of the partition) of the sector to load
+; - The VBR saves (in addition to DL, ES:DI and DS:SI values passed down by the MBR) : 
+;   * The memory address of a 16-byte partition entry (8-bytes for starting LBA and 8-bytes for ending LBA) in FS:BP
+;   * A flag for whether INT 0x13 extensions are supported (least significant bit of DH is set if supported)
+; - Note the VBR interface provides 64-bit LBA addresses for the partition boundaries to the next stage of the bootloader
+; - This VBR only supports 32-bit LBAs (since it reads them from the MBR partition table)
+; - As long as the VBR interface is maintained, some different code could also pass the partition boundaries from the GPT (16-bytes at offset 0x20 in the GPT partition entry)
 
 ; First let us include some definitions of constants that the VBR needs
 
@@ -15,7 +21,6 @@ SECTOR_SIZE             equ 0x0200                         ; Size of a sector (o
 LOAD_ADDRESS            equ 0x7C00                         ; This is where the MBR, VBR is loaded in memory
 VBR_RELOC_ADDRESS       equ 0x0800                         ; This is where the MBR relocates itself to, then loads the VBR at LOAD_ADDRESS
 STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
-SCREEN_TEXT_BUFFER      equ 0xB800                         ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
 
 BOOTLOADLD_PART_START   equ 8                              ; Starting sector of the boot loader on the partition
 
@@ -40,9 +45,7 @@ VBR:
 
 	; We reserve the next 128 bytes of the VBR for any filesystem related data structure (e.g. the BIOS Parameter Block in FAT file systems)
 
-	times 128+4-($-$$)    db 0                             ; The 3 accounts for the 3 bytes taken up by the JMP instruction
-
-	Drive_ID              db 0
+	times 128+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 byte for nop
 
 	DAP:                                                   ; We put the DAP at a known offset of 132 bytes from the start of the VBR
 	.Size                 db 0x10                          ; The start sector (relative to the partition) of the bootloader loader can be modified when installing the OS
@@ -57,8 +60,6 @@ VBR:
 	.Sectors_Per_Track    db 18                            ; Software downstream can directly import this information if need be
 	.Sectors_Per_Cylinder dw 36                            ; The VBR is relocated to VBR_RELOC_ADDRESS --> Downstream software will need to know this to be able to access CHS geometry
 
-	DiskReadFlags         db 0
-
 	Messages:
 	.DiskIOErr            db 'Unable to load AVOS', 0
 
@@ -72,10 +73,6 @@ VBR:
 	
 	cli
 	
-	; Clear the direction flag so that the string operations (that we will use later) proceed from low to high memory addresses
-
-	cld
-
 	; We first set up a usable stack
 
 	xor   ax, ax
@@ -92,39 +89,39 @@ VBR:
 	push  ds
 	push  si
 	
-	mov   ebx, DWORD [si+0x08]                             ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
+	mov   ebp, DWORD [si+0x08]                             ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
+	mov   ebx, DWORD [si+0x0C]                             ; Get the size of the partition in sectors from the MBR partition table [restricts us to 32-bits]
 
-	; The MBR is expected to make a jump to 0x0000:0x7C00 (as opposed to 0x07C0:0x0000 or something else) but lets not assume this
-	; We should initialize the segment registers to the base address values that we want to use (0x0000)
+	; Initialize the segment registers to the base address values that we want to use (0x0000)
 	
 	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
+	mov   fs, ax
 
-	; Lets reenable interrupts now
-
-	sti
-	
     ; Then, we relocate the VBR code/data to memory location 0x0000:VBR_RELOC_ADDRESS
 
     mov   cx, SECTOR_SIZE
     mov   si, LOAD_ADDRESS
     mov   di, VBR_RELOC_ADDRESS
+	cld                                                    ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
     rep   movsb
 	jmp   0x0000:Start
 	
 	Start:
 
-	; Set video to 80x25 text mode
+	; Lets reenable interrupts now
 
-	mov   ax, 0x0003
-	int   0x10
-
-	; Save the LBA of the bootloader start sector in the Disk Address Packet (DAP) used by the extended INT 0x13 
+	sti
 	
-	mov   [Drive_ID], dl                                   ; Save the boot drive ID --> MBR put it in DL
-	add   DWORD [DAP.Start_Sector], ebx                    ; Add the partition start sector sector to the sector offset of the start of the bootloader
+	; Add the LBA of the bootloader start sector to the Disk Address Packet (DAP) used by the extended INT 0x13 
+	
+	add   DWORD [DAP.Start_Sector], ebp                    ; Add the partition start sector to the sector offset of the start of the bootloader
 	adc   DWORD [DAP.Start_Sector+4], 0                    ; The start sector LBA in the DAP is 64-bit, we must appropriately account for any carry after adding the above offset  
+	mov   DWORD [Volume_Partition_Table], ebp              ; Save the lower 4 bytes of the 64-bit LBA of the start sector of the partition
+	mov   DWORD [Volume_Partition_Table+8], ebp            ; Save the 64-bit LBA of the end sector of the partition (start + size)
+	add   DWORD [Volume_Partition_Table+8], ebx
+	adc   DWORD [Volume_Partition_Table+0x10], 0
 
 	; Check for BIOS extensions to read from disk using the LBA scheme
 
@@ -140,8 +137,8 @@ VBR:
 	; BIOS extensions exist. So, we use the INT 0x13, AH=0x42 BIOS routine to read from disk (See MBR code for more details)
 	
 	DiskReadUsingLBA:
-	mov   BYTE [DiskReadFlags], 1                          ; INT 0x13 extension exists. Lets make a note of it
-	mov   dl, BYTE [Drive_ID]
+	mov   BYTE [STACK_TOP-1], 1                            ; INT 0x13 extension exists. Lets make a note of it
+	mov   dl, [STACK_TOP-2]
 	mov   si, DAP
 	mov   ah, 0x42
 	int   0x13
@@ -150,7 +147,7 @@ VBR:
 	; If BIOS extensions do not exist or did not work, we will need to read from disk using INT 0x13, AH=0x02 that employs the CHS scheme
 	
 	DiskReadUsingCHS:
-	mov   BYTE [DiskReadFlags], 0                          ; INT 0x13 extension did not work. Lets make a note of it
+	mov   BYTE [STACK_TOP-1], 0                            ; INT 0x13 extension did not work. Lets make a note of it
 
 	; First we read the disk geometry using INT 0x13, AH=0x08
 	; - It is recommended to set ES:DI to 0x0000:0x0000 to work around some buggy BIOS
@@ -169,10 +166,9 @@ VBR:
 	xor   ax, ax
 	mov   es, ax
 	mov   di, ax
-	mov   dl, BYTE [Drive_ID]
+	mov   dl, [STACK_TOP-2]
 	mov   ah, 0x08
 	int   0x13
-	mov   si, Messages.DiskIOErr   
 	jc    HaltSystem
 
 	movzx ax, dh
@@ -211,8 +207,8 @@ VBR:
 	xor   ax, ax
 	mov   es, ax
 	mov   bx, LOAD_ADDRESS                                 ; Store the load memory address in ES:BX
-	mov   dl, BYTE [Drive_ID]                              ; Drive ID is stored in DL
-	mov   al, BYTE [DAP.Sectors_Count]                     ; Number of sectors to copy are stored in AL
+	mov   dl, [STACK_TOP-2]                                ; Drive ID is stored in DL
+	mov   al, [DAP.Sectors_Count]                          ; Number of sectors to copy are stored in AL
 
 	; Now call INT 0x13, AH=0x02
 	
@@ -222,50 +218,49 @@ VBR:
 	jmp   HaltSystem
 	
 	; We reach here if the disk read was successful 
-	
+	; Save the DL, DS:SI and ES:DI values passed by the MBR
+	; Save the INT 0x13 extensions support flat in DH
+	; Save the address of the 16-byte entry containing the partition boundaries in FS:BP 	
+
 	LaunchBootloader:
-	movzx bx, BYTE [DiskReadFlags]                         ; Store the flag that indicates extended INT 0x13 support in BX 
 	mov   sp, STACK_TOP-10 
 	pop   si
 	pop   ds
 	pop   di
 	pop   es
 	pop   dx
+	mov   bp, Volume_Partition_Table
 	jmp   LOAD_ADDRESS
 	
 	; If we did not read what we wanted to we halt
 	; Before halting we print an error message on the screen 
-	; In the PC architecture the video buffer sits at 0xB8000
-	; We put the ES segment at that location
-	; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
-	; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
-	; We will print the error message on the penultimate line, in red
+	; We use INT 0x10 AH=0x0E to print a string to screen character-by-character
+	; The character byte is stored in AL ; BH contains the display page number ; BL contains the display color for the character
 	
-	HaltSystem:
-	mov   ax, SCREEN_TEXT_BUFFER
-	mov   es, ax             
-	mov   di, 80*23*2        
+    HaltSystem:
 	mov   si, Messages.DiskIOErr   
-	.printchar:
-		lodsb                
-		test  al, al        
-		jz    .printdone    
-		mov   ah, 0x04      
-		stosw                   
-		jmp   .printchar 
-	.printdone:	
-	cli
-	hlt
-	jmp   .printdone
+    .printchar:
+    lodsb
+    test  al, al
+    jz    .printdone
+    mov   ah, 0x0E
+    mov   bx, 0x0007
+    int   0x10
+    jmp   .printchar
+
+    .printdone:
+    cli
+    hlt
+    jmp   .printdone
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Padding of zeroes till offset 440 (location of the MBR signature and then the partition table). We will keep this space empty
+; Padding of zeroes till offset 446 : location of the VBR partition table (if any)
+; We put a 16-byte entry at offset 446 corresponding to the 64-bit LBAs of the start and end sectors of the partition
+; The address of this 16-byte entry is passed to the next step of the bootloader in the FS:BP registers
 
-times 440-($-$$) db 0
-
-VBR_Signature:
-times  6 db 0
+times 446-($-$$) db 0
 
 Volume_Partition_Table:
 times 64 db 0
