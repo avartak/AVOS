@@ -165,7 +165,7 @@ AVBL:
 	jnz   HaltSystem
 
 	mov   eax, [DAP.Start_Sector]
-	mov   edx, 0
+	xor   edx, edx
 	movzx ebx, WORD [CHS_Geometry.Sectors_Per_Cylinder]
 	div   ebx                                              ; LBA / sectors per cylinder = cylinder number
 	cmp   eax, 0x3FF                                       ; cylinder number greater than 1023 is not supported by the BIOS INT 0x13, AH=0x02 routine

@@ -46,6 +46,8 @@ AVBL16:
 	push  di
 	push  ds
 	push  si
+	push  fs
+	push  bp
 
 	; Set all the segment registers to the base address we want (0x0000)
 	
@@ -65,26 +67,30 @@ AVBL16:
 
 	call  A20_Enable
 	test  al, al
-    mov   si, ErrStr_A20
 	jz    HaltSystem
 
-	; Save the boot drive ID in DL, the active partition entry location in ESI, and information about "$PnP" installation check structure in EDI
+	; Save the boot drive ID in DL, the location of MBR's active partition in ESI, and information about "$PnP" installation check structure in EDI
+	; Save the pointer to the 16-bytes containing the 64-bit start and end LBAs of this partition in EBP
 
-	mov   eax, 0
-	mov   esi, 0
+	xor   eax, eax
+	xor   ebp, ebp
+	pop   ax
+	pop   bp
+	shl   ebp, 4
+	add   ebp, eax
+
+	xor   esi, esi
 	pop   ax
 	pop   si
 	shl   esi, 4
 	add   esi, eax
 
-	mov   eax, 0
-	mov   edi, 0
+	xor   edi, edi
 	pop   ax
 	pop   di
 	shl   edi, 4
 	add   edi, eax
 
-	mov   edx, 0
 	pop   dx
 
 	; Load a valid GDT (See the GDT description at the end)
@@ -103,22 +109,21 @@ AVBL16:
 	
 	; Halt the system in case of trouble
 
-	HaltSystem:
-    mov   ax, SCREEN_TEXT_BUFFER
-    mov   es, ax
-    mov   di, 80*23*2
+    HaltSystem:
+    mov   si, Messages.A20EnableErr
     .printchar:
-        lodsb
-        test  al, al
-        jz    .printdone
-        mov   ah, 0x04
-        stosw
-        jmp   .printchar
-    .printdone:
-	cli
-	hlt
-	jmp  .printdone
+    lodsb
+    test  al, al
+    jz    .printdone
+    mov   ah, 0x0E
+    mov   bx, 0x0007
+    int   0x10
+    jmp   .printchar
 
+    .printdone:
+    cli
+    hlt
+    jmp   .printdone
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,7 +134,8 @@ AVBL16:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ErrStr_A20 db 'A20 line could not be enabled', 0
+Messages:
+.A20EnableErr db 'A20 line could not be enabled', 0
 
 ; Global Descriptor Table (GDT) : Tells the CPU about memory segments
 ; It is a table of 8-byte entries, each being a memory segment descriptor. The segment registers themselves point to the descriptors
