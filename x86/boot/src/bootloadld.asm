@@ -1,10 +1,8 @@
-; The Volume Boot Record (VBR) is the first sector of the 'active' or bootable partition that contains our OS
-; The Master Boot Record (MBR) first identifies the active partition, then loads the VBR at memory address 0x7C00, and transfers control to it
-; The VBR is the first OS-specific code. 
-; It reads a part (first 512 B sector) of our bootloader from disk into memory and transfers control to it 
-; This VBR has been made relocatable - it relocates to a specified address (just like the MBR) and loads the first sector of the bootloader in its place 
-; The VBR also has the boot signature word (0xAA55) at its end, just like the MBR
-; Since the VBR is just one sector (512 bytes) long it cannot access filesystems. Therefore, it reads the bootloader from disk knowing the low-level LBA of the bootloader
+; This is the "bootloader loader"
+; It takes a blocklist of sectors on disk containing the bootloader code, loads them in memory and jumps to the bootloader
+; Each blocklist entry contains the offset of the starting sector relative to the start of the partition, and the number of contiguous sectors to read out
+; The VBR passes oon to this code, all the information it receives from the MBR : DL (drive ID), ES:DI (Plug-and-Play BIOS), DS:SI (address of partition entry for this partition in MBR)
+; In addition, it passes a flag for INT 0x13 extensions support (first bit of DH), and the 64-bit LBA boundaries of this partition in FS:BP
 
 ; First let us include some definitions of constants that the VBR needs
 
@@ -35,7 +33,7 @@ AVBL:
 
 	AVBL_BlockList:
 
-	; We reserve the next 104 bytes for the blocklist corresponding to the bootloader code on disk
+	; We reserve the next 128 bytes for the blocklist corresponding to the bootloader code on disk
 	; This is basically a table containing (up to) 12 ten-byte entries
 	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the bootloader code in memory
 	; The next 4 bytes are reserved
@@ -229,11 +227,6 @@ AVBL:
 	
 	; If we did not read what we wanted to we halt
 	; Before halting we print an error message on the screen 
-	; In the PC architecture the video buffer sits at 0xB8000
-	; We put the ES segment at that location
-	; We can write to the video buffer as if it is array of characters (in fact it's an array of the character byte + attribute byte)
-	; the usual VGA compatible text mode has 80 columns (i.e. 80 characters per line) and 25 rows (i.e. 25 lines)
-	; We will print the error message on the penultimate line, in red
 	
 	HaltSystem:
 	mov   si, Messages.DiskIOErr
