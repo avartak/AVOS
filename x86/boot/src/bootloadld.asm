@@ -140,17 +140,17 @@ AVBL:
 	adc   DWORD [di+4], 0
 
 	mov   [DAP.Sectors_Count], al
-    mov   edx, [fs:bp]
-    mov   [DAP.Start_Sector], edx
-    mov   edx, [fs:bp+4]
-    mov   [DAP.Start_Sector+4], edx
-    add   [DAP.Start_Sector], ebx
-    adc   [DAP.Start_Sector+4], ecx
-
+	mov   edx, [fs:bp]
+	mov   [DAP.Start_Sector], edx
+	mov   edx, [fs:bp+4]
+	mov   [DAP.Start_Sector+4], edx
+	add   [DAP.Start_Sector], ebx
+	adc   [DAP.Start_Sector+4], ecx
+	
 	DiskReadUsingLBA:
 	test  BYTE [STACK_TOP-1], 1                            ; Check if we can read the disk using LBA scheme
 	jz    DiskReadUsingCHS
-
+	
 	mov   dl, [STACK_TOP-2]
 	mov   si, DAP
 	mov   ah, 0x42
