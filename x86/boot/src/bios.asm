@@ -72,6 +72,7 @@ BIOS_Interrupt:
 	; We start by saving the general registers and the flags register to memory, in the BIOS_Regs32 structure defined at the end
 
 	pushfd
+	pushfd
 	pushad
 
 	; Clear interrupts
@@ -270,6 +271,12 @@ BITS 32
 
 	; Return 
 
+	pop   eax
+	test  eax, 0x200
+	jz    .return
+	sti
+
+	.return:
 	mov   esp, ebp
 	pop   ebp
 	ret
