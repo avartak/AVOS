@@ -12,7 +12,7 @@ SECTOR_SIZE             equ 0x0200                         ; Size of a sector (o
 LOAD_ADDRESS            equ 0x7C00                         ; This is where the bootloader loader is loaded in memory
 STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
 SCREEN_TEXT_BUFFER      equ 0xB800                         ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
-BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
+BOOTLOADER_ADDRESS      equ 0x7E00                         ; Starting location in memory where the bootloader code gets loaded
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -36,21 +36,23 @@ AVBL:
 	AVBL_BlockList:
 
 	; We reserve the next 104 bytes for the blocklist corresponding to the bootloader code on disk
-	; This is basically a table containing (up to) 10 ten-byte entries
+	; This is basically a table containing (up to) 12 ten-byte entries
 	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the bootloader code in memory
+	; The next 4 bytes are reserved
 	; Then come the blocklist entries
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
 	; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
-	; Some tool provided by the OS/bootloader should fill this table. Right now it has some defaults put in
 
-	.Load_segment         dw 0
-	.Load_offset          dw BOOTLOADER_ADDRESS
+	.Load_Offset          dw BOOTLOADER_ADDRESS
+	.Load_Segment         dw 0
+
+	.Reserved             dd 0
 
 	.Block1_LBA           dq 9
-	.Block1_num_sectors   dw 0x40-1
+	.Block1_Num_Sectors   dw 0x40-1
 
-	times 104+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
+	times 128+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
 
 	CHS_Geometry:
 	.Sectors_Per_Track    db 18
@@ -86,32 +88,22 @@ AVBL:
 	push  ds
 	push  si
 	
-	mov   ebx, DWORD [si+0x08]                             ; Get the LBA of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
-
 	; Lets initialize the segment registers to the base address values that we want to use (0x0000)
 	
 	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
 
-	; Save some useful information
-	
-	mov   di, AVBL_BlockList+4                             ; Save the starting address of the bootloader blocklist entries
-	
 	; Save the CHS disk geometry in case read with LBA scheme fails
 
 	LoadCHSGeometry:
-	pusha
-	xor   ax, ax
-	mov   es, ax
 	mov   di, ax
 	mov   dl, [STACK_TOP-2]
-	mov   ah, 0x08
+	mov   ah, 8
 	int   0x13
 	jnc   SaveCHSGeometry
 	or    BYTE [STACK_TOP-1], 2
-	popa
-	jmp   ReadLoop
+	jmp   SaveBlockListInfo
 	
 	SaveCHSGeometry:
 	movzx ax, dh
@@ -121,42 +113,39 @@ AVBL:
 	movzx si, cl
 	mul   si                                               
 	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
-	popa
 
+	SaveBlockListInfo:
+	mov   ebx, [AVBL_BlockList]
+	mov   [DAP.Memory_Offset], ebx
+	mov   di, AVBL_BlockList.Block1_LBA                    ; Save the starting address of the bootloader blocklist entries
+	
 	ReadLoop:
-	cmp   WORD [di+0x08], 0                                ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
+	cmp   WORD [di+8], 0                                   ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
 	je    LaunchBootloader
 
 	DiskRead:
-	mov   ebx, DWORD [di]
-	mov   ecx, DWORD [di+0x04]
+	mov   ebx, [di]
+	mov   ecx, [di+4]
 
 	xor   eax, eax
 	mov   al, 0x7F
-	cmp   [di+0x08], ax
+	cmp   [di+8], ax
 	jg    PrepareRead
-	mov   ax, [di+0x08]
+	mov   ax, [di+8]
 	
 	PrepareRead:                                           ; Save the necessary information needed by (extended) BIOS routines to read from disk --> Fill the DAP
-	sub   [di+0x08], ax
+	sub   [di+8], ax
 	
-	add   DWORD [di], eax
-	adc   DWORD [di+0x04], 0
+	add   [di], eax
+	adc   DWORD [di+4], 0
 
 	mov   [DAP.Sectors_Count], al
-	mov   [DAP.Start_Sector], ebx
-	mov   [DAP.Start_Sector+0x04], ecx
-	mov   ebx, [fs:bp]
-	add   DWORD [DAP.Start_Sector], ebx
-	mov   ebx, [fs:bp+4]
-	adc   DWORD [DAP.Start_Sector+0x04], ebx
-
-	mov   bx, [AVBL_BlockList]
-	mov   [DAP.Memory_Segment], bx
-	mov   bx, [AVBL_BlockList+0x02]
-	mov   [DAP.Memory_Offset], bx
-
-	push  di
+    mov   edx, [fs:bp]
+    mov   [DAP.Start_Sector], edx
+    mov   edx, [fs:bp+4]
+    mov   [DAP.Start_Sector+4], edx
+    add   [DAP.Start_Sector], ebx
+    adc   [DAP.Start_Sector+4], ecx
 
 	DiskReadUsingLBA:
 	test  BYTE [STACK_TOP-1], 1                            ; Check if we can read the disk using LBA scheme
@@ -173,11 +162,11 @@ AVBL:
 	DiskReadUsingCHS:
 	test  BYTE [STACK_TOP-1], 2
 	jnz   HaltSystem
-	mov   eax, DWORD [DAP.Start_Sector+0x04]               ; Cannot read sector numbers outside the 32-bit range using CHS
-	or    eax, eax
+	mov   eax, [DAP.Start_Sector+4]                        ; Cannot read sector numbers outside the 32-bit range using CHS
+	test  eax, eax
 	jnz   HaltSystem
 
-	mov   eax, DWORD [DAP.Start_Sector]
+	mov   eax, [DAP.Start_Sector]
 	mov   edx, 0
 	movzx ebx, WORD [CHS_Geometry.Sectors_Per_Cylinder]
 	div   ebx                                              ; LBA / sectors per cylinder = cylinder number
@@ -203,15 +192,22 @@ AVBL:
 
 	; Now call INT 0x13, AH=0x02
 	
-	mov   ah, 0x02
+	mov   ah, 2
 	int   0x13
 	jc    HaltSystem
 
 	; Check if we still need to loop
 
 	ReadLoopCheck:
-	pop   di
-	cmp   WORD [di+0x08], 0
+	mov   ax, [DAP.Memory_Segment]
+	shl   eax, 4
+	add   eax, [DAP.Memory_Offset]
+	add   eax, [DAP.Sectors_Count]
+	mov   [DAP.Memory_Offset], ax
+	mov   WORD [DAP.Memory_Offset], 0x000F
+	shr   eax, 4
+	mov   [DAP.Memory_Segment], ax
+	cmp   WORD [di+8], 0
 	jne   DiskRead
 	add   di, 10
 	jmp   ReadLoop
@@ -225,9 +221,9 @@ AVBL:
 	pop   di
 	pop   es
 	pop   dx
-	mov   ax, WORD [AVBL_BlockList]
+	mov   ax, [AVBL_BlockList+2]
 	push  ax
-	mov   ax, WORD [AVBL_BlockList+0x02]
+	mov   ax, [AVBL_BlockList]
 	push  ax
 	retf
 	
