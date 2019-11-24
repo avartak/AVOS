@@ -10,6 +10,8 @@ bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 
     BIOS_regs.eax   = 0x0800;
     BIOS_regs.edx   = drive;
+    BIOS_regs.edi   = 0;
+    BIOS_regs.es    = 0;
 
 	BIOS_Interrupt(0x13, &BIOS_regs);
 
@@ -96,8 +98,8 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 
     for (size_t i = 0; i < num_sectors; i++) {
         BIOS_regs.eax = 0x0201;
-        BIOS_regs.ebx = (uintptr_t)DiskIO_LowMemoryBuffer & 0xF;
         BIOS_regs.edx = drive;
+        BIOS_regs.ebx = (uintptr_t)DiskIO_LowMemoryBuffer & 0xF;
         BIOS_regs.es  = (uintptr_t)DiskIO_LowMemoryBuffer >> 4;
 
 		uint16_t sector   = (read_sector % geometry.sectors_per_track) + 1;
