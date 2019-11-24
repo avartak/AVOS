@@ -15,9 +15,14 @@
 #define BOOTINFO_ENTRY_RAM        1
 #define BOOTINFO_ENTRY_VBE        2
 
-struct Info_Entry {
+struct Info32_Entry {
     uintptr_t address;
     size_t    size;
+}__attribute__((packed));
+
+struct Info64_Entry {
+    uint64_t address;
+    uint64_t    size;
 }__attribute__((packed));
 
 typedef uint32_t clock_t;

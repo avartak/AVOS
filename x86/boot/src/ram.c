@@ -20,7 +20,6 @@ uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 		if ((BIOS_regs.ecx & 0xFFFF) != 0) memory_upper += (BIOS_regs.ecx & 0xFFFF) + (BIOS_regs.edx & 0xFFFF)*0x40;
 		else memory_upper += (BIOS_regs.eax & 0xFFFF) + (BIOS_regs.ebx & 0xFFFF)*0x40;
 	}
-
 	else {
 		BIOS_ClearRegistry(&BIOS_regs);
 		BIOS_regs.eax = 0x88;
@@ -34,7 +33,7 @@ uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 	mem[0] = memory_lower;
 	mem[1] = memory_upper;
 	
-	if (mem[1] != 0) return addr + 8;
+	if (mem[0] != 0 && mem[1] != 0) return addr + 8;
 	else return addr;
 
 }
@@ -71,9 +70,9 @@ uintptr_t RAM_StoreE820Info(uintptr_t addr) {
 }
 
 
-uintptr_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
+uint64_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
 
-	uintptr_t mem_max = 0;
+	uint64_t mem_max = 0;
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem_max;
 	for (size_t i = 0; i < E820_Table_size; i++) {
 		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
@@ -83,12 +82,12 @@ uintptr_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, s
 	return mem_max;
 }
 
-bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
+bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
 
 	if (min >= max) return false;
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return false;
 	
-	uintptr_t mem_max = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
+	uint64_t mem_max = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
 	if (min >= mem_max || max > mem_max) return false;
 
 	for (size_t i = 0; i < E820_Table_size; i++) {
@@ -112,12 +111,12 @@ bool RAM_IsMemoryPresent(uintptr_t min, uintptr_t max, struct Multiboot_E820_Ent
 
 uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
 	size_t table_size  = 0;
-	struct Info_Entry* table_ptr = (struct Info_Entry*)(addr);
+	struct Info64_Entry* table_ptr = (struct Info64_Entry*)(addr);
 	table_ptr->address = 0;
 	table_ptr->size = 0;
 
-	uintptr_t mem = 0;
-	uintptr_t mem_end = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
+	uint64_t mem = 0;
+	uint64_t mem_end = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
 	while (mem < mem_end) {
 		mem += MEMORY_SIZE_PAGE;
 		if (mem < mem-MEMORY_SIZE_PAGE || mem > mem_end) break;
@@ -135,7 +134,7 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 			}
 		}
 	}
-	table_size *= sizeof(struct Info_Entry);
+	table_size *= sizeof(struct Info64_Entry);
 
 	return addr + table_size;
 }

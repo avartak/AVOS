@@ -321,7 +321,7 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 
 	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
-	mbi_mem_ram->entry_size = sizeof(struct Info_Entry);
+	mbi_mem_ram->entry_size = sizeof(struct Info64_Entry);
 	mbi_mem_ram->entry_version = 0;
 	
 	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
