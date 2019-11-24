@@ -15,9 +15,9 @@ bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 
 	if ((BIOS_regs.flags & 1) == 1) return false;
 
-	geometry->heads = ((BIOS_regs.edx & 0x0000FF00) >> 8) + 1;
+	geometry->heads = ((BIOS_regs.edx & 0x0000FF00) >> 8);
 	geometry->sectors_per_track = BIOS_regs.ecx & 0x3F;
-	geometry->sectors_per_cylinder = geometry->heads * geometry->sectors_per_track;
+	geometry->sectors_per_cylinder = ((uint16_t)(geometry->heads)+1) * geometry->sectors_per_track;
 
 	return true;
 }
@@ -101,7 +101,7 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 
 		uint16_t sector   = (read_sector % geometry.sectors_per_track) + 1;
 		uint16_t cylinder =  read_sector / geometry.sectors_per_cylinder;
-		uint16_t head     = (read_sector / geometry.sectors_per_track) % geometry.heads;
+		uint16_t head     = (read_sector / geometry.sectors_per_track) % ((uint16_t)(geometry.heads)+1);
 
 		if (head > 255 || cylinder > 1023 || sector > 63) return false;
 
