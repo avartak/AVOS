@@ -46,9 +46,9 @@ bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 	if (num_sectors == 0) return false;
 
     struct BIOS_Registers BIOS_regs;
-	struct DiskIO_DAP dap;
-
 	BIOS_ClearRegistry(&BIOS_regs);
+
+	struct DiskIO_DAP dap;
 
 	dap.size = 0x10;
 	dap.unused1 = 0;
