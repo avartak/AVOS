@@ -3,7 +3,7 @@
 
 uint8_t DiskIO_LowMemoryBuffer[512];
 
-bool DiskIO_GetGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
+bool DiskIO_GetCHSGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 
     struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
@@ -88,7 +88,7 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 	if (0xFFFFFFFF - disk_start_sector_lo < num_sectors) return false;
 
 	struct DiskIO_Geometry geometry;
-	if (!DiskIO_GetGeometry(drive, &geometry)) return false;
+	if (!DiskIO_GetCHSGeometry(drive, &geometry)) return false;
 
     struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
