@@ -56,12 +56,14 @@ AVBL32:
     ; Store information needed to load the kernel
 
     mov  [Kernel_Info.boot_drive_ID], dl
-
     mov  [Kernel_Info.boot_partition], esi
 
-	mov  eax, DWORD [esi+0x08]
+	mov  eax, DWORD [ebp]
+	mov  ebx, DWORD [ebp+4]
     add  eax, KERNEL_PART_START
+    adc  ebx, 0
     mov  [Kernel_Info.disk_start], eax
+    mov  [Kernel_Info.disk_start+4], ebx
 
     mov  eax, KERNEL_IMAGE_START
     mov  [Kernel_Info.image_start], eax
@@ -166,12 +168,11 @@ Kernel_Info:
 	.boot_partition    resd 1
 	.image_size        resd 1
 	.image_start       resd 1
-	.disk_start        resd 1
+	.disk_start        resq 1
 	.start             resd 1
 	.multiboot_header  resd 1
 	.entry             resd 1
 	.size              resd 1
-	.reserved          resd 1
 
 ; Multiboot information (MBI) table
 

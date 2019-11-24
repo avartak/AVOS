@@ -38,7 +38,7 @@ bool DiskIO_CheckForBIOSExtensions(uint8_t drive) {
     return true;
 }
 
-bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
+bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector_lo, uint32_t disk_start_sector_hi, size_t num_sectors) {
 
 	if (!DiskIO_CheckForBIOSExtensions(drive)) return false;
 	if (num_sectors == 0) return false;
@@ -54,8 +54,8 @@ bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 	dap.unused2 = 0;
 	dap.memory_offset   = (uintptr_t)DiskIO_LowMemoryBuffer & 0xF;
 	dap.memory_segment  = (uintptr_t)DiskIO_LowMemoryBuffer >> 4;
-	dap.start_sector_lo = disk_start_sector;
-	dap.start_sector_hi = 0;
+	dap.start_sector_lo = disk_start_sector_lo;
+	dap.start_sector_hi = disk_start_sector_hi;
 
 	uintptr_t mem_pos = mem_start_addr;
 
@@ -79,10 +79,11 @@ bool DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
     return true;
 }
 
-bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
+bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector_lo, uint32_t disk_start_sector_hi, size_t num_sectors) {
 
     if (num_sectors == 0) return false;
-	if (0xFFFFFFFF - disk_start_sector < num_sectors) return false;
+	if (disk_start_sector_hi > 0) return false;
+	if (0xFFFFFFFF - disk_start_sector_lo < num_sectors) return false;
 
 	struct DiskIO_Geometry geometry;
 	if (!DiskIO_GetGeometry(drive, &geometry)) return false;
@@ -91,7 +92,7 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 	BIOS_ClearRegistry(&BIOS_regs);
 
     uintptr_t mem_pos  = mem_start_addr;
-	uint32_t  read_sector = disk_start_sector;
+	uint32_t  read_sector = disk_start_sector_lo;
 
     for (size_t i = 0; i < num_sectors; i++) {
         BIOS_regs.eax = 0x0201;
@@ -121,10 +122,10 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
     return true;
 }
 
-size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector, size_t num_sectors) {
-	bool read_success = DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector, num_sectors);
+size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_start_sector_lo, uint32_t disk_start_sector_hi, size_t num_sectors) {
+	bool read_success = DiskIO_ReadUsingLBA(drive, mem_start_addr, disk_start_sector_lo, disk_start_sector_hi, num_sectors);
 	if (!read_success) {
-		read_success  = DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector, num_sectors);
+		read_success  = DiskIO_ReadUsingCHS(drive, mem_start_addr, disk_start_sector_lo, disk_start_sector_hi, num_sectors);
 	}
 	if (!read_success) return 0;
 	return num_sectors * DISKIO_SECTOR_SIZE;

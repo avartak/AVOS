@@ -77,7 +77,7 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	size_t    load_size     = file_size;
 	size_t    bss_size      = 0;
 
-	if (DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kernel_info->disk_start, num_sectors) == 0) return false;
+	if (DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kernel_info->disk_start_lo, kernel_info->disk_start_hi, num_sectors) == 0) return false;
 
 	uintptr_t multiboot_header_ptr = Multiboot_GetHeader(image, file_size);
 	if (multiboot_header_ptr == 0) return 0;
