@@ -10,12 +10,12 @@ struct Multiboot_Kernel_Info {
 	uint32_t  boot_partition;
 	size_t    image_size;
 	uintptr_t image_start;
-	uintptr_t disk_start;
+	uintptr_t disk_start_lo;
+	uintptr_t disk_start_hi;
 	uintptr_t start;
 	uintptr_t multiboot_header;
 	uintptr_t entry;
 	size_t    size;
-	uint32_t  reserved;
 }__attribute__((packed));
 
 extern uintptr_t Multiboot_GetHeader             (uintptr_t start_addr, size_t size);
