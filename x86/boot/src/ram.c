@@ -110,31 +110,67 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 }
 
 uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
-	size_t table_size  = 0;
-	struct Info64_Entry* table_ptr = (struct Info64_Entry*)(addr);
-	table_ptr->address = 0;
-	table_ptr->size = 0;
+    size_t table_size  = 0;
+    struct Info64_Entry* table_ptr = (struct Info64_Entry*)(addr);
+    table_ptr->address = 0;
+    table_ptr->size = 0;
 
-	uint64_t mem = 0;
+	// Create a map of free memory from the E820 entries 
 	uint64_t mem_end = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
-	while (mem < mem_end) {
-		mem += MEMORY_SIZE_PAGE;
-		if (mem < mem-MEMORY_SIZE_PAGE || mem > mem_end) break;
-
-		if (RAM_IsMemoryPresent(mem-MEMORY_SIZE_PAGE, mem, E820_Table, E820_Table_size)) {
-			if (table_ptr->size == 0) table_size++;
-			table_ptr->size += MEMORY_SIZE_PAGE;
+	while (table_ptr->address < mem_end) {
+		uint64_t addr_limit = ~((uint64_t)0);
+		uint64_t closest_boundary = addr_limit;
+		for (size_t i = 0; i < E820_Table_size; i++) {
+			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
+			if (E820_Table[i].base >= table_ptr->address && E820_Table[i].base < closest_boundary) closest_boundary = E820_Table[i].base;
 		}
-		else {
-			if (table_ptr->size == 0) table_ptr->address = mem;
-			else {
-				table_ptr++;
-				table_ptr->address = mem;
-				table_ptr->size = 0;
+		if (closest_boundary == addr_limit) break;
+
+		table_ptr->address = closest_boundary;
+		table_ptr->size = 0;
+		for (size_t i = 0; i < E820_Table_size; i++) {
+			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
+			if (E820_Table[i].base <= table_ptr->address && E820_Table[i].base + E820_Table[i].size >= table_ptr->address + table_ptr->size) {
+				table_ptr->size = E820_Table[i].base + E820_Table[i].size - table_ptr->address;
+			}
+			if (E820_Table[i].base >  table_ptr->address && E820_Table[i].base + E820_Table[i].size >= table_ptr->address + table_ptr->size) {
+				if (E820_Table[i].base > table_ptr->address + table_ptr->size) continue;
+				table_ptr->size = E820_Table[i].base + E820_Table[i].size - table_ptr->address;
 			}
 		}
+		table_ptr++;
+		table_size++;
+		table_ptr->address = (table_ptr-1)->address + (table_ptr-1)->size + 1;
 	}
-	table_size *= sizeof(struct Info64_Entry);
 
-	return addr + table_size;
+	// Adjust the entries on 4KB boundaries
+    table_ptr = (struct Info64_Entry*)(addr);
+	for (size_t i = 0; i < table_size; i++) {
+		uint64_t min_addr = table_ptr[i].address;
+		uint64_t mask = ~((uint64_t)(0xFFF));
+		if ((min_addr & mask) < min_addr) min_addr = mask + (min_addr & mask);
+		uint64_t max_addr = (table_ptr[i].address + table_ptr[i].size) & mask;
+		if (max_addr > min_addr) {
+			table_ptr[i].address = min_addr;
+			table_ptr[i].size = max_addr - min_addr;
+		}
+		else {
+			table_ptr[i].address = 0;
+			table_ptr[i].size = 0;
+		}
+	}
+
+	// Remove entries that are reduced to 0-size after 4KB boundary adjustment
+	for (size_t i = 0; i < table_size; i++) {
+		if (table_ptr[i].size == 0) {
+			for (size_t j = i+i; j < table_size; j++) {
+				table_ptr[j-1].address = table_ptr[j].address;
+				table_ptr[j-1].size = table_ptr[j].size;
+			}
+			table_size--;
+		}
+	}
+
+    return addr + table_size * sizeof(struct Info64_Entry);
 }
+
