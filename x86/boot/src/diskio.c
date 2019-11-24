@@ -108,8 +108,8 @@ bool DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t mem_start_addr, uint32_t disk_
 
 		if (head > 255 || cylinder > 1023 || sector > 63) return false;
 
-		BIOS_regs.ecx  = (cylinder << 8) + ((cylinder >> 2) & 0xC0) + sector;
-		BIOS_regs.edx +=  head << 8;
+		BIOS_regs.ecx  = ((cylinder & 0xFF) << 8) | ((cylinder & 0x300) >> 2) | sector;
+		BIOS_regs.edx |=  head << 8;
 
         BIOS_Interrupt(0x13, &BIOS_regs);
         if ((BIOS_regs.flags & 1) == 1 || (BIOS_regs.eax & 0xFF) != 1) break;
