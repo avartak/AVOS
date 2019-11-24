@@ -90,11 +90,13 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 	uint64_t mem_max = RAM_MaxPresentMemoryAddress(E820_Table, E820_Table_size);
 	if (min >= mem_max || max > mem_max) return false;
 
+	// First check if the memory range is covered by a single entry 
 	for (size_t i = 0; i < E820_Table_size; i++) {
 		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 		if (E820_Table[i].base <= min && E820_Table[i].base + E820_Table[i].size >= max) return true;
 	}
 	
+	// Next check if the memory range is covered by multiple entries
 	for (size_t i = 0; i < E820_Table_size; i++) {
 		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 		uint8_t fit = 0;
