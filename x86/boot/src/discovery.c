@@ -9,7 +9,7 @@ uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 
 	BIOS_regs.eax = 0x00005304;
     BIOS_Interrupt(0x15, &BIOS_regs);
-    if ((BIOS_regs.flags & 1) == 1 && (BIOS_regs.eax & 0xFF00 >> 8) != 3) return addr;
+    if ((BIOS_regs.flags & 1) == 1 || (BIOS_regs.eax & 0xFF00 >> 8) != 3) return addr;
 
     BIOS_ClearRegistry(&BIOS_regs);
     BIOS_regs.eax = 0x00005300;
