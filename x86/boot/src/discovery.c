@@ -78,14 +78,14 @@ uintptr_t Discovery_StoreSMBIOSInfo(uintptr_t addr) {
 	struct Multiboot_SMBIOS_EntryPointTable* smbios_ept = (struct Multiboot_SMBIOS_EntryPointTable*)mem;
 
 	// First two bytes contain the version information; nexy 6 bytes are reserved	
-	uint8_t* rev = (uint8_t*)addr;
-	rev[0] = smbios_ept->major_version;
-	rev[1] = smbios_ept->minor_version;
-	for (size_t i = 2; i < 8; i++) rev[i] = 0;
+	uint8_t* ver = (uint8_t*)addr;
+	ver[0] = smbios_ept->major_version;
+	ver[1] = smbios_ept->minor_version;
+	for (size_t i = 2; i < 8; i++) ver[i] = 0;
 	
 	// Then we copy all the SMBIOS tables starting with the entry point table (not clear if the EPT should be included)
 	uint8_t* src = (uint8_t*)mem;
-	uint8_t* dst = rev + 8;
+	uint8_t* dst = ver + 8;
 	memmove(dst, src, smbios_ept->length);
 
 	// Now copy all the SMBIOS tables (the starting address and the total size of all tables is in the EPT)
@@ -109,9 +109,9 @@ uintptr_t Discovery_StoreACPIInfo(uintptr_t addr, bool old) {
 	// The Root System Description Pointer (RSDP) can be found either in the first KB of the EBDA (the 16-bit segment pointing to the EBDA is located ar 0x40E)
 	// Or it can be found in the range 0xE0000 - 0x100000
     bool found = false;
-    uintptr_t ebda_ptr = (uintptr_t)(((uint16_t*)0x40E)[0]) << 4;
-	uintptr_t ptr = ebda_ptr;
-    for (; ptr < 0x100000; ptr = (ptr + 0x10 == ebda_ptr + 0x400 ? 0xE0000 : ptr + 0x10)) {
+	uintptr_t ptr = (uintptr_t)(((uint16_t*)0x40E)[0]) << 4;
+	uintptr_t ebda_1kb = ptr + 0x400;
+    for (; ptr < 0x100000; ptr = (ptr + 0x10 == ebda_1kb ? 0xE0000 : ptr + 0x10)) {
         if (((uint8_t*)ptr)[0] != 'R') continue;
         if (((uint8_t*)ptr)[1] != 'S') continue;
         if (((uint8_t*)ptr)[2] != 'D') continue;
