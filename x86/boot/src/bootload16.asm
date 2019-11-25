@@ -36,6 +36,34 @@ BITS 16
 
 AVBL16:
 
+	jmp   Code
+	nop
+	nop
+
+    BlockList:
+
+    ; We reserve the next 124 bytes for the blocklist corresponding to the kernel code on disk
+    ; This is basically a table containing (up to) 12 ten-byte entries
+    ; The first 4 bytes of the blocklist contain the 32-bit start address where the kernel is loaded in memory
+    ; Then come the blocklist entries
+    ; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the code
+    ; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
+    ; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
+
+    .Load_Offset          dw BOOTLOADER_ADDRESS
+    .Load_Segment         dw 0
+
+    .Block1_LBA           dq 0x800
+    .Block1_Num_Sectors   dw 0x800
+
+	times 124+4-($-$$)    db 0                                          ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	; This is where the code starts
+
+	Code:
+
 	; Expect the stack to be appropriately set up when control is handed over here
 	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
 	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
@@ -92,6 +120,11 @@ AVBL16:
 	add   edi, eax
 
 	pop   dx
+
+	; Set up the switch to protected mode
+	; First disable interrupts
+
+	cli
 
 	; Load a valid GDT (See the GDT description at the end)
 
