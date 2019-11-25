@@ -1,6 +1,7 @@
 #include <x86/boot/include/io.h>
 #include <x86/boot/include/bios.h>
 
+// Clear screen
 void IO_ClearScreen() {
     char* screen = (char*)0xB8000;
 
@@ -12,6 +13,7 @@ void IO_ClearScreen() {
     }
 }
 
+// Print the banner for the 'AVBL' bootloader 
 void IO_PrintBanner() {
 
     char* screen = (char*)0xB8000;
@@ -36,7 +38,7 @@ void IO_PrintBanner() {
     return;
 }
 
-
+// Print a character at a certain location on screen
 void IO_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
@@ -51,6 +53,7 @@ void IO_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color) {
 
 }
 
+// Print a character starting at a certain location on screen
 void IO_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
@@ -66,6 +69,7 @@ void IO_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t co
 	}
 }
 
+// Print a 32-bit unsigned integer in hex format at a certain location on screen
 void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
@@ -108,6 +112,7 @@ void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 
 }
 
+// Read a character from the keyboard
 char IO_ReadChar() {
 
     struct BIOS_Registers BIOS_regs;
@@ -121,6 +126,7 @@ char IO_ReadChar() {
 
 }
 
+// Place the cursor at a certain location on screen
 void IO_SetCursorPosition(uint8_t line, uint8_t column) {
 
     struct BIOS_Registers BIOS_regs;
@@ -132,6 +138,7 @@ void IO_SetCursorPosition(uint8_t line, uint8_t column) {
     BIOS_Interrupt(0x10, &BIOS_regs);
 }
 
+// Make the cursor invisible (no more blinking dash)
 void IO_MakeCursorInvisible() {
 
     struct BIOS_Registers BIOS_regs;
@@ -144,6 +151,7 @@ void IO_MakeCursorInvisible() {
 
 }
 
+// Make the cursor visible
 void IO_MakeCursorVisible() {
 
     struct BIOS_Registers BIOS_regs;
@@ -156,6 +164,9 @@ void IO_MakeCursorVisible() {
 
 }
 
+// Read a command string from the keyboard and print it on the screen
+// Input ends when enter is pressed (ASCII code 0x0D)
+// At most 0x400 characters allowed
 void IO_ReadCommand(char* buffer) {
 
 	uint8_t start_line   = 2;
@@ -181,8 +192,13 @@ void IO_ReadCommand(char* buffer) {
 	IO_PrintChar(']', line, column++, color);
 
 	while (true) {
+		// Set the cursor position on the current line/column
 		IO_SetCursorPosition(line, column);
+
+		// Read character from keyboard
 		char c = IO_ReadChar();
+
+		// If the character is alphanumeric print it at the current location and advance the line/column
 		if (c >= 0x20 && c < 0x7F) {
 			IO_PrintChar(c, line, column, color);
 			if (column == 79) {
@@ -192,10 +208,14 @@ void IO_ReadCommand(char* buffer) {
 			else column++;
 			buffer[pos++] = c;
 		}
+
+		// If an enter key was pressed then null-terminate the input buffer and end
 		if (c == 0x0D) {
 			buffer[pos] = '\0';
 			break;
 		}
+
+		// If a backspace was pressed then delete the characted at the current position (replace with a space) and move back the current location by one
 		if (c == 8) {
 			if (line == start_line && column == start_column+7) continue;
 			else if (column == 0) {
@@ -207,6 +227,7 @@ void IO_ReadCommand(char* buffer) {
 			pos--;
 		}
 
+		// If the input buffer is full (0x400 characters read) then issue a message that the buffer is full and ask the user to press enter to continue
 		if (line == end_line && column == end_column) {
 			IO_PrintString("Command line buffer full. Press enter to continue", 23, 0, 0x04);
 			while (IO_ReadChar() != 0x0D) {
