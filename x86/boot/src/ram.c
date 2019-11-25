@@ -4,6 +4,7 @@
 
 uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 
+	// INT 0x12 is the most reliable way to get the size of low memory; but it does not give a map if usable areas
     struct BIOS_Registers BIOS_regs;
     BIOS_ClearRegistry(&BIOS_regs);
 
@@ -12,6 +13,10 @@ uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 	size_t memory_lower = BIOS_regs.eax & 0xFFFF;
 	size_t memory_upper = 0;
 
+	// To get the size of upper memory (above the 1 MB limit placed by the 20-bit real addressing) we first try INT 0x15, AX=0xE801
+	// This routine knows about the 1MB memory hole at address 15 MB, but stops at the next hole / reserved area. 
+	// Gives the available memory in KB between 1-15 MB in CX, and the available memory in 64 KB above 16 MB in DX
+	// If CX contains zero before and after the routine, check AX/BX instead
 	BIOS_ClearRegistry(&BIOS_regs);
 	BIOS_regs.eax = 0xE801;
 	BIOS_Interrupt(0x15, &BIOS_regs);
@@ -20,6 +25,8 @@ uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 		if ((BIOS_regs.ecx & 0xFFFF) != 0) memory_upper += (BIOS_regs.ecx & 0xFFFF) + (BIOS_regs.edx & 0xFFFF)*0x40;
 		else memory_upper += (BIOS_regs.eax & 0xFFFF) + (BIOS_regs.ebx & 0xFFFF)*0x40;
 	}
+	// If INT 0x15, AX=0xE801 didn't work, we try INT 0x15, AX=0x88
+	// This function may stop itself at 15 MB
 	else {
 		BIOS_ClearRegistry(&BIOS_regs);
 		BIOS_regs.eax = 0x88;
@@ -39,6 +46,21 @@ uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 }
 
 uintptr_t RAM_StoreE820Info(uintptr_t addr) {
+
+	// INT 0x15, EAX = 0xE820 is the best way to get the detailed memory map of the system
+	// Memory map is set up at the designated memory address in ES:DI
+	// Each entry in the map is typically 20 bytes, but can be 24-byte long
+	// First 8 bytes carry the 64-bit start address of the memory block
+	// Next 8 bytes carry the size of the memory block 
+	// Next 4 bytes carry the type information about the memory
+	// - 1 : Usable or available or free RAM
+	// - 2 : Reserved (do not use)
+	// - 3 : ACPI reclaimable memory 
+	// - 4 : ACPI NVS memory
+	// - 5 : Bad memory
+	// Last 4 bytes if available are meant for ACPI 3.0 extensions
+	// Bit 0 of the last 4 bytes : If clear then ignore the block
+	// Bit 1 of the last 4 bytes : If set then the memory in the entry is non-volatile
 
     struct Multiboot_E820_Entry* current_entry = (struct Multiboot_E820_Entry*)addr;
 
@@ -72,6 +94,9 @@ uintptr_t RAM_StoreE820Info(uintptr_t addr) {
 
 uint64_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
 
+	// Find the maximum memory address that exists physically and is available
+	// Iterate over the E820 memory map to get this information
+
 	uint64_t mem_max = 0;
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem_max;
 	for (size_t i = 0; i < E820_Table_size; i++) {
@@ -98,22 +123,17 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 	
 	// Next check if the memory range is covered by multiple entries
 	for (size_t i = 0; i < E820_Table_size; i++) {
+		uint64_t e820_entry_end = E820_Table[i].base + E820_Table[i].size;
 		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-		uint8_t fit = 0;
-		if (E820_Table[i].base <= min && E820_Table[i].base + E820_Table[i].size > min) fit += 1;
-		if (E820_Table[i].base + E820_Table[i].size >= max && E820_Table[i].base < max) fit += 2;
-		
-		if      (fit == 0) continue;
-		else if (fit == 1) return RAM_IsMemoryPresent(E820_Table[i].base + E820_Table[i].size, max, E820_Table, E820_Table_size);
-		else if (fit == 2) return RAM_IsMemoryPresent(min, E820_Table[i].base, E820_Table, E820_Table_size);
-		else return true;
+		if (E820_Table[i].base <= min && e820_entry_end > min) return RAM_IsMemoryPresent(e820_entry_end, max, E820_Table, E820_Table_size);
+		if (e820_entry_end >= max && E820_Table[i].base < max) return RAM_IsMemoryPresent(min, E820_Table[i].base, E820_Table, E820_Table_size);
 	}
 	return false;
 }
 
 uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
     size_t table_size  = 0;
-    struct Info64_Entry* table_ptr = (struct Info64_Entry*)(addr);
+    struct Block64_Entry* table_ptr = (struct Block64_Entry*)(addr);
     table_ptr->address = 0;
     table_ptr->size = 0;
 
@@ -132,13 +152,8 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 		table_ptr->size = 0;
 		for (size_t i = 0; i < E820_Table_size; i++) {
 			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-			if (E820_Table[i].base <= table_ptr->address && E820_Table[i].base + E820_Table[i].size >= table_ptr->address + table_ptr->size) {
-				table_ptr->size = E820_Table[i].base + E820_Table[i].size - table_ptr->address;
-			}
-			if (E820_Table[i].base >  table_ptr->address && E820_Table[i].base + E820_Table[i].size >= table_ptr->address + table_ptr->size) {
-				if (E820_Table[i].base > table_ptr->address + table_ptr->size) continue;
-				table_ptr->size = E820_Table[i].base + E820_Table[i].size - table_ptr->address;
-			}
+			uint64_t e820_entry_end = E820_Table[i].base + E820_Table[i].size;
+			if (E820_Table[i].base <= table_ptr->address && e820_entry_end >= table_ptr->address + table_ptr->size) table_ptr->size = e820_entry_end - table_ptr->address;
 		}
 		table_ptr++;
 		table_size++;
@@ -146,7 +161,7 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 	}
 
 	// Adjust the entries on 4KB boundaries
-    table_ptr = (struct Info64_Entry*)(addr);
+    table_ptr = (struct Block64_Entry*)(addr);
 	for (size_t i = 0; i < table_size; i++) {
 		uint64_t min_addr = table_ptr[i].address;
 		uint64_t mask = ~((uint64_t)(0xFFF));
@@ -173,6 +188,6 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 		}
 	}
 
-    return addr + table_size * sizeof(struct Info64_Entry);
+    return addr + table_size * sizeof(struct Block64_Entry);
 }
 
