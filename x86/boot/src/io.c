@@ -108,17 +108,6 @@ void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 
 }
 
-void IO_SetCursorPosition(uint8_t line, uint8_t column) {
-
-    struct BIOS_Registers BIOS_regs;
-    BIOS_ClearRegistry(&BIOS_regs);
-
-    BIOS_regs.eax = 0x0200;
-    BIOS_regs.edx = (line << 8) + column;
-
-    BIOS_Interrupt(0x10, &BIOS_regs);
-}
-
 char IO_ReadChar() {
 
     struct BIOS_Registers BIOS_regs;
@@ -130,6 +119,17 @@ char IO_ReadChar() {
     if ((BIOS_regs.flags & 1) == 1) return 0;
 	else return BIOS_regs.eax & 0xFF;
 
+}
+
+void IO_SetCursorPosition(uint8_t line, uint8_t column) {
+
+    struct BIOS_Registers BIOS_regs;
+    BIOS_ClearRegistry(&BIOS_regs);
+
+    BIOS_regs.eax = 0x0200;
+    BIOS_regs.edx = (line << 8) + column;
+
+    BIOS_Interrupt(0x10, &BIOS_regs);
 }
 
 void IO_MakeCursorInvisible() {
