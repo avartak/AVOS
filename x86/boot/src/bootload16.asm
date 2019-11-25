@@ -51,8 +51,7 @@ AVBL16:
     ; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
     ; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
-    .Load_Offset          dw BOOTLOADER_ADDRESS
-    .Load_Segment         dw 0
+    .Load_Address         dd 0x100000
 
     .Block1_LBA           dq 0x800
     .Block1_Num_Sectors   dw 0x800
@@ -122,7 +121,6 @@ AVBL16:
 	add   edi, eax
 
 	mov   ebx, BlockList
-
 	pop   dx
 
 	; Set up the switch to protected mode

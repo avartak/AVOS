@@ -10,9 +10,6 @@
 
 STACK_TOP               equ 0x7C00                                      ; Top of the stack
 KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
-KERNEL_IMAGE_START      equ 0x100000                                    ; Kernel ELF executable is loaded at physical memory location of 1 MB
-KERNEL_IMAGE_SIZE       equ 0x100000                                    ; Size of the kernel image in bytes
-KERNEL_PART_START       equ 0x0800                                      ; Starting sector of the kernel on the partition (1 MB offset)
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video buffer for the 80x25 VBE text mode
 
@@ -60,23 +57,10 @@ AVBL32:
     mov  [Kernel_Info.boot_drive_ID], dl
     mov  [Kernel_Info.boot_partition], esi
     mov  [Kernel_Info.blocklist_ptr], ebx
-
-	mov  eax, DWORD [ebp]
-	mov  ebx, DWORD [ebp+4]
-    add  eax, KERNEL_PART_START
-    adc  ebx, 0
-    mov  [Kernel_Info.disk_start], eax
-    mov  [Kernel_Info.disk_start+4], ebx
-
-    mov  eax, KERNEL_IMAGE_START
-    mov  [Kernel_Info.image_start], eax
+    mov  [Kernel_Info.part_info_ptr], ebp
 
     mov  eax, KERNEL_START
     mov  [Kernel_Info.start], eax
-
-    mov  eax, KERNEL_IMAGE_SIZE
-    mov  [Kernel_Info.image_size], eax
-
 
 	; Print the AVOS boot loader banner
 
@@ -169,15 +153,12 @@ global Kernel_Info
 Kernel_Info:
 	.boot_drive_ID     resd 1
 	.boot_partition    resd 1
-	.image_size        resd 1
-	.image_start       resd 1
-	.disk_start        resq 1
+	.part_info_ptr     resd 1
 	.blocklist_ptr     resd 1
 	.start             resd 1
 	.multiboot_header  resd 1
 	.entry             resd 1
 	.size              resd 1
-	.reserved          resd 1
 
 ; Multiboot information (MBI) table
 
