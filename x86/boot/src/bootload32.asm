@@ -59,6 +59,7 @@ AVBL32:
 
     mov  [Kernel_Info.boot_drive_ID], dl
     mov  [Kernel_Info.boot_partition], esi
+    mov  [Kernel_Info.blocklist_ptr], ebx
 
 	mov  eax, DWORD [ebp]
 	mov  ebx, DWORD [ebp+4]
@@ -171,10 +172,12 @@ Kernel_Info:
 	.image_size        resd 1
 	.image_start       resd 1
 	.disk_start        resq 1
+	.blocklist_ptr     resd 1
 	.start             resd 1
 	.multiboot_header  resd 1
 	.entry             resd 1
 	.size              resd 1
+	.reserved          resd 1
 
 ; Multiboot information (MBI) table
 

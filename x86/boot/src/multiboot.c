@@ -62,7 +62,7 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	uintptr_t image         = kernel_info->image_start;
 	size_t    file_size     = kernel_info->image_size;
 	uintptr_t start_addr    = kernel_info->start;
-	size_t    num_sectors   = (kernel_info->image_size % 0x200 == 0 ? kernel_info->image_size/0x200 : 1 + kernel_info->image_size/0x200);
+	size_t    num_sectors   = (file_size % 0x200 == 0 ? file_size/0x200 : 1 + file_size/0x200);
 
 	bool      reloc         = false;
 	uintptr_t start_min     = start_addr;
