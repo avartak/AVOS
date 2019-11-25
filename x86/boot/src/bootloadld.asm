@@ -24,19 +24,18 @@ BITS 16
 ; This is where the VBR boot code starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 AVBL:
 
-	jmp   AVBL_Code
+	jmp   Code
+	nop
 	nop
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	BlockList:
 
-	AVBL_BlockList:
-
-	; We reserve the next 128 bytes for the blocklist corresponding to the bootloader code on disk
+	; We reserve the next 124 bytes for the blocklist corresponding to the bootloader code on disk
 	; This is basically a table containing (up to) 12 ten-byte entries
-	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the bootloader code in memory
-	; The next 4 bytes are reserved
+	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the code in memory
 	; Then come the blocklist entries
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
 	; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
@@ -45,34 +44,16 @@ AVBL:
 	.Load_Offset          dw BOOTLOADER_ADDRESS
 	.Load_Segment         dw 0
 
-	.Reserved             dd 0
-
 	.Block1_LBA           dq 9
 	.Block1_Num_Sectors   dw 0x40-1
 
-	times 128+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 reserved byte
-
-	CHS_Geometry:
-	.Sectors_Per_Track    db 18
-	.Sectors_Per_Cylinder dw 36
-
-	DAP:
-	.Size                 db 0x10
-	.Unused1              db 0
-	.Sectors_Count        db 0
-	.Unused2              db 0
-	.Memory_Offset        dw 0
-	.Memory_Segment       dw 0
-	.Start_Sector         dq 0
-
-	Messages:
-	.DiskIOErr            db 'Unable to load AVOS', 0
+	times 124+4-($-$$)    db 0                             ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	; This is where the VBR code starts
+	; This is where the code starts
 
-	AVBL_Code:
+	Code:
 
 	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
 	; Expect DL to be 1 if INT 0x13 extensions for disk read using LBA scheme exist, and 0 if we need to resort to CHS addressing
@@ -113,9 +94,9 @@ AVBL:
 	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
 
 	SaveBlockListInfo:
-	mov   ebx, [AVBL_BlockList]
+	mov   ebx, [BlockList]
 	mov   [DAP.Memory_Offset], ebx
-	mov   di, AVBL_BlockList.Block1_LBA                    ; Save the starting address of the bootloader blocklist entries
+	mov   di, BlockList.Block1_LBA                         ; Save the starting address of the bootloader blocklist entries
 	
 	ReadLoop:
 	cmp   WORD [di+8], 0                                   ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
@@ -219,9 +200,9 @@ AVBL:
 	pop   di
 	pop   es
 	pop   dx
-	mov   ax, [AVBL_BlockList+2]
+	mov   ax, [BlockList+2]
 	push  ax
-	mov   ax, [AVBL_BlockList]
+	mov   ax, [BlockList]
 	push  ax
 	retf
 	
@@ -243,6 +224,26 @@ AVBL:
 	cli
 	hlt
 	jmp   .printdone
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	; Some data/information we need
+
+	CHS_Geometry:
+	.Sectors_Per_Track    db 18
+	.Sectors_Per_Cylinder dw 36
+	
+	DAP:
+	.Size                 db 0x10
+	.Unused1              db 0
+	.Sectors_Count        db 0
+	.Unused2              db 0
+	.Memory_Offset        dw 0
+	.Memory_Segment       dw 0
+	.Start_Sector         dq 0
+	
+	Messages:
+	.DiskIOErr            db 'Unable to load AVOS', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

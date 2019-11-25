@@ -38,36 +38,19 @@ BITS 16
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 VBR:
 
-	jmp   VBR_Code
+	jmp   Code
+	nop
 	nop
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	; We reserve the next 124 bytes of the VBR for any filesystem related data structure (e.g. the BIOS Parameter Block in FAT file systems)
 
-	; We reserve the next 128 bytes of the VBR for any filesystem related data structure (e.g. the BIOS Parameter Block in FAT file systems)
-
-	times 128+4-($-$$)    db 0                             ; The 4 accounts for the 3 bytes taken up by the JMP instruction + 1 byte for nop
-
-	DAP:                                                   ; We put the DAP at a known offset of 132 bytes from the start of the VBR
-	.Size                 db 0x10                          ; The start sector (relative to the partition) of the bootloader loader can be modified when installing the OS
-	.Unused1              db 0
-	.Sectors_Count        db 1                             ; The bootloader loader is exactly one sector in size
-	.Unused2              db 0
-	.Memory_Offset        dw LOAD_ADDRESS                  ; Where to put the bootloader loader in memory
-	.Memory_Segment       dw 0
-	.Start_Sector         dq BOOTLOADLD_PART_START
-
-	CHS_Geometry:                                          ; We put the CHS geometry (and a flag byte indicating of CHS access is needed) at an offset of 148 bytes 
-	.Sectors_Per_Track    db 18                            ; Software downstream can directly import this information if need be
-	.Sectors_Per_Cylinder dw 36                            ; The VBR is relocated to VBR_RELOC_ADDRESS --> Downstream software will need to know this to be able to access CHS geometry
-
-	Messages:
-	.DiskIOErr            db 'Unable to load AVOS', 0
+	times 124+4-($-$$)    db 0                             ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	; This is where the VBR code starts
+	; This is where the code starts
 
-	VBR_Code:
+	Code:
 
 	; We don't want any interrupts right now.
 	
@@ -253,6 +236,26 @@ VBR:
     hlt
     jmp   .printdone
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	; Some data/information we need
+
+	DAP:                                                   ; We put the DAP at a known offset of 132 bytes from the start of the VBR
+	.Size                 db 0x10                          ; The start sector (relative to the partition) of the bootloader loader can be modified when installing the OS
+	.Unused1              db 0
+	.Sectors_Count        db 1                             ; The bootloader loader is exactly one sector in size
+	.Unused2              db 0
+	.Memory_Offset        dw LOAD_ADDRESS                  ; Where to put the bootloader loader in memory
+	.Memory_Segment       dw 0
+	.Start_Sector         dq BOOTLOADLD_PART_START
+	
+	CHS_Geometry:                                          ; We put the CHS geometry (and a flag byte indicating of CHS access is needed) at an offset of 148 bytes 
+	.Sectors_Per_Track    db 18                            ; Software downstream can directly import this information if need be
+	.Sectors_Per_Cylinder dw 36                            ; The VBR is relocated to VBR_RELOC_ADDRESS --> Downstream software will need to know this to be able to access CHS geometry
+	
+	Messages:
+	.DiskIOErr            db 'Unable to load AVOS', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
