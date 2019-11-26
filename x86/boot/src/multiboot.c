@@ -59,11 +59,11 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
 	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return false;
 
-	uint16_t* blocklist_ptr = (uint16_t*)(kernel_info->blocklist_ptr + 4);
+	uint32_t* blocklist_ptr = (uint32_t*)(kernel_info->blocklist_ptr + 4);
 	uintptr_t image         = ((uintptr_t*)(kernel_info->blocklist_ptr))[0];
 	uintptr_t start_addr    = kernel_info->start;
 	size_t    file_size     = 0;
-	for (size_t i = 0; blocklist_ptr[i+4] != 0; i = i + 5) file_size += blocklist_ptr[i+4] * 0x200;
+	for (size_t i = 0; blocklist_ptr[i+2] != 0  && i < 10; i+=3) file_size += blocklist_ptr[i+2] * 0x200;
 
 	bool      reloc         = false;
 	uintptr_t start_min     = start_addr;
@@ -78,11 +78,11 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	size_t    load_size     = file_size;
 	size_t    bss_size      = 0;
 
-	for (size_t i = 0; blocklist_ptr[i+4] != 0; i = i + 5) {
+	for (size_t i = 0; blocklist_ptr[i+2] != 0 && i < 10; i+=3) {
 		uint64_t* part_ptr   = (uint64_t*)(kernel_info->part_info_ptr);
 		uint64_t* offset_ptr = (uint64_t*)(blocklist_ptr + i);
 		uint64_t lba = part_ptr[0] + offset_ptr[0];
-		if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)((lba >> 32) & 0xFFFFFFFF), blocklist_ptr[i+4])) return false;
+		if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)((lba >> 32) & 0xFFFFFFFF), blocklist_ptr[i+2])) return false;
 	}
 
 	uintptr_t multiboot_header_ptr = Multiboot_GetHeader(image, file_size);

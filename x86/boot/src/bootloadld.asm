@@ -32,18 +32,17 @@ AVBL:
 	BlockList:
 
 	; We reserve the next 124 bytes for the blocklist corresponding to the bootloader code on disk
-	; This is basically a table containing (up to) 12 ten-byte entries
+	; This is basically a table containing (up to) 10 twelve-byte entries
 	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the code in memory
 	; Then come the blocklist entries
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
-	; The last 2 bytes contain the size of the block (number of contiguous sectors to be read out)
+	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
-	.Load_Offset          dw BOOTLOADER_ADDRESS
-	.Load_Segment         dw 0
+	.Load_Address         dd BOOTLOADER_ADDRESS
 
 	.Block1_LBA           dq 9
-	.Block1_Num_Sectors   dw 0x40-1
+	.Block1_Num_Sectors   dd 0x40-1
 
 	times 124+4-($-$$)    db 0                             ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
 
@@ -92,12 +91,10 @@ AVBL:
 	mov   [CHS_Geometry.Sectors_Per_Cylinder], ax          
 
 	SaveBlockListInfo:
-	mov   ebx, [BlockList]
-	mov   [DAP.Memory_Offset], ebx
 	mov   di, BlockList.Block1_LBA                         ; Save the starting address of the bootloader blocklist entries
 	
 	ReadLoop:
-	cmp   WORD [di+8], 0                                   ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
+	cmp   DWORD [di+8], 0                                  ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
 	je    LaunchBootloader
 
 	DiskRead:
@@ -184,7 +181,7 @@ AVBL:
 	mov   WORD [DAP.Memory_Offset], 0x000F
 	shr   eax, 4
 	mov   [DAP.Memory_Segment], ax
-	cmp   WORD [di+8], 0
+	cmp   DWORD [di+8], 0
 	jne   DiskRead
 	add   di, 10
 	jmp   ReadLoop
@@ -236,7 +233,7 @@ AVBL:
 	.Unused1              db 0
 	.Sectors_Count        db 0
 	.Unused2              db 0
-	.Memory_Offset        dw 0
+	.Memory_Offset        dw BOOTLOADER_ADDRESS
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
 	
