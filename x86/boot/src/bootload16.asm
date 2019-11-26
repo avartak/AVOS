@@ -43,18 +43,20 @@ AVBL16:
 
     BlockList:
 
-    ; We reserve the next 124 bytes for the blocklist corresponding to the kernel code on disk
-    ; This is basically a table containing (up to) 10 twelve-byte entries
-    ; The first 4 bytes of the blocklist contain the 32-bit start address where the kernel is loaded in memory
-    ; Then come the blocklist entries
-    ; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the code
-    ; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
-    ; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
+    ; We reserve the next 124 bytes for the blocklist master for the blocklists of the kernel and modules to be loaded from disk to memory
+	; This is basically a table containing (up to) 8 twelve-byte entries + 1 null entry (zero size)
+	; The first 8 bytes of the blocklist contain the 64-bit load address that can be ignored in this specific case
+	; Next 8-bytes are reserved
+	; Then come the blocklist entries
+	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' of the blocklists file
+	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
+	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
-    .Load_Address         dd 0x100000
+	.Load_Address         dq 0
+	.Reserved             dq 0
 
-    .Block1_LBA           dq 0x800
-    .Block1_Num_Sectors   dd 0x800
+	.Block1_LBA           dq 0x1800
+	.Block1_Num_Sectors   dd 1
 
 	times 124+4-($-$$)    db 0                                          ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
 
@@ -120,7 +122,7 @@ AVBL16:
 	shl   edi, 4
 	add   edi, eax
 
-	mov   ebx, BlockList
+	mov   ebx, AVBL16
 	pop   dx
 
 	; Set up the switch to protected mode

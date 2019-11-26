@@ -4,7 +4,9 @@
 #include <kernel/include/common.h>
 #include <kernel/include/multiboot.h>
 #include <csupport/include/string.h>
+#include <x86/boot/include/boot.h>
 
+/*
 struct Multiboot_Kernel_Info {
 	uint32_t  boot_drive_ID;
 	uint32_t  boot_partition;
@@ -15,10 +17,11 @@ struct Multiboot_Kernel_Info {
 	uintptr_t entry;
 	size_t    size;
 }__attribute__((packed));
+*/
 
 extern uintptr_t Multiboot_GetHeader             (uintptr_t start_addr, size_t size);
 extern uintptr_t Multiboot_GetKernelEntry        (uintptr_t multiboot_header_ptr);
-extern bool      Multiboot_LoadKernel            (struct Multiboot_Kernel_Info* kernel_info, uintptr_t mbi_addr);
+extern bool      Multiboot_LoadKernel            (struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr);
 extern bool      Multiboot_CheckForValidMBI      (uintptr_t mbi_addr);
 extern uintptr_t Multiboot_FindMBITagAddress     (uintptr_t mbi_addr, uint32_t tag_type);
 extern bool      Multiboot_CreateEmptyMBI        (uintptr_t mbi_addr);
@@ -34,7 +37,7 @@ extern bool      Multiboot_SaveAPMInfo           (uintptr_t mbi_addr);
 extern bool      Multiboot_SaveSMBIOSInfo        (uintptr_t mbi_addr);
 extern bool      Multiboot_SaveACPIInfo          (uintptr_t mbi_addr, bool old);
 extern bool      Multiboot_SaveLoadBaseAddress   (uintptr_t mbi_addr, uintptr_t base_addr);
-extern bool      Multiboot_SaveInfo              (uintptr_t mbi_addr, struct Multiboot_Kernel_Info* kernel_info);
+extern bool      Multiboot_SaveInfo              (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 extern bool      Multiboot_CheckForSupportFailure(uintptr_t multiboot_header_ptr);
 
 #endif

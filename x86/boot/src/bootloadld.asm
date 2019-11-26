@@ -32,14 +32,16 @@ AVBL:
 	BlockList:
 
 	; We reserve the next 124 bytes for the blocklist corresponding to the bootloader code on disk
-	; This is basically a table containing (up to) 10 twelve-byte entries
-	; The first 4 bytes of the blocklist contain the segment address, then the offset address from where to start loading the code in memory
+	; This is basically a table containing (up to) 8 twelve-byte entries + 1 null entry (zero size)
+	; The first 8 bytes of the blocklist contain the 64-bit memory address from where to start loading the code in memory
+	; Next 8-bytes are reserved
 	; Then come the blocklist entries
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
-	.Load_Address         dd BOOTLOADER_ADDRESS
+	.Load_Address         dq BOOTLOADER_ADDRESS
+	.Reserved             dq 0
 
 	.Block1_LBA           dq 9
 	.Block1_Num_Sectors   dd 0x40-1

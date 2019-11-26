@@ -64,11 +64,15 @@ CRTI=$(X86_KERNEL)/crti.s.o
 CRTN=$(X86_KERNEL)/crtn.s.o
 CRT0=$(X86_KERNEL)/start.s.o
 
-avos.iso: kernel.bin bootloader.bin vbr.bin mbr.bin
+avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
+	dd conv=notrunc if=modulelist.bin of=avos.iso seek=8192
 	dd conv=notrunc if=kernel.bin of=avos.iso seek=4096
 	dd conv=notrunc if=bootloader.bin of=avos.iso seek=2056
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
+
+modulelist.bin: x86/boot/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin x86/boot/src/modulelist.asm
 
 mbr.bin: x86/boot/src/MBR.asm
 	$(AS) -f bin -o mbr.bin x86/boot/src/MBR.asm

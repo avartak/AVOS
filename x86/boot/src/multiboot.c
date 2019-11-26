@@ -51,7 +51,7 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 }
 
 
-bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t mbi_addr) {
+bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr) {
 
 	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
 	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
@@ -59,11 +59,42 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
 	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return false;
 
-	uint32_t* blocklist_ptr = (uint32_t*)(kernel_info->blocklist_ptr + 4);
-	uintptr_t image         = ((uintptr_t*)(kernel_info->blocklist_ptr))[0];
-	uintptr_t start_addr    = kernel_info->start;
-	size_t    file_size     = 0;
-	for (size_t i = 0; blocklist_ptr[i+2] != 0  && i < 10; i+=3) file_size += blocklist_ptr[i+2] * 0x200;
+    uintptr_t image         = 0;
+    size_t    file_size     = 0;
+    uintptr_t start_addr    = kernel_info->start;
+
+    struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
+    uint8_t blocklist[512];
+    bool kernel_found = false;
+    for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
+        for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
+            uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
+            uint64_t offset = blocklist_mst->blocks[i].lba + j;
+            uint64_t lba = part_start + offset;
+
+            if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)((lba >> 32) & 0xFFFFFFFF), 1)) return false;
+            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
+            char* marker = (char*)(&(blocklist512->reserved));
+            if (marker[0] == 'A' && marker[1] == 'V' && marker[2] == 'K' && marker[3] == 'E' && marker[4] == 'R' && marker[5] == 'N' && marker[6] == 'E' && marker[7] == 'L') {
+                if (kernel_found) return false;
+                kernel_found = true;
+                for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
+                    image = blocklist512->load_address_lo;
+                    file_size += blocklist512->blocks[k].num_sectors * 0x200;
+                    uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
+                    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, (uint32_t)(kern_lba & 0xFFFFFFFF), (uint32_t)((kern_lba >> 32) & 0xFFFFFFFF), blocklist512->blocks[k].num_sectors)) return false;
+                }
+            }
+            else {
+                for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
+                    uint64_t mod_lba = part_start + blocklist512->blocks[k].lba;
+                    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), blocklist512->load_address_lo, (uint32_t)(mod_lba & 0xFFFFFFFF), (uint32_t)((mod_lba >> 32) & 0xFFFFFFFF), blocklist512->blocks[k].num_sectors)) return false;
+                }
+            }
+        }
+    }
+    if (!kernel_found) return false;
+
 
 	bool      reloc         = false;
 	uintptr_t start_min     = start_addr;
@@ -77,13 +108,6 @@ bool Multiboot_LoadKernel(struct Multiboot_Kernel_Info* kernel_info, uintptr_t m
 	uintptr_t load_start    = image;
 	size_t    load_size     = file_size;
 	size_t    bss_size      = 0;
-
-	for (size_t i = 0; blocklist_ptr[i+2] != 0 && i < 10; i+=3) {
-		uint64_t* part_ptr   = (uint64_t*)(kernel_info->part_info_ptr);
-		uint64_t* offset_ptr = (uint64_t*)(blocklist_ptr + i);
-		uint64_t lba = part_ptr[0] + offset_ptr[0];
-		if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)((lba >> 32) & 0xFFFFFFFF), blocklist_ptr[i+2])) return false;
-	}
 
 	uintptr_t multiboot_header_ptr = Multiboot_GetHeader(image, file_size);
 	if (multiboot_header_ptr == 0) return 0;
@@ -618,7 +642,7 @@ bool Multiboot_CheckForSupportFailure(uintptr_t multiboot_header_ptr) {
 	return true;
 }
 
-bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Multiboot_Kernel_Info* kernel_info) {
+bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
 
