@@ -21,6 +21,7 @@ extern DiskIO_ReadFromDisk
 extern Multiboot_CreateEmptyMBI
 extern Multiboot_SaveMemoryMaps
 extern Multiboot_LoadKernel
+extern Multiboot_LoadModules
 extern Multiboot_SaveInfo
 
 ; Starting point of the 32-bit bootloader code. See linkboot.ld for details on how the code is linked into the bootloader binary
@@ -92,6 +93,16 @@ AVBL32:
 	mov   esi, ErrStr_LoadKernel
 	jz    HaltSystem
 
+	; Load boot modules from disk
+
+	push  Multiboot_Information_start
+	push  Kernel_Info 
+	call  Multiboot_LoadModules
+	add   esp, 0x8
+	test  al, al
+	mov   esi, ErrStr_LoadModules
+	jz    HaltSystem
+
 	; Store multiboot information
 
 	push Kernel_Info
@@ -138,6 +149,7 @@ section .data
 Messages: 
 ErrStr_Memory       db 'Unable to get memory information', 0
 ErrStr_LoadKernel   db 'Unable to load kernel', 0
+ErrStr_LoadModules  db 'Unable to load boot modules', 0
 ErrStr_MBI          db 'Unable to save multiboot information', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

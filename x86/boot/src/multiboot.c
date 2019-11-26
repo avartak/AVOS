@@ -85,13 +85,9 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_ad
                     if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, (uint32_t)(kern_lba & 0xFFFFFFFF), (uint32_t)((kern_lba >> 32) & 0xFFFFFFFF), blocklist512->blocks[k].num_sectors)) return false;
                 }
             }
-            else {
-                for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
-                    uint64_t mod_lba = part_start + blocklist512->blocks[k].lba;
-                    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), blocklist512->load_address_lo, (uint32_t)(mod_lba & 0xFFFFFFFF), (uint32_t)((mod_lba >> 32) & 0xFFFFFFFF), blocklist512->blocks[k].num_sectors)) return false;
-                }
-            }
+			if (kernel_found) break;
         }
+		if (kernel_found) break;
     }
     if (!kernel_found) return false;
 
@@ -292,6 +288,56 @@ bool Multiboot_TerminateTag(uintptr_t mbi_addr, uintptr_t tag_addr) {
 	}
 	return true;
 
+}
+
+bool Multiboot_LoadModules(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr) {
+
+	bool page_align = false;
+
+    uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
+    struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
+    struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
+
+    while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
+        if (header_tag->type == MULTIBOOT_HEADER_TAG_MODULE_ALIGN) page_align = true;
+        header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
+	}
+
+    struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
+    uint8_t blocklist[512];
+	uintptr_t mod_addr = kernel_info->start + kernel_info->size;
+    for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
+        for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
+            uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
+            uint64_t offset = blocklist_mst->blocks[i].lba + j;
+            uint64_t lba = part_start + offset;
+
+            if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)((lba >> 32) & 0xFFFFFFFF), 1)) return false;
+            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
+            char* marker = (char*)(&(blocklist512->reserved));
+            if (marker[0] == 'A' && marker[1] == 'V' && marker[2] == 'K' && marker[3] == 'E' && marker[4] == 'R' && marker[5] == 'N' && marker[6] == 'E' && marker[7] == 'L') continue;
+
+            struct Boot_BlockList272* blocklist272 = (struct Boot_BlockList272*)blocklist;
+			size_t mod_size = 0;
+			if (page_align && mod_addr % 0x1000 != 0) mod_addr = 0x1000 * (1 + mod_addr / 0x1000);
+			for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) {
+			    uint64_t mod_lba = part_start + blocklist272->blocks[k].lba;
+			    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, (uint32_t)(mod_lba & 0xFFFFFFFF), (uint32_t)((mod_lba >> 32) & 0xFFFFFFFF), blocklist272->blocks[k].num_sectors)) return false;
+				mod_size += blocklist272->blocks[k].num_sectors * 0x200;
+			}
+			if (mod_size > 0) {
+				struct Multiboot_Info_Modules* mbi_mod = (struct Multiboot_Info_Modules*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MODULE);
+				if (mbi_mod == MEMORY_NULL_PTR || mbi_mod->type != 0) return false;
+    			mbi_mod->type = MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME;
+    			mbi_mod->size = 256;
+				mbi_mod->mod_start = mod_addr;
+				mbi_mod->mod_end = mod_addr + mod_size - 1;
+				for (size_t k = 0; i < 240; k++) mbi_mod->string[k] = blocklist272->string[k];
+				if (!Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mod)) return false;
+			}
+        }
+    }
+	return true;	
 }
 
 bool Multiboot_SaveBootLoaderInfo(uintptr_t mbi_addr) {
@@ -625,7 +671,6 @@ bool Multiboot_CheckForSupportFailure(uintptr_t multiboot_header_ptr) {
 			struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
 			size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
 			for (size_t i = 0; i < nrequests; i++) {
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_MODULE  ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32   ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64   ) return false;
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_NETWORK ) return false;

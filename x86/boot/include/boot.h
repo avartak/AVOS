@@ -5,6 +5,7 @@
 
 #define BOOT_BLOCKLIST_MAXBLOCKS128 9
 #define BOOT_BLOCKLIST_MAXBLOCKS512 41
+#define BOOT_BLOCKLIST_MAXBLOCKS272 21
 
 struct Boot_Block {
 	uint64_t  lba;
@@ -17,6 +18,15 @@ struct Boot_BlockList128 {
     uint32_t  load_address_hi;
     uint64_t  reserved;
     struct Boot_Block blocks[9];
+}__attribute__((packed));
+
+struct Boot_BlockList272 {
+    uint32_t  jump;
+    uint32_t  load_address_lo;
+    uint32_t  load_address_hi;
+    uint64_t  reserved;
+    struct Boot_Block blocks[21];
+	char      string[240];
 }__attribute__((packed));
 
 struct Boot_BlockList512 {
