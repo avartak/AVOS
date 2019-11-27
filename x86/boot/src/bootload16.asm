@@ -58,7 +58,9 @@ AVBL16:
 	.Block1_LBA           dq 0x1800
 	.Block1_Num_Sectors   dd 1
 
-	times 124+4-($-$$)    db 0                                          ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
+	; Pad the remaining bytes up to AVBL+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
+
+	times 128-($-$$)      db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -17,14 +17,13 @@
 ; First let us include some definitions of constants that the VBR needs
 
 SECTOR_SIZE             equ 0x0200                         ; Size of a sector (or size of the MBR, VBR)
-LOAD_ADDRESS            equ 0x7C00                         ; This is where the bootloader loader is loaded in memory
+VBR_ADDRESS             equ 0x7C00                         ; This is where the VBR is loaded in memory
 STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
-SCREEN_TEXT_BUFFER      equ 0xB800                         ; Segment address pointing to the video buffer for the 80x25 VBE text mode (for displaying error messages)
 BOOTLOADER_ADDRESS      equ 0x7E00                         ; Starting location in memory where the bootloader code gets loaded
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
-ORG LOAD_ADDRESS
+ORG VBR_ADDRESS
 
 ; The x86 system is still in real mode when control is transferred to the VBR
 ; We need to tell the assembler to produce 16-bit code
@@ -56,11 +55,13 @@ VBR:
 	.Block1_LBA           dq 8
 	.Block1_Num_Sectors   dd 0x40
 
-	times 124+4-($-$$)    db 0                             ; The 4 accounts for the 2 bytes taken up by the JMP instruction + 2 NOPs
+	; Pad the remaining bytes up to VBR+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
+
+	times 128-($-$$)      db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	; This is where the code starts
+	; This is where the code starts -- VBR + 128
 
 	Code:
 
