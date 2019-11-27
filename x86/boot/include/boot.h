@@ -16,7 +16,8 @@ struct Boot_BlockList128 {
     uint32_t  jump;
     uint32_t  load_address_lo;
     uint32_t  load_address_hi;
-    uint64_t  reserved;
+	uint16_t  sector_size;
+    char      reserved[6];
     struct Boot_Block blocks[9];
 }__attribute__((packed));
 
@@ -24,7 +25,8 @@ struct Boot_BlockList272 {
     uint32_t  jump;
     uint32_t  load_address_lo;
     uint32_t  load_address_hi;
-    uint64_t  reserved;
+	uint16_t  sector_size;
+    char      reserved[6];
     struct Boot_Block blocks[21];
 	char      string[240];
 }__attribute__((packed));
@@ -33,7 +35,8 @@ struct Boot_BlockList512 {
 	uint32_t  jump;
 	uint32_t  load_address_lo;
 	uint32_t  load_address_hi;
-	uint64_t  reserved;
+	uint16_t  sector_size;
+    char      reserved[6];
 	struct Boot_Block blocks[41];
 }__attribute__((packed));
 

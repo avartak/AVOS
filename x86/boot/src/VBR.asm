@@ -16,7 +16,7 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-SECTOR_SIZE             equ 0x0200                         ; Size of a sector (or size of the MBR, VBR)
+SECTOR_SIZE             equ 0x0200                         ; Assumed size of a sector
 VBR_ADDRESS             equ 0x7C00                         ; This is where the VBR is loaded in memory
 STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
 BOOTLOADER_ADDRESS      equ 0x7E00                         ; Starting location in memory where the bootloader code gets loaded
@@ -49,8 +49,15 @@ VBR:
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
+	; Note : 
+	; The VBR does not check the size of a sector (whether it is 512 bytes, or 4 KB, etc.)
+	; A default size of 512 bytes is assumed 
+	; But this can be changed by setting the word at offset 0xC from the start of the VBR when install the bootloader (e.g. when creating the blocklist)
+
 	.Load_Address         dq BOOTLOADER_ADDRESS
-	.Reserved             dq 0
+	.Sector_Size          dw SECTOR_SIZE
+	.Reserved1            dw 0
+	.Reserved2            dd 0
 
 	.Block1_LBA           dq 8
 	.Block1_Num_Sectors   dd 0x40
@@ -152,12 +159,15 @@ VBR:
 	; Check if we still need to loop
 
 	ReadLoopCheck:
-	mov   ax, [DAP.Memory_Segment]
-	shl   eax, 4
-	add   eax, [DAP.Memory_Offset]
-	add   eax, [DAP.Sectors_Count]
+	mov   bx, [DAP.Memory_Segment]
+	shl   ebx, 4
+	add   ebx, [DAP.Memory_Offset]
+	mov   eax, [DAP.Sectors_Count]
+	movzx ecx, WORD [BlockList.Sector_Size]
+	mul   ecx
+	add   eax, ebx
+	mov   ax, 0x000F
 	mov   [DAP.Memory_Offset], ax
-	mov   WORD [DAP.Memory_Offset], 0x000F
 	shr   eax, 4
 	mov   [DAP.Memory_Segment], ax
 	cmp   DWORD [di+8], 0

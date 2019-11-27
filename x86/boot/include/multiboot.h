@@ -6,19 +6,6 @@
 #include <csupport/include/string.h>
 #include <x86/boot/include/boot.h>
 
-/*
-struct Multiboot_Kernel_Info {
-	uint32_t  boot_drive_ID;
-	uint32_t  boot_partition;
-	uintptr_t part_info_ptr;
-	uintptr_t blocklist_ptr;
-	uintptr_t start;
-	uintptr_t multiboot_header;
-	uintptr_t entry;
-	size_t    size;
-}__attribute__((packed));
-*/
-
 extern uintptr_t Multiboot_GetHeader             (uintptr_t start_addr, size_t size);
 extern uintptr_t Multiboot_GetKernelEntry        (uintptr_t multiboot_header_ptr);
 extern bool      Multiboot_LoadKernel            (struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr);

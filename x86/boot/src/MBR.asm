@@ -36,7 +36,7 @@
 
 ; First let us include some definitions of constants
 
-SECTOR_SIZE             equ 0x0200                ; Size of a sector (or size of the MBR, VBR)
+MBR_SIZE                equ 0x0200                ; Size of the MBR
 LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
 MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at LOAD_ADDRESS
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
@@ -82,7 +82,7 @@ MBR:
 
 	; Then, we relocate the MBR code/data to memory location 0x0000:MBR_RELOC_ADDRESS
 
-	mov   cx, SECTOR_SIZE
+	mov   cx, MBR_SIZE
 	mov   si, LOAD_ADDRESS
 	mov   di, MBR_RELOC_ADDRESS
 	cld                                           ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
