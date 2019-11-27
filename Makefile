@@ -80,12 +80,9 @@ mbr.bin: x86/boot/src/MBR.asm
 vbr.bin: x86/boot/src/VBR.asm
 	$(AS) -f bin -o vbr.bin x86/boot/src/VBR.asm
 
-bootloader.bin: bootloadld.bin bootload16.bin bootload32.bin
-	cat bootloadld.bin bootload16.bin bootload32.bin > bootloader.bin
+bootloader.bin: bootload16.bin bootload32.bin
+	cat bootload16.bin bootload32.bin > bootloader.bin
 	
-bootloadld.bin: x86/boot/src/bootloadld.asm
-	$(AS) -f bin -o bootloadld.bin x86/boot/src/bootloadld.asm
-
 bootload16.bin: x86/boot/src/bootload16.asm
 	$(AS) -f bin -o bootload16.bin x86/boot/src/bootload16.asm
 
