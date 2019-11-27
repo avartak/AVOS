@@ -52,7 +52,7 @@ VBR:
 	; Note : 
 	; The VBR does not check the size of a sector (whether it is 512 bytes, or 4 KB, etc.)
 	; A default size of 512 bytes is assumed 
-	; But this can be changed by setting the word at offset 0xC from the start of the VBR when install the bootloader (e.g. when creating the blocklist)
+	; But this can be changed by setting the word at offset 0xC from the start of the VBR when installing the bootloader (e.g. when creating the blocklist)
 
 	.Load_Address         dq BOOTLOADER_ADDRESS
 	.Sector_Size          dw SECTOR_SIZE
