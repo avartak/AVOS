@@ -69,6 +69,19 @@ VBR:
 	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
 	; Save these registers on the stack
 
+	; First lets set up the stack properly
+
+	xor   ax, ax
+	mov   ss, ax
+
+	; Lets make certain that CS is set to 0x0000
+	
+	jmp   0x0000:Start
+
+	; Now we are ready to launch into the bootloading
+
+	Start:
+
 	mov   sp, STACK_TOP
 	push  dx
 	push  es
