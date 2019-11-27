@@ -24,10 +24,8 @@ struct DiskIO_Geometry {
 
 extern uint8_t DiskIO_LowMemoryBuffer[];
 
-extern bool   DiskIO_GetCHSGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
 extern bool   DiskIO_CheckForBIOSExtensions(uint8_t drive);
 extern bool   DiskIO_ReadUsingLBA(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start_lo, uint32_t kernel_disk_start_hi, size_t kernel_size);
-extern bool   DiskIO_ReadUsingCHS(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start_lo, uint32_t kernel_disk_start_hi, size_t kernel_size);
 extern size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t kernel_start, uint32_t kernel_disk_start_lo, uint32_t kernel_disk_start_hi, size_t kernel_size);
 
 
