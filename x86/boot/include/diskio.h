@@ -16,12 +16,6 @@ struct DiskIO_DAP {
 	uint32_t start_sector_hi;
 }__attribute__((packed));
 
-struct DiskIO_Geometry {
-    uint8_t  heads;
-    uint8_t  sectors_per_track;
-    uint16_t sectors_per_cylinder;
-}__attribute__((packed));
-
 extern uint8_t DiskIO_LowMemoryBuffer[];
 
 extern bool   DiskIO_CheckForBIOSExtensions(uint8_t drive);
