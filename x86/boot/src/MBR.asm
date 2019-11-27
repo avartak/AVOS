@@ -17,6 +17,8 @@
 ; - If no partition is active : hang or ask the user to select an active partition, and then optionally mark it as active in the MBR (i.e. save it as active in the actual MBR on disk)
 ; - If multiple partitions are marked as active : hang or take the first one as "the" active partition or ask the user to select one
 ; - Load the volume boot record (VBR) i.e. the first sector of the active partition at memory address 0x0000:0x7C00 [VBR is a more OS-specific first stage boot loader]
+;   * No check is made of the sector size when loading the boot sector of a volume/partition
+;   * Sector size of 512 bytes is assumed but even if it is larger (e.g. 4 KB) we will still only be using the first 512 bytes of the sector content that gets loaded in memory
 ; - Preserve the BIOS boot drive ID in DL
 ; - Preserve the contents of DH (flag for device supported through INT 0x13) and ES:DI ("$PnP" installation check structure) --> These may be needed by the OS downstream
 ; - Save the pointer to the active partition in the relocated MBR in DS:SI
