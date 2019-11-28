@@ -19,7 +19,6 @@
 
 ; First let us include some definitions of constants
 
-STACK_TOP               equ 0x7C00                                      ; Top of the stack
 BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit kernel code segment
 
