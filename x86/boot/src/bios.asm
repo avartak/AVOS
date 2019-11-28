@@ -1,9 +1,9 @@
 ; The following care the descriptors for the 32-bit and 16-bit protected mode segments
 
-SEG32_CODE        equ 0x08
-SEG32_DATA        equ 0x10
-SEG16_CODE        equ 0x18
-SEG16_DATA        equ 0x20
+SEG32_CODE equ 0x08
+SEG32_DATA equ 0x10
+SEG16_CODE equ 0x18
+SEG16_DATA equ 0x20
 
 section .text
 
