@@ -20,10 +20,8 @@
 ; First let us include some definitions of constants
 
 STACK_TOP               equ 0x7C00                                      ; Top of the stack
-SCREEN_TEXT_BUFFER      equ 0xB800                                      ; Video buffer for the 80x25 VBE text mode (for displaying error messages)
 BOOTLOADER_ADDRESS      equ 0x7E00                                      ; Starting location in memory where the bootloader code gets loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit kernel code segment
-SEG32_DATA              equ 0x10                                        ; 32-bit kernel data segment
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 

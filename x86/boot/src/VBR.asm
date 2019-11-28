@@ -2,12 +2,12 @@
 ; The Master Boot Record (MBR) first identifies the active partition, then loads the VBR at memory address 0x7C00, and transfers control to it
 ; The VBR is the first OS-specific code
 ; Salient features of our VBR :
-; - Starts with JMP to the VBR code
-; - There are 124 bytes left for OS-specific (or filesystem specific) data/header after the first two bytes of the JMP instruction + 2 NOPs (the JMP jumps over this block) 
+; - Starts with JMP over the first 128 bytes of data to the VBR code
+; - First 128 bytes : First two bytes for a near JMP + 2 NOPs (the JMP jumps over this block) ; then 124 bytes for OS-specific (or filesystem specific) data/header
 ;   * We use these 124 bytes to store a blocklist of sectors containing the bootload code on disk
-;   * Each blocklist entry contains the offset of the starting sector relative to the start of the partition, and the number of contiguous sectors to read out
+;   * Each blocklist entry contains the offset of the starting sector relative to the start of the partition, and the number of contiguous sectors to be read out
 ; - The VBR also has the boot signature word (0xAA55) at its end, just like the MBR
-; - The VBR then loads the bootloader code from disk to memory
+; - The VBR loads the bootloader code from disk to memory
 ; - The VBR saves (in addition to DL, ES:DI and DS:SI values passed down by the MBR) : 
 ;   * The memory address of a 16-byte partition entry (8-bytes for starting LBA and 8-bytes for ending LBA) in FS:BP
 ; - Note the VBR interface provides 64-bit LBA addresses for the partition boundaries to the bootloader
@@ -16,10 +16,15 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-SECTOR_SIZE             equ 0x0200                         ; Assumed size of a sector
-VBR_ADDRESS             equ 0x7C00                         ; This is where the VBR is loaded in memory
-STACK_TOP               equ 0x7C00                         ; Top of the stack used by the MBR
-BOOTLOADER_ADDRESS      equ 0x7E00                         ; Starting location in memory where the bootloader code gets loaded
+SECTOR_SIZE            equ 0x0200                          ; Assumed size of a sector
+VBR_ADDRESS            equ 0x7C00                          ; This is where the VBR is loaded in memory
+BOOTLOADER_ADDRESS     equ 0x7E00                          ; Starting location in memory where the bootloader code gets loaded
+
+DP_TABLE_SIZE          equ 0x1A
+DP_TABLE_START         equ VBR_ADDRESS-DP_TABLE_SIZE
+DP_TABLE_SECTOR_SIZE   equ DP_TABLE_START + 0x18
+
+STACK_TOP              equ DP_TABLE_START                  ; Top of the stack
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -50,9 +55,7 @@ VBR:
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
 	; Note : 
-	; The VBR does not check the size of a sector (whether it is 512 bytes, or 4 KB, etc.)
-	; A default size of 512 bytes is assumed 
-	; But this can be changed by setting the word at offset 0xC from the start of the VBR when installing the bootloader (e.g. when creating the blocklist)
+	; The VBR gets the size of a sector (whether it is 512 bytes, or 4 KB, etc.) and compares it with the value stored in the blocklist to make sure they agree
 
 	.Load_Address         dq BOOTLOADER_ADDRESS
 	.Sector_Size          dw SECTOR_SIZE
@@ -114,13 +117,25 @@ VBR:
 	jc    HaltSystem
 	cmp   bx, 0xAA55
 	jne   HaltSystem
-	test  cx, 1
+	test  cl, 1
 	jz    HaltSystem
 
-	; Save the starting address of the bootloader blocklist entries
+	; Save the disk geometry, and check that the sector size is the same as that specified in the blocklist
+
+	mov   ax, 0x1A
+	mov   [DP_TABLE_START], ax
+	mov   ah, 0x48
+	mov   si, DP_TABLE_START
+	int   0x13
+	jc    HaltSystem
+	mov   ax, [DP_TABLE_SECTOR_SIZE]	
+	cmp   ax, [BlockList.Sector_Size]
+	jne   HaltSystem
+
+	; Save the starting address of the bootloader blocklist entries 
 	
 	mov   di, BlockList.Block1_LBA
-	
+
 	; Loop on the blocklist to load the bootloader code from disk to memory
 
 	ReadLoop:
@@ -185,11 +200,11 @@ VBR:
 	pop   es
 	pop   dx
 
-	mov   eax, DWORD [si+0x08]                             ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
-	mov   ecx, DWORD [si+0x0C]                             ; Get the size of the partition in sectors from the MBR partition table [restricts us to 32-bits]
-	mov   DWORD [Partition], eax                           ; Save the lower 4 bytes of the 64-bit LBA of the start sector of the partition
-	mov   DWORD [Partition+8], eax                         ; Save the 64-bit LBA of the end sector of the partition (start + size)
-	add   DWORD [Partition+8], ecx
+	mov   eax, [si+0x08]                                   ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
+	mov   ecx, [si+0x0C]                                   ; Get the size of the partition in sectors from the MBR partition table [restricts us to 32-bits]
+	mov   [Partition], eax                                 ; Save the lower 4 bytes of the 64-bit LBA of the start sector of the partition
+	mov   [Partition+8], eax                               ; Save the 64-bit LBA of the end sector of the partition (start + size)
+	add   [Partition+8], ecx
 	adc   DWORD [Partition+0x10], 0
 	mov   bp, Partition
 	xor   ax, ax
@@ -222,17 +237,18 @@ VBR:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	; Some data/information we need
+; Error string
 
 	DAP:
-	.Size                 db 0x10
-	.Unused1              db 0
-	.Sectors_Count        db 0
-	.Unused2              db 0
-	.Memory_Offset        dw BOOTLOADER_ADDRESS
+	.Size                 db 0x10         
+	.Unused1              db 0            
+	.Sectors_Count        db 1            
+	.Unused2              db 0            
+	.Memory_Offset        dw BOOTLOADER_ADDRESS 
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
-	
+
+
 	Messages:
 	.DiskIOErr            db 'Unable to load AVOS', 0
 
@@ -242,7 +258,7 @@ VBR:
 ; We put a 16-byte entry at offset 446 corresponding to the 64-bit LBAs of the start and end sectors of the partition
 ; The address of this 16-byte entry is passed to the next step of the bootloader in the FS:BP registers
 
-	times 446-($-$$) db 0
+	times 446-($-$$)      db 0
 
 	Partition:
 	times 16              db 0
@@ -251,7 +267,7 @@ VBR:
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 510-($-$$) db 0 
+times 510-($-$$)          db 0 
 
 ; The last two bytes need to have the following boot signature -- MBR code typically checks for it
 
