@@ -29,7 +29,7 @@ BIOS_Regs16:
     .flags  dw   0
 
 ; Interrupt number to be invoked (only the first byte is relevant)
-BIOS_Int_ID dd 0
+BIOS_Int_ID db 0
 
 ; Place to store the protected mode stack pointer (we will use a dedicated 1 KB stack for the real mode)
 BIOS_PM_ESP dd   0 
@@ -60,7 +60,7 @@ BIOS_ClearRegistry:
 
 global BIOS_Interrupt
 ; Parameters (in order that is passed when calling the function in C):
-; - Interrupt ID as a 32-bit unsigned integer
+; - Interrupt ID
 ; - Pointer to the BIOS registry structure
 BIOS_Interrupt:
 
