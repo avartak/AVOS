@@ -35,8 +35,8 @@ BITS 32
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-global AVBL32
-AVBL32:
+global AVBL
+AVBL:
 
 	; First lets disable all interrupts (the real mode code should have done this already before switching to protected mode, but lets do it anyways)
 

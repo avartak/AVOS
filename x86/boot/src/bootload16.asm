@@ -33,7 +33,7 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-AVBL16:
+AVBL:
 
 	jmp   Code
 	nop
@@ -122,7 +122,7 @@ AVBL16:
 	shl   edi, 4
 	add   edi, eax
 
-	mov   ebx, AVBL16
+	mov   ebx, AVBL
 	pop   dx
 
 	; Set up the switch to protected mode

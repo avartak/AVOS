@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(AVBL32)
+ENTRY(AVBL)
 
 /* Output format */
 OUTPUT_FORMAT("binary")
