@@ -1,4 +1,4 @@
-; The following are the descriptors for the 32-bit and 16-bit protected mode segments
+; The following care the descriptors for the 32-bit and 16-bit protected mode segments
 
 SEG32_CODE        equ 0x08
 SEG32_DATA        equ 0x10
@@ -8,6 +8,10 @@ SEG16_DATA        equ 0x20
 section .text
 
 BITS 32
+
+align 0x10
+
+BIOS_Start:
 
 ; The 40-byte "BIOS Registry" structure
 BIOS_Regs16:
@@ -24,17 +28,11 @@ BIOS_Regs16:
     .ss     dw   0
     .flags  dw   0
 
+; Interrupt number to be invoked (only the first byte is relevant)
 BIOS_Int_ID dd 0
 
-
-BIOS_IDT_Desc:
-    dw 0x400 - 1
-    dd 0
-
-
-Save_IDT_Desc:
-    dw 0x400 - 1
-    dd 0
+; Place to store the protected mode stack pointer (we will use a dedicated 1 KB stack for the real mode)
+BIOS_PM_ESP dd   0 
 
 global BIOS_ClearRegistry
 ; Parameters (in order that is passed when calling the function in C):
@@ -79,16 +77,12 @@ BIOS_Interrupt:
 
 	cli
 
-	; We then save the IDT descriptor
+	; Save the interrupt vector index
 
-	sidt  [Save_IDT_Desc]
+	mov   al, [ebp+8]
+	mov   [BIOS_Int_ID], al
 
-	; We then copy the interrupt vector index to the EDX register
-
-	mov   eax, [ebp+8]
-	mov   [BIOS_Int_ID], eax
-
-	; We store the real mode register values (from the structure pointed to by EAX) into the BIOS_Regs16 structure
+	; Save the real mode register values to be used when calling the BIOS routine
 
 	mov   esi, [ebp+12]
 	mov   edi, BIOS_Regs16
@@ -117,115 +111,99 @@ BITS 16
 	and   al , 0xFE
 	mov   cr0, eax
 
-	; Switch the code segment register to real mode
+	; Set the base address of FS to BIOS_Start
 
-	jmp   0:BIOS_Interrupt.RMode
+	mov   eax, BIOS_Start
+	shr   eax, 4
+	mov   fs, ax
 
-	; Switch the segment registers to real mode
+	; Lets set up a real mode stack
 
-	.RMode:
-	mov   ax, 0
+	mov   [fs:BIOS_PM_ESP-BIOS_Start], esp
+	mov   eax, BIOS_Stack_Segment
+	shr   eax, 4
+	mov   ss, ax
+	mov   esp, BIOS_Stack_Pointer-BIOS_Stack_Segment
+	
+	; Lets set data segments (DS,ES,GS) all with base address 0
+
+	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
-	mov   fs, ax
 	mov   gs, ax
-	mov   ss, ax
+
+	; Switch the code segment register to real mode with a far return, setting the base address of CS to BIOS_Start
+
+	push  fs
+	push  BIOS_Interrupt.RMode-BIOS_Start
+	retf
+
+	.RMode:
+
+	; Save the real mode stack pointer in case the BIOS routine trashes it
+
+	mov   [fs:BIOS_Regs16.esp-BIOS_Start], esp
+
+	; Prepare the stack for a call to the interrupt routine
+
+    mov   al, BYTE [fs:BIOS_Int_ID-BIOS_Start]
+    mov   bl, 4
+    mul   bl
+	mov   si, ax
+
+    pushf
+    push  cs
+    push  WORD BIOS_Interrupt.SwitchToPMode32-BIOS_Start
+    push  WORD [si+2]
+    push  WORD [si]
 
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
 
-	mov   ax, [fs:BIOS_Regs16.ds]
+	mov   ax, [fs:BIOS_Regs16.ds-BIOS_Start]
 	mov   ds, ax
-	mov   ax, [fs:BIOS_Regs16.es]
+	mov   ax, [fs:BIOS_Regs16.es-BIOS_Start]
 	mov   es, ax
 
 	; Store the designated values in the general purpose registers
-	; We do not change the stack pointer ; it could be done but we do not need to do it in the context of our boot loader set up
 
-	mov   eax, [fs:BIOS_Regs16.eax]
-	mov   ebx, [fs:BIOS_Regs16.ebx]
-	mov   ecx, [fs:BIOS_Regs16.ecx]
-	mov   edx, [fs:BIOS_Regs16.edx]
-	mov   esi, [fs:BIOS_Regs16.esi]
-	mov   edi, [fs:BIOS_Regs16.edi]
-	mov   ebp, [fs:BIOS_Regs16.ebp]
-
-	; Save the stack pointer in case the BIOS routine trashes it
-
-	mov   [fs:BIOS_Regs16.esp], esp
-
-	; Load the real mode IDT so that we can call the BIOS interrupts
-	; In general, we should save the 32-bit IDT descriptor so that we can use it after switching back to protected mode 
-	; But we don't have it set up in the boot loader anyways
-
-	lidt  [fs:BIOS_IDT_Desc]
+	mov   eax, [fs:BIOS_Regs16.eax-BIOS_Start]
+	mov   ebx, [fs:BIOS_Regs16.ebx-BIOS_Start]
+	mov   ecx, [fs:BIOS_Regs16.ecx-BIOS_Start]
+	mov   edx, [fs:BIOS_Regs16.edx-BIOS_Start]
+	mov   esi, [fs:BIOS_Regs16.esi-BIOS_Start]
+	mov   edi, [fs:BIOS_Regs16.edi-BIOS_Start]
+	mov   ebp, [fs:BIOS_Regs16.ebp-BIOS_Start]
 
 	; Trigger the appropriate BIOS interrupt
-	; It is at this stage that we will change the DS register to the designated value
 
-	cmp   WORD [fs:BIOS_Int_ID], 0x10
-	je    BIOS_Interrupt.Int0x10
-	cmp   WORD [fs:BIOS_Int_ID], 0x12
-	je    BIOS_Interrupt.Int0x12
-	cmp   WORD [fs:BIOS_Int_ID], 0x13
-	je    BIOS_Interrupt.Int0x13
-	cmp   WORD [fs:BIOS_Int_ID], 0x15
-	je    BIOS_Interrupt.Int0x15
-	cmp   WORD [fs:BIOS_Int_ID], 0x16
-	je    BIOS_Interrupt.Int0x16
-
-	jmp   BIOS_Interrupt.SwitchToPMode32
-
-	.Int0x10:
-	clc
-	int   0x10
-	jmp   BIOS_Interrupt.SwitchToPMode32
-
-	.Int0x12:
-	clc
-	int   0x12
-	jmp   BIOS_Interrupt.SwitchToPMode32
-
-	.Int0x13:
-	clc
-    int   0x13
-    jmp   BIOS_Interrupt.SwitchToPMode32
-
-	.Int0x15:
-	clc
-    int   0x15
-    jmp   BIOS_Interrupt.SwitchToPMode32
-
-	.Int0x16:
-	clc
-    int   0x16
-    jmp   BIOS_Interrupt.SwitchToPMode32
-
+	clc 
+    retf
 
 	; We are done with the BIOS routine; now we have to switch back to the protected mode
 	; First we restore the stack pointer and store the register values (these represent the state immediately after the BIOS call) in the BIOS_Regs16 structure
 
 	.SwitchToPMode32:
-    mov   esp, [fs:BIOS_Regs16.esp]
-	mov   [fs:BIOS_Regs16.eax], eax	
-	mov   [fs:BIOS_Regs16.ebx], ebx	
-	mov   [fs:BIOS_Regs16.ecx], ecx	
-	mov   [fs:BIOS_Regs16.edx], edx	
-	mov   [fs:BIOS_Regs16.esi], esi	
-	mov   [fs:BIOS_Regs16.edi], edi	
-	mov   [fs:BIOS_Regs16.ebp], ebp	
+    mov   esp, [fs:BIOS_Regs16.esp-BIOS_Start]
+	mov   [fs:BIOS_Regs16.eax-BIOS_Start], eax	
+	mov   [fs:BIOS_Regs16.ebx-BIOS_Start], ebx	
+	mov   [fs:BIOS_Regs16.ecx-BIOS_Start], ecx	
+	mov   [fs:BIOS_Regs16.edx-BIOS_Start], edx	
+	mov   [fs:BIOS_Regs16.esi-BIOS_Start], esi	
+	mov   [fs:BIOS_Regs16.edi-BIOS_Start], edi	
+	mov   [fs:BIOS_Regs16.ebp-BIOS_Start], ebp	
 
 	; Also save the flags register
 
 	pushf
 	pop   ax
-	mov   [fs:BIOS_Regs16.flags], ax
+	mov   [fs:BIOS_Regs16.flags-BIOS_Start], ax
 
 	; Save the segment registers
 
 	mov   ax, ds
-	mov   [fs:BIOS_Regs16.ds], ax	
+	mov   [fs:BIOS_Regs16.ds-BIOS_Start], ax	
 	mov   ax, es
-	mov   [fs:BIOS_Regs16.es], ax	
+	mov   [fs:BIOS_Regs16.es-BIOS_Start], ax	
 
 	; Switch to 32-bit protected mode
 
@@ -247,6 +225,8 @@ BITS 32
 	mov   fs, ax
 	mov   gs, ax
 	mov   ss, ax
+
+	mov   esp, [BIOS_PM_ESP]
 	popad
 	popfd
 
@@ -265,19 +245,25 @@ BITS 32
 	pop   edi
 	pop   esi
 
-	; Restore the IDT that we started out with 
-
-	lidt  [Save_IDT_Desc]
-
-	; Return 
+	; Check if interrupts were enabled when BIOS_Interrupt was called
 
 	pop   eax
 	test  eax, 0x200
 	jz    .return
 	sti
 
+	; Return 
+
 	.return:
 	mov   esp, ebp
 	pop   ebp
 	ret
+
+
+
+align 0x10
+
+BIOS_Stack_Segment:
+times 0x400 db   0
+BIOS_Stack_Pointer:
 
