@@ -55,7 +55,7 @@ VBR:
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
 	; Note : 
-	; The VBR gets the size of a sector (whether it is 512 bytes, or 4 KB, etc.) and compares it with the value stored in the blocklist to make sure they agree
+	; The VBR gets the size of a sector (whether it is 512 bytes, or 4 KB, etc.) from BIOS and compares it with the value stored in the blocklist to make sure they agree
 
 	.Load_Address         dq BOOTLOADER_ADDRESS
 	.Sector_Size          dw SECTOR_SIZE
@@ -237,7 +237,7 @@ VBR:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Error string
+; Inputs/variables needed by the VBR code
 
 	DAP:
 	.Size                 db 0x10         
