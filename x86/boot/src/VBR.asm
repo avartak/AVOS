@@ -16,7 +16,6 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-SECTOR_SIZE            equ 0x0200                          ; Assumed size of a sector
 VBR_ADDRESS            equ 0x7C00                          ; This is where the VBR is loaded in memory
 BOOTLOADER_ADDRESS     equ 0x7E00                          ; Starting location in memory where the bootloader code gets loaded
 
@@ -58,7 +57,7 @@ VBR:
 	; The VBR gets the size of a sector (whether it is 512 bytes, or 4 KB, etc.) from BIOS and compares it with the value stored in the blocklist to make sure they agree
 
 	.Load_Address         dq BOOTLOADER_ADDRESS
-	.Sector_Size          dw SECTOR_SIZE
+	.Sector_Size          dw 0x200
 	.Reserved1            dw 0
 	.Reserved2            dd 0
 
