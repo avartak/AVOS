@@ -168,7 +168,7 @@ AVBL:
 
 ; Enable the A20 line
 
-%include "x86/boot/src/a20.asm"
+%include "x86/boot/src/A20.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,6 +178,24 @@ Messages:
 ; Global Descriptor Table (GDT) : Tells the CPU about memory segments
 ; It is a table of 8-byte entries, each being a memory segment descriptor. The segment registers themselves point to the descriptors
 ; The first 8-bytes are expected to be NULL (0)
+;
+;-----------------------------------------------------------------------------
+;|31                                 16 | 15                               0 |
+;|----------------------------------------------------------------------------
+;|                                      |                                    |
+;|                 Base                 |                Limit               |
+;|                 0:15                 |                0:15                |
+;|                                      |                                    |
+;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+;|63              56 |55   52 |51    48 | 47            40|39             32 |
+;|----------------------------------------------------------------------------
+;|                   |        |         |                 |                  |
+;|       Base        | Flags  |  Limit  |   Access byte   |       Base       |
+;|       24:31       |        |  16:19  |                 |       16:23      |
+;|                   |        |         |                 |                  |
+;-----------------------------------------------------------------------------
+;
 ; Bytes 0-1 : 16 least significant bits of the 20-bit limit of the segment (either in units of 1 byte or 4 KB i.e. one page) ; 0xFFFF means the end of the 32-bit addressable space
 ; Bytes 2-4 : 24 least significant bits of the base address of the start of the segment
 ; Byte  5   : Access byte (description of bit-fields below)
