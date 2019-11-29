@@ -1,8 +1,8 @@
-#include <x86/boot/include/io.h>
+#include <x86/boot/include/console.h>
 #include <x86/boot/include/bios.h>
 
 // Clear screen
-void IO_ClearScreen() {
+void Console_ClearScreen() {
     char* screen = (char*)0xB8000;
 
     size_t i = 0;
@@ -13,33 +13,46 @@ void IO_ClearScreen() {
     }
 }
 
-// Print the banner for the 'AVBL' bootloader 
-void IO_PrintBanner() {
+// Make the cursor invisible (no more blinking dash)
+void Console_MakeCursorInvisible() {
 
-    char* screen = (char*)0xB8000;
+    struct BIOS_Registers BIOS_regs;
+    BIOS_ClearRegistry(&BIOS_regs);
 
-    IO_ClearScreen();
+    BIOS_regs.ecx = 0x2607;
+    BIOS_regs.eax = 0x0100;
 
-    size_t i = 0;
-    while (i < 80) {
-        screen[2*i  ] = 0x00;
-        screen[2*i+1] = 0x90;
-        i++;
-    }
+    BIOS_Interrupt(0x10, &BIOS_regs);
 
-    char* str = "AVOS Boot loader";
-    i = 0;
-    while (str[i] != 0) {
-        screen[64 + 2*i]   = str[i];
-        screen[64 + 2*i+1] = 0x9F;
-        i++;
-    }
+}
 
-    return;
+// Make the cursor visible
+void Console_MakeCursorVisible() {
+
+    struct BIOS_Registers BIOS_regs;
+    BIOS_ClearRegistry(&BIOS_regs);
+
+    BIOS_regs.ecx = 0x0607;
+    BIOS_regs.eax = 0x0100;
+
+    BIOS_Interrupt(0x10, &BIOS_regs);
+
+}
+
+// Place the cursor at a certain location on screen
+void Console_SetCursorPosition(uint8_t line, uint8_t column) {
+
+    struct BIOS_Registers BIOS_regs;
+    BIOS_ClearRegistry(&BIOS_regs);
+
+    BIOS_regs.eax = 0x0200;
+    BIOS_regs.edx = (line << 8) + column;
+
+    BIOS_Interrupt(0x10, &BIOS_regs);
 }
 
 // Print a character at a certain location on screen
-void IO_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color) {
+void Console_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
     column = column % 80;
@@ -54,7 +67,7 @@ void IO_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color) {
 }
 
 // Print a character starting at a certain location on screen
-void IO_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t color) {
+void Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
     column = column % 80;
@@ -70,7 +83,7 @@ void IO_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t co
 }
 
 // Print a 32-bit unsigned integer in hex format at a certain location on screen
-void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
+void Console_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 
     line = line % 25;
     column = column % 80;
@@ -79,15 +92,15 @@ void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 
     char* screen = (char*)0xB8000;
 
-    screen[pos] = '0';
-    pos++;
-    screen[pos] = color;
-    pos++;
-
-    screen[pos] = 'x';
-    pos++;
-    screen[pos] = color;
-    pos++;
+	screen[pos] = '0';
+	pos++;
+	screen[pos] = color;
+	pos++;
+	
+	screen[pos] = 'x';
+	pos++;
+	screen[pos] = color;
+	pos++;
 
     uint32_t divisor = 0x10000000;
     uint32_t digit = 0;
@@ -113,7 +126,7 @@ void IO_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color) {
 }
 
 // Read a character from the keyboard
-char IO_ReadChar() {
+char Console_ReadChar() {
 
     struct BIOS_Registers BIOS_regs;
     BIOS_ClearRegistry(&BIOS_regs);
@@ -126,81 +139,69 @@ char IO_ReadChar() {
 
 }
 
-// Place the cursor at a certain location on screen
-void IO_SetCursorPosition(uint8_t line, uint8_t column) {
+// Print the banner for the 'AVBL' bootloader 
+void Console_PrintBanner() {
 
-    struct BIOS_Registers BIOS_regs;
-    BIOS_ClearRegistry(&BIOS_regs);
+    char* screen = (char*)0xB8000;
 
-    BIOS_regs.eax = 0x0200;
-    BIOS_regs.edx = (line << 8) + column;
+    Console_ClearScreen();
 
-    BIOS_Interrupt(0x10, &BIOS_regs);
-}
+    size_t i = 0;
+    while (i < 80) {
+        screen[2*i  ] = 0x00;
+        screen[2*i+1] = 0x90;
+        i++;
+    }
 
-// Make the cursor invisible (no more blinking dash)
-void IO_MakeCursorInvisible() {
+    char* str = "AVOS Boot loader";
+    i = 0;
+    while (str[i] != 0) {
+        screen[64 + 2*i]   = str[i];
+        screen[64 + 2*i+1] = 0x9F;
+        i++;
+    }
 
-    struct BIOS_Registers BIOS_regs;
-    BIOS_ClearRegistry(&BIOS_regs);
-
-    BIOS_regs.ecx = 0x2607;
-    BIOS_regs.eax = 0x0100;
-
-    BIOS_Interrupt(0x10, &BIOS_regs);
-
-}
-
-// Make the cursor visible
-void IO_MakeCursorVisible() {
-
-    struct BIOS_Registers BIOS_regs;
-    BIOS_ClearRegistry(&BIOS_regs);
-
-    BIOS_regs.ecx = 0x0607;
-    BIOS_regs.eax = 0x0100;
-
-    BIOS_Interrupt(0x10, &BIOS_regs);
-
+    return;
 }
 
 // Read a command string from the keyboard and print it on the screen
 // Input ends when enter is pressed (ASCII code 0x0D)
 // At most 0x400 characters allowed
-void IO_ReadCommand(char* buffer) {
+void Console_ReadCommand(char* buffer) {
+
+	uint8_t color        = 0x0F;
 
 	uint8_t start_line   = 2;
 	uint8_t start_column = 0;
 
-	uint8_t end_line     = 14;
-	uint8_t end_column   = 70;
-
 	uint8_t line         = start_line;
 	uint8_t column       = start_column;
-	uint8_t color        = 0x0F;
 
-	size_t  pos          = 0;
+	Console_MakeCursorVisible();
+	Console_PrintChar('[', line, column++, color);
+	Console_PrintChar('A', line, column++, color);
+	Console_PrintChar('V', line, column++, color);
+	Console_PrintChar('B', line, column++, color);
+	Console_PrintChar('L', line, column++, color);
+	Console_PrintChar(':', line, column++, color);
+	Console_PrintChar(']', line, column++, color);
 
-	IO_MakeCursorVisible();
-	
-	IO_PrintChar('[', line, column++, color);
-	IO_PrintChar('A', line, column++, color);
-	IO_PrintChar('V', line, column++, color);
-	IO_PrintChar('B', line, column++, color);
-	IO_PrintChar('L', line, column++, color);
-	IO_PrintChar(':', line, column++, color);
-	IO_PrintChar(']', line, column++, color);
+	size_t pos = line*80 + column + 0x3FF;
+	uint8_t end_line   = pos / 80;
+	uint8_t end_column = pos % 80;
+
+	pos = 0;
 
 	while (true) {
 		// Set the cursor position on the current line/column
-		IO_SetCursorPosition(line, column);
+		Console_SetCursorPosition(line, column);
 
 		// Read character from keyboard
-		char c = IO_ReadChar();
+		char c = Console_ReadChar();
 
 		// If the character is alphanumeric print it at the current location and advance the line/column
 		if (c >= 0x20 && c < 0x7F) {
-			IO_PrintChar(c, line, column, color);
+			Console_PrintChar(c, line, column, color);
 			if (column == 79) {
 				column = 0;
 				line++;
@@ -223,14 +224,14 @@ void IO_ReadCommand(char* buffer) {
 				line--;
 			}
 			else column--;
-			IO_PrintChar(' ', line, column, color);
+			Console_PrintChar(' ', line, column, color);
 			pos--;
 		}
 
 		// If the input buffer is full (0x400 characters read) then issue a message that the buffer is full and ask the user to press enter to continue
 		if (line == end_line && column == end_column) {
-			IO_PrintString("Command line buffer full. Press enter to continue", 23, 0, 0x04);
-			while (IO_ReadChar() != 0x0D) {
+			Console_PrintString("Command line buffer full. Press enter to continue", 23, 0, 0x04);
+			while (Console_ReadChar() != 0x0D) {
 			}
 			buffer[pos] = '\0';
 			break;

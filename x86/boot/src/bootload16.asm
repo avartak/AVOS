@@ -50,7 +50,9 @@ AVBL:
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
 	.Load_Address         dq 0
-	.Reserved             dq 0
+	.Sector_Size          dw 0x200
+	.Reserved1            dw 0
+	.Reserved2            dd 0
 
 	.Block1_LBA           dq 0x1800
 	.Block1_Num_Sectors   dd 1

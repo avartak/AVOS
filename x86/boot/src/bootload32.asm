@@ -15,9 +15,8 @@ SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video 
 
 ; These are the externally defined functions and variables we need
 
-extern IO_PrintBanner
-extern IO_MakeCursorInvisible
-extern DiskIO_ReadFromDisk
+extern Console_PrintBanner
+extern Console_MakeCursorInvisible
 extern Multiboot_CreateEmptyMBI
 extern Multiboot_SaveMemoryMaps
 extern Multiboot_LoadKernel
@@ -65,8 +64,8 @@ AVBL:
 
 	; Print the AVOS boot loader banner
 
-	call IO_PrintBanner
-	call IO_MakeCursorInvisible
+	call Console_PrintBanner
+	call Console_MakeCursorInvisible
 
 	; Create an empty multiboot information (MBI) record
 

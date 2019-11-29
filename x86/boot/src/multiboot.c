@@ -3,7 +3,7 @@
 #include <x86/boot/include/ram.h>
 #include <x86/boot/include/vbe.h>
 #include <x86/boot/include/elf.h>
-#include <x86/boot/include/io.h>
+#include <x86/boot/include/console.h>
 #include <x86/boot/include/discovery.h>
 
 uintptr_t Multiboot_GetHeader(uintptr_t start_addr, size_t size) {
@@ -64,7 +64,7 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_ad
     uintptr_t start_addr    = kernel_info->start;
 
     struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
-    uint8_t blocklist[512];
+    uint8_t blocklist[0x1000];
     bool kernel_found = false;
     for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
         for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
@@ -72,19 +72,26 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_ad
             uint64_t offset = blocklist_mst->blocks[i].lba + j;
             uint64_t lba = part_start + offset;
 
-            if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1)) return false;
-            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
-            char* marker = blocklist512->reserved;
-            if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
-                if (kernel_found) return false;
-                kernel_found = true;
-                for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
-                    image = blocklist512->load_address_lo;
-                    file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
-                    uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
-                    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kern_lba, blocklist512->blocks[k].num_sectors)) return false;
-                }
-            }
+			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1); 
+            if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
+
+			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist);
+			blocklist512--;
+			for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
+				blocklist512++;
+				if (blocklist512->jump != 0x9001FDE9) continue;
+				char* marker = blocklist512->reserved;
+				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
+				    kernel_found = true;
+				    for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
+				        image = blocklist512->load_address_lo;
+				        file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
+				        uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
+				        if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kern_lba, blocklist512->blocks[k].num_sectors)) return false;
+				    }
+				}
+				if (kernel_found) break;
+			}
 			if (kernel_found) break;
         }
 		if (kernel_found) break;
@@ -304,7 +311,7 @@ bool Multiboot_LoadModules(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_a
 	}
 
     struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
-    uint8_t blocklist[512];
+    uint8_t blocklist[0x1000];
 	uintptr_t mod_addr = kernel_info->start + kernel_info->size;
     for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
         for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
@@ -312,29 +319,37 @@ bool Multiboot_LoadModules(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_a
             uint64_t offset = blocklist_mst->blocks[i].lba + j;
             uint64_t lba = part_start + offset;
 
-            if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1)) return false;
-            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
-            char* marker = blocklist512->reserved;
-            if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') continue;
+			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
+			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 
-            struct Boot_BlockList272* blocklist272 = (struct Boot_BlockList272*)blocklist;
-			size_t mod_size = 0;
-			if (page_align && mod_addr % 0x1000 != 0) mod_addr = 0x1000 * (1 + mod_addr / 0x1000);
-			for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) {
-			    uint64_t mod_lba = part_start + blocklist272->blocks[k].lba;
-			    if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, mod_lba, blocklist272->blocks[k].num_sectors)) return false;
-				mod_size += blocklist272->blocks[k].num_sectors * blocklist272->sector_size;
-			}
-			if (mod_size > 0) {
-				struct Multiboot_Info_Modules* mbi_mod = (struct Multiboot_Info_Modules*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MODULE);
-				if (mbi_mod == MEMORY_NULL_PTR || mbi_mod->type != 0) return false;
-    			mbi_mod->type = MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME;
-    			mbi_mod->size = 256;
-				mbi_mod->mod_start = mod_addr;
-				mbi_mod->mod_end = mod_addr + mod_size - 1;
-				for (size_t k = 0; i < 240; k++) mbi_mod->string[k] = blocklist272->string[k];
-				if (!Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mod)) return false;
-			}
+            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
+			blocklist512--;
+            for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
+                blocklist512++;
+                if (blocklist512->jump != 0x9001FDE9) continue;
+                char* marker = blocklist512->reserved;
+                if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') continue;
+
+				struct Boot_BlockList272* blocklist272 = (struct Boot_BlockList272*)blocklist512;
+				size_t mod_size = 0;
+				if (page_align && mod_addr % 0x1000 != 0) mod_addr = 0x1000 * (1 + mod_addr / 0x1000);
+				for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) {
+				    uint64_t mod_lba = part_start + blocklist272->blocks[k].lba;
+					bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, mod_lba, blocklist272->blocks[k].num_sectors);
+					if (bytes_read == 0 || bytes_read != blocklist272->sector_size || bytes_read > 0x1000) return false;
+					mod_size += blocklist272->blocks[k].num_sectors * blocklist272->sector_size;
+				}
+				if (mod_size > 0) {
+					struct Multiboot_Info_Modules* mbi_mod = (struct Multiboot_Info_Modules*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MODULE);
+					if (mbi_mod == MEMORY_NULL_PTR || mbi_mod->type != 0) return false;
+					mbi_mod->type = MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME;
+					mbi_mod->size = 256;
+					mbi_mod->mod_start = mod_addr;
+					mbi_mod->mod_end = mod_addr + mod_size - 1;
+					for (size_t k = 0; i < 240; k++) mbi_mod->string[k] = blocklist272->string[k];
+					if (!Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mod)) return false;
+				}
+            }
         }
     }
 	return true;	
@@ -363,7 +378,7 @@ bool Multiboot_SaveBootCommand(uintptr_t mbi_addr) {
 
     mbi_cmd->type = MULTIBOOT_TAG_TYPE_CMDLINE;
 	mbi_cmd->size = 8;
-	IO_ReadCommand(mbi_cmd->string);
+	Console_ReadCommand(mbi_cmd->string);
 	size_t i;
 	for (i = 0; (mbi_cmd->string)[i] != '\0'; i++) (mbi_cmd->size)++;
 	(mbi_cmd->size)++;
