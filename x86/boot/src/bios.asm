@@ -28,7 +28,7 @@ BIOS_Regs16:
     .ss     dw   0
     .flags  dw   0
 
-; Interrupt number to be invoked (only the first byte is relevant)
+; Interrupt number to be invoked
 BIOS_Int_ID db 0
 
 ; Place to store the protected mode stack pointer (we will use a dedicated 1 KB stack for the real mode)
@@ -67,7 +67,7 @@ BIOS_Interrupt:
 	push  ebp
 	mov   ebp, esp
 
-	; We start by saving the general registers and the flags register to memory, in the BIOS_Regs32 structure defined at the end
+	; We start by saving the general registers and the flags register on the stack (pushing the flags register twice is deliberate - used at the end to set the interrupt flag)
 
 	pushfd
 	pushfd

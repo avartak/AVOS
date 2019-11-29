@@ -4,45 +4,45 @@
 
 uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 
+	uint32_t* mem = (uint32_t*)(addr);
+	
 	// INT 0x12 is the most reliable way to get the size of low memory; but it does not give a map if usable areas
     struct BIOS_Registers BIOS_regs;
     BIOS_ClearRegistry(&BIOS_regs);
 
 	BIOS_Interrupt(0x12, &BIOS_regs);
 	if ((BIOS_regs.flags & 1) == 1) return addr;
-	size_t memory_lower = BIOS_regs.eax & 0xFFFF;
-	size_t memory_upper = 0;
+	mem[0] = BIOS_regs.eax & 0xFFFF;
+	if (mem[0] == 0) return addr;
 
 	// To get the size of upper memory (above the 1 MB limit placed by the 20-bit real addressing) we first try INT 0x15, AX=0xE801
 	// This routine knows about the 1MB memory hole at address 15 MB, but stops at the next hole / reserved area. 
 	// Gives the available memory in KB between 1-15 MB in CX, and the available memory in 64 KB above 16 MB in DX
 	// If CX contains zero before and after the routine, check AX/BX instead
+	mem[1] = 0;
 	BIOS_ClearRegistry(&BIOS_regs);
 	BIOS_regs.eax = 0xE801;
 	BIOS_Interrupt(0x15, &BIOS_regs);
-	if ((BIOS_regs.flags & 1) == 1 || (BIOS_regs.eax & 0xFF00) == 0x8600 || (BIOS_regs.eax & 0xFF00) == 0x8000) return addr;
-	if ((BIOS_regs.eax & 0xFFFF) != 0 || (BIOS_regs.ecx & 0xFFFF) != 0) {
-		if ((BIOS_regs.ecx & 0xFFFF) != 0) memory_upper += (BIOS_regs.ecx & 0xFFFF) + (BIOS_regs.edx & 0xFFFF)*0x40;
-		else memory_upper += (BIOS_regs.eax & 0xFFFF) + (BIOS_regs.ebx & 0xFFFF)*0x40;
+	if ((BIOS_regs.flags & 1) == 0 && (BIOS_regs.eax & 0xFF00) != 0x8600 && (BIOS_regs.eax & 0xFF00) != 0x8000) {
+		if ((BIOS_regs.ecx & 0xFFFF) != 0) {
+			mem[1] += (BIOS_regs.ecx & 0xFFFF) + (BIOS_regs.edx & 0xFFFF)*0x40;
+			return addr + 8;
+		}
+		else if ((BIOS_regs.eax & 0xFFFF) != 0) {
+			mem[1] += (BIOS_regs.eax & 0xFFFF) + (BIOS_regs.ebx & 0xFFFF)*0x40;
+			return addr + 8;
+		}
 	}
+
 	// If INT 0x15, AX=0xE801 didn't work, we try INT 0x15, AX=0x88
 	// This function may stop itself at 15 MB
-	else {
-		BIOS_ClearRegistry(&BIOS_regs);
-		BIOS_regs.eax = 0x88;
-		BIOS_Interrupt(0x15, &BIOS_regs);
-
-		if ((BIOS_regs.flags & 1) == 1) return addr;
-		memory_upper = (BIOS_regs.eax & 0xFFFF);
-	}
-
-	uint32_t* mem = (uint32_t*)(addr);
-	mem[0] = memory_lower;
-	mem[1] = memory_upper;
+	BIOS_ClearRegistry(&BIOS_regs);
+	BIOS_regs.eax = 0x88;
+	BIOS_Interrupt(0x15, &BIOS_regs);
 	
-	if (mem[0] != 0 && mem[1] != 0) return addr + 8;
-	else return addr;
-
+	if ((BIOS_regs.flags & 1) == 1) return addr;
+	mem[1] = (BIOS_regs.eax & 0xFFFF);
+	return addr + 8;
 }
 
 uintptr_t RAM_StoreE820Info(uintptr_t addr) {
@@ -78,9 +78,9 @@ uintptr_t RAM_StoreE820Info(uintptr_t addr) {
 
         BIOS_Interrupt(0x15, &BIOS_regs);
 
-        if (BIOS_regs.eax != 0x534D4150 || BIOS_regs.ebx == 0 || (BIOS_regs.flags & 1) == 1) break;
+        if ((BIOS_regs.flags & 1) == 1 || BIOS_regs.eax != 0x534D4150 || BIOS_regs.ebx == 0) break;
 
-        if ((BIOS_regs.ecx <= 20 || current_entry->acpi3 == 1) && current_entry->size > 0) {
+        if ((BIOS_regs.ecx <= 20 || (current_entry->acpi3 & 3) == 1) && current_entry->size > 0) {
             BIOS_regs.esi += 0x18;
             BIOS_regs.edi += 0x18;
             current_entry++;
@@ -101,8 +101,7 @@ uint64_t RAM_MaxPresentMemoryAddress(struct Multiboot_E820_Entry* E820_Table, si
 	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem_max;
 	for (size_t i = 0; i < E820_Table_size; i++) {
 		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-		if (E820_Table[i].base + E820_Table[i].size < mem_max) continue;
-		mem_max = E820_Table[i].base + E820_Table[i].size;
+		if (E820_Table[i].base + E820_Table[i].size > mem_max) mem_max = E820_Table[i].base + E820_Table[i].size;
 	}
 	return mem_max;
 }
@@ -165,7 +164,7 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 	for (size_t i = 0; i < table_size; i++) {
 		uint64_t min_addr = table_ptr[i].address;
 		uint64_t mask = ~((uint64_t)(0xFFF));
-		if ((min_addr & mask) < min_addr) min_addr = mask + (min_addr & mask);
+		if ((min_addr & mask) < min_addr) min_addr = (min_addr & mask) + 0x1000;
 		uint64_t max_addr = (table_ptr[i].address + table_ptr[i].size) & mask;
 		if (max_addr > min_addr) {
 			table_ptr[i].address = min_addr;
