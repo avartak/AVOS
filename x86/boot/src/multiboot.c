@@ -1,6 +1,6 @@
 #include <x86/boot/include/multiboot.h>
 #include <x86/boot/include/diskio.h>
-#include <x86/boot/include/ram.h>
+#include <x86/boot/include/RAM.h>
 #include <x86/boot/include/vbe.h>
 #include <x86/boot/include/elf.h>
 #include <x86/boot/include/console.h>
