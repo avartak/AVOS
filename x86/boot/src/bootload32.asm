@@ -84,8 +84,8 @@ AVBL:
 
 	; Load kernel from disk
 
-	push  Multiboot_Information_start
 	push  Kernel_Info 
+	push  Multiboot_Information_start
 	call  Multiboot_LoadKernel
 	add   esp, 0x8
 	test  al, al
@@ -94,8 +94,8 @@ AVBL:
 
 	; Load boot modules from disk
 
-	push  Multiboot_Information_start
 	push  Kernel_Info 
+	push  Multiboot_Information_start
 	call  Multiboot_LoadModules
 	add   esp, 0x8
 	test  al, al

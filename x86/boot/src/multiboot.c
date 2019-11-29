@@ -6,6 +6,74 @@
 #include <x86/boot/include/console.h>
 #include <x86/boot/include/discovery.h>
 
+bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
+    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
+
+    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
+    if ((mbi_addr % 8) == 0 && mbi_start->reserved == 0 && mbi_start->total_size >= 16 && mbi_term_tag->type == 0 && mbi_term_tag->size == 8) return true;
+    else return false;
+}
+
+bool Multiboot_CreateEmptyMBI(uintptr_t mbi_addr) {
+
+	if (Multiboot_CheckForValidMBI(mbi_addr)) return true;
+	if (mbi_addr % 8 != 0) return false; 
+
+    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
+	mbi_start->total_size = 16;
+	mbi_start->reserved   = 0;
+
+    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
+	mbi_term_tag->type = 0;
+	mbi_term_tag->size = 8;
+
+	return true;
+}
+
+uintptr_t Multiboot_FindMBITagAddress(uintptr_t mbi_addr, uint32_t tag_type) {
+
+	if (!Multiboot_CheckForValidMBI(mbi_addr)) return (uintptr_t)MEMORY_NULL_PTR;
+
+    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
+	struct Multiboot_Info_Tag*   mbi_tag   = (struct Multiboot_Info_Tag*)(mbi_addr + 8);
+	struct Multiboot_Info_Tag*   ret_tag   = (struct Multiboot_Info_Tag*)(mbi_addr + 8);
+
+	while (mbi_tag->type != 0 && (uintptr_t)mbi_tag < mbi_addr + mbi_start->total_size) {
+		if (mbi_tag->type == tag_type) {
+			ret_tag = mbi_tag;
+			break;
+		}
+		mbi_tag = (struct Multiboot_Info_Tag*)(mbi_tag->size + (uintptr_t)mbi_tag);
+	}
+
+	if (ret_tag->type == tag_type) return (uintptr_t)ret_tag;
+	ret_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
+	if (ret_tag->type != 0 || ret_tag->size != 8) return (uintptr_t)MEMORY_NULL_PTR;
+	else return (uintptr_t)ret_tag;
+}
+
+bool Multiboot_TerminateTag(uintptr_t mbi_addr, uintptr_t tag_addr) {
+
+    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
+    if ((mbi_addr % 8) != 0 || mbi_start->reserved != 0 || (mbi_start->total_size % 8) != 0) return false;
+
+	struct Multiboot_Info_Tag* mbi_tag  = (struct Multiboot_Info_Tag*)tag_addr;
+	struct Multiboot_Info_Tag* mbi_term = (struct Multiboot_Info_Tag*)(mbi_tag->size + tag_addr);
+
+	if (mbi_tag->type == 0 && mbi_tag->size == 8) return true;
+	if (mbi_tag->size == 0) {
+		mbi_term->type = 0;
+		mbi_term->size = 8;
+	}
+	else {
+		mbi_term->type = 0;
+		mbi_term->size = 8;
+		mbi_start->total_size += mbi_tag->size;
+	}
+	return true;
+
+}
+
 uintptr_t Multiboot_GetHeader(uintptr_t start_addr, size_t size) {
 
     uint32_t* start_ptr_u32 = (uint32_t*)start_addr;
@@ -20,14 +88,14 @@ uintptr_t Multiboot_GetHeader(uintptr_t start_addr, size_t size) {
         }
     }
 
-	if (!found_header_magic) return 0;
+    if (!found_header_magic) return 0;
 
-	struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
-	if (header_magic->architecture != MULTIBOOT_ARCHITECTURE_I386) return 0;
-	if (header_magic->header_length < sizeof(struct Multiboot_Header_Magic_Fields)) return 0;
-	if ((uint32_t)(header_magic->checksum + header_magic->magic + header_magic->architecture + header_magic->header_length) != 0) return 0;
+    struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
+    if (header_magic->architecture != MULTIBOOT_ARCHITECTURE_I386) return 0;
+    if (header_magic->header_length < sizeof(struct Multiboot_Header_Magic_Fields)) return 0;
+    if ((uint32_t)(header_magic->checksum + header_magic->magic + header_magic->architecture + header_magic->header_length) != 0) return 0;
 
-	return multiboot_header_ptr;
+    return multiboot_header_ptr;
 
 }
 
@@ -51,7 +119,7 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 }
 
 
-bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr) {
+bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
 	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
@@ -228,75 +296,7 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_ad
 	
 }
 
-bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
-    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
-
-    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
-    if ((mbi_addr % 8) == 0 && mbi_start->reserved == 0 && mbi_start->total_size >= 16 && mbi_term_tag->type == 0 && mbi_term_tag->size == 8) return true;
-    else return false;
-}
-
-bool Multiboot_CreateEmptyMBI(uintptr_t mbi_addr) {
-
-	if (Multiboot_CheckForValidMBI(mbi_addr)) return true;
-	if (mbi_addr % 8 != 0) return false; 
-
-    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
-	mbi_start->total_size = 16;
-	mbi_start->reserved   = 0;
-
-    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
-	mbi_term_tag->type = 0;
-	mbi_term_tag->size = 8;
-
-	return true;
-}
-
-uintptr_t Multiboot_FindMBITagAddress(uintptr_t mbi_addr, uint32_t tag_type) {
-
-	if (!Multiboot_CheckForValidMBI(mbi_addr)) return (uintptr_t)MEMORY_NULL_PTR;
-
-    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
-	struct Multiboot_Info_Tag*   mbi_tag   = (struct Multiboot_Info_Tag*)(mbi_addr + 8);
-	struct Multiboot_Info_Tag*   ret_tag   = (struct Multiboot_Info_Tag*)(mbi_addr + 8);
-
-	while (mbi_tag->type != 0 && (uintptr_t)mbi_tag < mbi_addr + mbi_start->total_size) {
-		if (mbi_tag->type == tag_type) {
-			ret_tag = mbi_tag;
-			break;
-		}
-		mbi_tag = (struct Multiboot_Info_Tag*)(mbi_tag->size + (uintptr_t)mbi_tag);
-	}
-
-	if (ret_tag->type == tag_type) return (uintptr_t)ret_tag;
-	ret_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
-	if (ret_tag->type != 0 || ret_tag->size != 8) return (uintptr_t)MEMORY_NULL_PTR;
-	else return (uintptr_t)ret_tag;
-}
-
-bool Multiboot_TerminateTag(uintptr_t mbi_addr, uintptr_t tag_addr) {
-
-    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
-    if ((mbi_addr % 8) != 0 || mbi_start->reserved != 0 || (mbi_start->total_size % 8) != 0) return false;
-
-	struct Multiboot_Info_Tag* mbi_tag  = (struct Multiboot_Info_Tag*)tag_addr;
-	struct Multiboot_Info_Tag* mbi_term = (struct Multiboot_Info_Tag*)(mbi_tag->size + tag_addr);
-
-	if (mbi_tag->type == 0 && mbi_tag->size == 8) return true;
-	if (mbi_tag->size == 0) {
-		mbi_term->type = 0;
-		mbi_term->size = 8;
-	}
-	else {
-		mbi_term->type = 0;
-		mbi_term->size = 8;
-		mbi_start->total_size += mbi_tag->size;
-	}
-	return true;
-
-}
-
-bool Multiboot_LoadModules(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_addr) {
+bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	bool page_align = false;
 
