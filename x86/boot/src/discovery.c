@@ -45,12 +45,12 @@ uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 	info[0]  =  version;
 	info[1]  =  BIOS_regs.eax & 0xFFFF;      
 	info[2]  =  BIOS_regs.ebx & 0xFFFF;
-	info[3]  = (BIOS_regs.ebx & 0xFFFF0000) >> 16;
+	info[3]  = (BIOS_regs.ebx & 0xFFFF0000) >> 0x10;
 	info[4]  =  BIOS_regs.ecx & 0xFFFF;
 	info[5]  =  BIOS_regs.edx & 0xFFFF;
 	info[6]  =  flags;
 	info[7]  =  BIOS_regs.esi & 0xFFFF;
-	info[8]  = (BIOS_regs.esi & 0xFFFF0000) >> 16;
+	info[8]  = (BIOS_regs.esi & 0xFFFF0000) >> 0x10;
 	info[9]  =  BIOS_regs.edi & 0xFFFF;
 	info[10] =  0;
 	info[11] =  0;
@@ -63,8 +63,8 @@ uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 uintptr_t Discovery_StoreSMBIOSInfo(uintptr_t addr) {
 
 	// Find the memory address of the SMBIOS entry point table in low memory --> It starts on a 16-byte aligned boundary in the range 0xF0000 - 0x100000
-    uintptr_t mem;
-    for (mem = 0xF0000; mem < 0x100000; mem += 16) {
+    uintptr_t mem = 0xF0000;
+    for (; mem < 0x100000; mem += 0x10) {
         char* str = (char*)mem;
         if (str[0] == '_' && str[1] == 'S' && str[2] == 'M' && str[3] == '_') {
             size_t length = (uint8_t)(str[5]);
@@ -77,7 +77,7 @@ uintptr_t Discovery_StoreSMBIOSInfo(uintptr_t addr) {
 
 	struct Multiboot_SMBIOS_EntryPointTable* smbios_ept = (struct Multiboot_SMBIOS_EntryPointTable*)mem;
 
-	// First two bytes contain the version information; nexy 6 bytes are reserved	
+	// First two bytes contain the version information; next 6 bytes are reserved	
 	uint8_t* ver = (uint8_t*)addr;
 	ver[0] = smbios_ept->major_version;
 	ver[1] = smbios_ept->minor_version;
