@@ -75,19 +75,18 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_ad
 			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1); 
             if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 
-			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist);
-			blocklist512--;
+			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist) - 1;
 			for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
 				blocklist512++;
 				if (blocklist512->jump != 0x9001FDE9) continue;
 				char* marker = blocklist512->reserved;
 				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
 				    kernel_found = true;
+				    image = blocklist512->load_address_lo;
 				    for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
-				        image = blocklist512->load_address_lo;
-				        file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
 				        uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
 				        if (!DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kern_lba, blocklist512->blocks[k].num_sectors)) return false;
+				        file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
 				    }
 				}
 				if (kernel_found) break;
@@ -322,8 +321,7 @@ bool Multiboot_LoadModules(struct Boot_Kernel_Info* kernel_info, uintptr_t mbi_a
 			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
 			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 
-            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist;
-			blocklist512--;
+            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist - 1;
             for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
                 blocklist512++;
                 if (blocklist512->jump != 0x9001FDE9) continue;
