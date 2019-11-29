@@ -42,18 +42,18 @@ uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 
 	// Save the APM interface information
 	uint16_t* info = (uint16_t*)addr;
-	info[0]  = version;
-	info[1]  = BIOS_regs.eax & 0xFFFF;      
-	info[2]  = BIOS_regs.ebx & 0xFFFF;
+	info[0]  =  version;
+	info[1]  =  BIOS_regs.eax & 0xFFFF;      
+	info[2]  =  BIOS_regs.ebx & 0xFFFF;
 	info[3]  = (BIOS_regs.ebx & 0xFFFF0000) >> 16;
-	info[4]  = BIOS_regs.ecx & 0xFFFF;
-	info[5]  = BIOS_regs.edx & 0xFFFF;
-	info[6]  = flags;
-	info[7]  = BIOS_regs.esi & 0xFFFF;
+	info[4]  =  BIOS_regs.ecx & 0xFFFF;
+	info[5]  =  BIOS_regs.edx & 0xFFFF;
+	info[6]  =  flags;
+	info[7]  =  BIOS_regs.esi & 0xFFFF;
 	info[8]  = (BIOS_regs.esi & 0xFFFF0000) >> 16;
-	info[9]  = BIOS_regs.edi & 0xFFFF;
-	info[10] = 0;
-	info[11] = 0;
+	info[9]  =  BIOS_regs.edi & 0xFFFF;
+	info[10] =  0;
+	info[11] =  0;
 
 	return addr + 24;
 
