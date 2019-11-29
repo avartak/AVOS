@@ -1,4 +1,4 @@
-#include <x86/boot/include/ram.h>
+#include <x86/boot/include/RAM.h>
 #include <x86/boot/include/multiboot.h>
 #include <x86/boot/include/bios.h>
 
