@@ -1,9 +1,12 @@
 ; The following care the descriptors for the 32-bit and 16-bit protected mode segments
 
-SEG32_CODE equ 0x08
-SEG32_DATA equ 0x10
-SEG16_CODE equ 0x18
-SEG16_DATA equ 0x20
+SEG32_CODE           equ 0x08
+SEG32_DATA           equ 0x10
+SEG16_CODE           equ 0x18
+SEG16_DATA           equ 0x20
+
+REAL_MODE_STACK_SIZE equ 0x400
+INTERRUPTS_ENABLED   equ 0x200
 
 section .text
 
@@ -248,7 +251,7 @@ BITS 32
 	; Check if interrupts were enabled when BIOS_Interrupt was called
 
 	pop   eax
-	test  eax, 0x200
+	test  eax, INTERRUPTS_ENABLED
 	jz    .return
 	sti
 
@@ -264,6 +267,6 @@ BITS 32
 align 0x10
 
 BIOS_Stack_Segment:
-times 0x400 db   0
+times REAL_MODE_STACK_SIZE db   0
 BIOS_Stack_Pointer:
 
