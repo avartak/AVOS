@@ -98,10 +98,9 @@ uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height)
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
 	if (width == 0 && height == 0) {
 		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
-			if (video_modes[i] == 3) {
-				if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
-				if ((VBE_ModeBuffer.attributes & 0x10) == 0 &&  VBE_ModeBuffer.width == 80 && VBE_ModeBuffer.height == 25) return video_modes[i];
-			}
+			if (video_modes[i] != 3) continue;
+			if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
+			if ((VBE_ModeBuffer.attributes & 0x10) == 0 &&  VBE_ModeBuffer.width == 80 && VBE_ModeBuffer.height == 25) return video_modes[i];
 		}
 		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
 			if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
@@ -125,10 +124,9 @@ uint16_t VBE_GetMode(uint16_t* video_modes, uint32_t width, uint32_t height, uin
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
 	if (width == 0 && height == 0 && depth == 0) {
         for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
-            if (video_modes[i] == 3) {
-                if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
-                if ((VBE_ModeBuffer.attributes & 0x10) == 0 &&  VBE_ModeBuffer.width == 80 && VBE_ModeBuffer.height == 25) return video_modes[i];
-            }
+            if (video_modes[i] != 3) continue;
+            if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
+            if ((VBE_ModeBuffer.attributes & 0x10) == 0 &&  VBE_ModeBuffer.width == 80 && VBE_ModeBuffer.height == 25) return video_modes[i];
         }
         for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
             if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;

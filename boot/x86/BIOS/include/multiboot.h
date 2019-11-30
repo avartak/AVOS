@@ -4,7 +4,7 @@
 #include <kernel/include/common.h>
 #include <kernel/include/multiboot.h>
 #include <csupport/include/string.h>
-#include <x86/boot/include/boot.h>
+#include <boot/x86/BIOS/include/boot.h>
 
 extern bool      Multiboot_CheckForValidMBI      (uintptr_t mbi_addr);
 extern uintptr_t Multiboot_FindMBITagAddress     (uintptr_t mbi_addr, uint32_t tag_type);
