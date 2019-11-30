@@ -72,16 +72,16 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
 modulelist.bin: boot/x86/BIOS/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin x86/boot/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin boot/x86/BIOS/src/modulelist.asm
 
 mbr.bin: boot/x86/BIOS/src/MBR.asm
-	$(AS) -f bin -o mbr.bin x86/boot/src/MBR.asm
+	$(AS) -f bin -o mbr.bin boot/x86/BIOS/src/MBR.asm
 
 vbr.bin: boot/x86/BIOS/src/VBR.asm
-	$(AS) -f bin -o vbr.bin x86/boot/src/VBR.asm
+	$(AS) -f bin -o vbr.bin boot/x86/BIOS/src/VBR.asm
 
 bootload16.bin: boot/x86/BIOS/src/bootload16.asm
-	$(AS) -f bin -o bootload16.bin x86/boot/src/bootload16.asm
+	$(AS) -f bin -o bootload16.bin boot/x86/BIOS/src/bootload16.asm
 
 bootload32.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
 	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
