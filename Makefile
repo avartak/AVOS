@@ -20,7 +20,7 @@ $(X86_BOOT)/bootload32.s.o \
 $(X86_BOOT)/bios.s.o \
 $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/RAM.c.o  \
-$(X86_BOOT)/vbe.c.o  \
+$(X86_BOOT)/VBE.c.o  \
 $(X86_BOOT)/elf.c.o  \
 $(X86_BOOT)/console.c.o  \
 $(X86_BOOT)/discovery.c.o  \
