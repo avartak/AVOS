@@ -14,14 +14,14 @@ CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra 
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
-X86_BOOT=x86/boot/src
+X86_BOOT=boot/x86/BIOS/src
 X86_BOOT_OBJS=\
 $(X86_BOOT)/bootload32.s.o \
 $(X86_BOOT)/bios.s.o \
 $(X86_BOOT)/diskio.c.o \
 $(X86_BOOT)/RAM.c.o  \
 $(X86_BOOT)/VBE.c.o  \
-$(X86_BOOT)/elf.c.o  \
+$(X86_BOOT)/ELF.c.o  \
 $(X86_BOOT)/console.c.o  \
 $(X86_BOOT)/discovery.c.o  \
 $(X86_BOOT)/multiboot.c.o 
@@ -71,24 +71,24 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
-modulelist.bin: x86/boot/src/modulelist.asm
+modulelist.bin: boot/x86/BIOS/src/modulelist.asm
 	$(AS) -f bin -o modulelist.bin x86/boot/src/modulelist.asm
 
-mbr.bin: x86/boot/src/MBR.asm
+mbr.bin: boot/x86/BIOS/src/MBR.asm
 	$(AS) -f bin -o mbr.bin x86/boot/src/MBR.asm
 
-vbr.bin: x86/boot/src/VBR.asm
+vbr.bin: boot/x86/BIOS/src/VBR.asm
 	$(AS) -f bin -o vbr.bin x86/boot/src/VBR.asm
 
-bootloader.bin: bootload16.bin bootload32.bin
-	cat bootload16.bin bootload32.bin > bootloader.bin
-	
-bootload16.bin: x86/boot/src/bootload16.asm
+bootload16.bin: boot/x86/BIOS/src/bootload16.asm
 	$(AS) -f bin -o bootload16.bin x86/boot/src/bootload16.asm
 
 bootload32.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
 	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
 
+bootloader.bin: bootload16.bin bootload32.bin
+	cat bootload16.bin bootload32.bin > bootloader.bin
+	
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)
 
@@ -105,6 +105,6 @@ clean:
 	rm x86/kernel/src/*.o
 	rm kernel/src/*.o
 	rm csupport/src/*.o
-	rm x86/boot/src/*.o
+	rm boot/x86/BIOS/src/*.o
 	rm *.bin
 

@@ -1,5 +1,5 @@
-#include <x86/boot/include/VBE.h>
-#include <x86/boot/include/bios.h>
+#include <boot/x86/BIOS/include/VBE.h>
+#include <boot/x86/BIOS/include/bios.h>
 
 struct VBE_Mode_Info VBE_ModeBuffer;
 

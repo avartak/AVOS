@@ -1,5 +1,5 @@
-#include <x86/boot/include/diskio.h>
-#include <x86/boot/include/bios.h>
+#include <boot/x86/BIOS/include/diskio.h>
+#include <boot/x86/BIOS/include/bios.h>
 
 uint8_t DiskIO_LowMemoryBuffer[0x1000];
 

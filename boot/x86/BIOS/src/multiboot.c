@@ -1,10 +1,10 @@
-#include <x86/boot/include/multiboot.h>
-#include <x86/boot/include/diskio.h>
-#include <x86/boot/include/RAM.h>
-#include <x86/boot/include/VBE.h>
-#include <x86/boot/include/elf.h>
-#include <x86/boot/include/console.h>
-#include <x86/boot/include/discovery.h>
+#include <boot/x86/BIOS/include/multiboot.h>
+#include <boot/x86/BIOS/include/diskio.h>
+#include <boot/x86/BIOS/include/RAM.h>
+#include <boot/x86/BIOS/include/VBE.h>
+#include <boot/x86/BIOS/include/ELF.h>
+#include <boot/x86/BIOS/include/console.h>
+#include <boot/x86/BIOS/include/discovery.h>
 
 bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
     struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;

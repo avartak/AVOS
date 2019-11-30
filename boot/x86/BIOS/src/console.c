@@ -1,5 +1,5 @@
-#include <x86/boot/include/console.h>
-#include <x86/boot/include/bios.h>
+#include <boot/x86/BIOS/include/console.h>
+#include <boot/x86/BIOS/include/bios.h>
 
 // Clear screen
 void Console_ClearScreen() {

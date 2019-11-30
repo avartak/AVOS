@@ -1,6 +1,6 @@
-#include <x86/boot/include/RAM.h>
-#include <x86/boot/include/multiboot.h>
-#include <x86/boot/include/bios.h>
+#include <boot/x86/BIOS/include/RAM.h>
+#include <boot/x86/BIOS/include/multiboot.h>
+#include <boot/x86/BIOS/include/bios.h>
 
 uintptr_t RAM_StoreBasicInfo(uintptr_t addr) {
 
