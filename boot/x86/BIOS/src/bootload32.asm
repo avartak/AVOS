@@ -52,15 +52,14 @@ AVBL:
 
 	mov  esp, STACK_TOP
 
-    ; Store information needed to load the kernel
+    ; Store information passed on by the VBR
 
     mov  [Kernel_Info.boot_drive_ID], dl
+    mov  [Kernel_Info.pnpbios_check_ptr], edi
     mov  [Kernel_Info.boot_partition], esi
-    mov  [Kernel_Info.blocklist_ptr], ebx
     mov  [Kernel_Info.part_info_ptr], ebp
-
-    mov  eax, KERNEL_START
-    mov  [Kernel_Info.start], eax
+    mov  [Kernel_Info.blocklist_ptr], ebx
+    mov  [Kernel_Info.start], DWORD KERNEL_START
 
 	; Print the AVOS boot loader banner
 
@@ -143,33 +142,34 @@ AVBL:
 
 section .data
 
+; Kernel loading information
+
+global Kernel_Info
+Kernel_Info:
+	.boot_drive_ID     dd 0
+	.pnpbios_check_ptr dd 0
+	.boot_partition    dd 0
+	.part_info_ptr     dd 0
+	.blocklist_ptr     dd 0
+	.start             dd 0
+	.multiboot_header  dd 0
+	.entry             dd 0
+	.size              dd 0
+
 ; Error strings in case the boot loader runs into trouble
 
 Messages: 
-ErrStr_Memory       db 'Unable to get memory information', 0
-ErrStr_LoadKernel   db 'Unable to load kernel', 0
-ErrStr_LoadModules  db 'Unable to load boot modules', 0
-ErrStr_MBI          db 'Unable to save multiboot information', 0
+ErrStr_Memory          db 'Unable to get memory information', 0
+ErrStr_LoadKernel      db 'Unable to load kernel', 0
+ErrStr_LoadModules     db 'Unable to load boot modules', 0
+ErrStr_MBI             db 'Unable to save multiboot information', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 section .bss
 
-; Kernel loading information
-
 align 8
-
-global Kernel_Info
-Kernel_Info:
-	.boot_drive_ID     resd 1
-	.boot_partition    resd 1
-	.part_info_ptr     resd 1
-	.blocklist_ptr     resd 1
-	.start             resd 1
-	.multiboot_header  resd 1
-	.entry             resd 1
-	.size              resd 1
 
 ; Multiboot information (MBI) table
 
