@@ -1,4 +1,4 @@
-; What follows is a traditional master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC. 
+; What follows is a traditional master boot record (MBR) that is part of the BIOS-based boot sequence of an x86 PC
 ; - This will not run through the Unified Extensible Firmware Interface (UEFI)
 ; - Traditional partitions ; no GUID Partition Table (GPT) or support for it 
 ; - Certain parts of the MBR (the partition table in particular) are expected to be written/maintained by a partition editor
@@ -6,7 +6,7 @@
 ; This file contains the code residing in the master boot record (MBR) of a fixed disk or removable drive that is deemed bootable [boot drive]
 ; MBR is the first sector (exactly 512 B) of the boot drive
 ; The last word of this sector has to be 0xAA55 -- this is the boot signature
-; The BIOS will look for this signature, then load this sector at memory address 0x7C00, and jump to 0x0000:0x7C00 (or sometimes 0x07C0:0x0000 -- beware!)
+; The BIOS will look for this signature, then load this sector at memory address 0x7C00, and jump to it
 ; The boot drive ID is stored in DL --> typically (but not always!) 0x80, 0x81, ... for fixed disks or removable drives ; 0x00, 0x01, ... for floppies ; 0x7E, 0x7F are reserved
 
 ; The MBR contains a partition table with 4 partition table entries (see description below), each 16 bytes in size, from 0x1BE to 0x1FD (0x1FE and 0x1FF contain the boot signature)
@@ -39,11 +39,10 @@
 ; First let us include some definitions of constants
 
 MBR_SIZE                equ 0x0200                ; Size of the MBR
-LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR, VBR is loaded in memory
-MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to, then loads the VBR at LOAD_ADDRESS
+MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to before loading the VBR 
+LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR will load the VBR in memory
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
-
-PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR
+PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR (byte 446 of the MBR)
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
@@ -156,8 +155,10 @@ MBR:
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	mov   dl, [STACK_TOP-2]
+	xor   ax, ax
+	mov   ds, ax
 	mov   si, DAP
+	mov   dl, [STACK_TOP-2]
 	mov   ah, 0x42
 	int   0x13
 	jnc   CheckVBR
@@ -175,14 +176,15 @@ MBR:
 	; - AH contains return code of the read routine ; AL contains the actual number of sectors that got read ; Carry flag is clear if the read was successful  
 
 	DiskReadUsingCHS:	
+	xor   ax, ax
+	mov   ds, ax
+	mov   es, ax
+	mov   bx, LOAD_ADDRESS
 	mov   dl, [STACK_TOP-2]
 	mov   bx, [STACK_TOP-8]
 	mov   dh, [bx+1]
 	mov   cl, [bx+2]
 	mov   ch, [bx+3]
-	xor   ax, ax
-	mov   es, ax
-	mov   bx, LOAD_ADDRESS
 	mov   al, 1
 	mov   ah, 0x02
 	int   0x13
@@ -194,6 +196,8 @@ MBR:
 	; Now check if the loaded VBR has the boot signature at the end
 	
 	CheckVBR:
+	xor   ax, ax
+	mov   ds, ax
 	mov   ax, [LOAD_ADDRESS+510]
 	cmp   ax, 0xAA55
 	je    LaunchVBR
@@ -203,6 +207,8 @@ MBR:
 	; We are all set to launch into the VBR
 
 	LaunchVBR:
+	xor   ax, ax
+	mov   ss, ax
 	mov   sp, STACK_TOP-8
 	xor   ax, ax
 	mov   ds, ax
@@ -218,6 +224,8 @@ MBR:
 	; The character byte is stored in AL ; BH contains the display page number ; BL contains the display color for the character
 
 	HaltSystem:
+	xor   ax, ax
+	mov   ds, ax
     .printchar:
     lodsb
     test  al, al
@@ -264,9 +272,9 @@ Messages:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Padding of zeroes till we reach (near) the start of the partition tables
+; Padding of zeroes till we reach (near) the start of the partition tables [there are 6 bytes before the partition table containing some ID information]
 
-times 440-($-$$)     db 0
+times PARTITION_TABLE_OFFSET-6-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,12 +336,11 @@ Partition_Table_Entry4:
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 512-2-($-$$)   db 0 
+times 0x200-2-($-$$) db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 
-Boot_Signature:
-dw   0xAA55
+Boot_Signature       dw   0xAA55
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
