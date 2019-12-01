@@ -155,8 +155,6 @@ MBR:
 	; This data structure is called the Data Address Packet (DAP) and is defined at the end of the boot sector code
 	
 	DiskReadUsingLBA:
-	xor   ax, ax
-	mov   ds, ax
 	mov   si, DAP
 	mov   dl, [STACK_TOP-2]
 	mov   ah, 0x42
@@ -176,9 +174,6 @@ MBR:
 	; - AH contains return code of the read routine ; AL contains the actual number of sectors that got read ; Carry flag is clear if the read was successful  
 
 	DiskReadUsingCHS:	
-	xor   ax, ax
-	mov   ds, ax
-	mov   es, ax
 	mov   bx, LOAD_ADDRESS
 	mov   dl, [STACK_TOP-2]
 	mov   bx, [STACK_TOP-8]
@@ -196,8 +191,6 @@ MBR:
 	; Now check if the loaded VBR has the boot signature at the end
 	
 	CheckVBR:
-	xor   ax, ax
-	mov   ds, ax
 	mov   ax, [LOAD_ADDRESS+510]
 	cmp   ax, 0xAA55
 	je    LaunchVBR
@@ -207,11 +200,7 @@ MBR:
 	; We are all set to launch into the VBR
 
 	LaunchVBR:
-	xor   ax, ax
-	mov   ss, ax
 	mov   sp, STACK_TOP-8
-	xor   ax, ax
-	mov   ds, ax
 	pop   si
 	pop   di
 	pop   es
@@ -224,8 +213,6 @@ MBR:
 	; The character byte is stored in AL ; BH contains the display page number ; BL contains the display color for the character
 
 	HaltSystem:
-	xor   ax, ax
-	mov   ds, ax
     .printchar:
     lodsb
     test  al, al
