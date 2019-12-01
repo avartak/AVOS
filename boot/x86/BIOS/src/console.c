@@ -161,7 +161,16 @@ void Console_PrintBanner() {
         i++;
     }
 
+	Console_MakeCursorInvisible();
+
     return;
+}
+
+// Print message passed as an argument, and returns the boolean value also passed as argument
+bool Console_PrintError(const char* string) {
+
+	Console_PrintString(string, 23, 0, 4);
+	return false;
 }
 
 // Read a command string from the keyboard and print it on the screen

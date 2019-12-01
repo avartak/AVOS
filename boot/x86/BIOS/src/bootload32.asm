@@ -15,13 +15,7 @@ SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video 
 
 ; These are the externally defined functions and variables we need
 
-extern Console_PrintBanner
-extern Console_MakeCursorInvisible
-extern Multiboot_CreateEmptyMBI
-extern Multiboot_SaveMemoryMaps
-extern Multiboot_LoadKernel
-extern Multiboot_LoadModules
-extern Multiboot_SaveInfo
+extern Multiboot_Boot
 
 ; Starting point of the 32-bit bootloader code. See linkboot.ld for details on how the code is linked into the bootloader binary
 
@@ -60,56 +54,15 @@ AVBL:
     mov  [Kernel_Info.part_info_ptr], ebp
     mov  [Kernel_Info.blocklist_ptr], ebx
 
-	; Print the AVOS boot loader banner
-
-	call Console_PrintBanner
-	call Console_MakeCursorInvisible
-
-	; Create an empty multiboot information (MBI) record
-
-	push Multiboot_MBI
-	call Multiboot_CreateEmptyMBI
-	add  esp, 0x4
-
-	; Save memory information in MBI
-
-	push Multiboot_MBI
-	call Multiboot_SaveMemoryMaps
-	add  esp, 0x4
-	test al, al
-	mov  esi, ErrStr_Memory
-	jz   HaltSystem
-
-	; Load kernel from disk
+	; Boot OS 
 
 	push  Kernel_Info 
 	push  Multiboot_MBI
-	call  Multiboot_LoadKernel
+	call  Multiboot_Boot
 	add   esp, 0x8
 	test  al, al
-	mov   esi, ErrStr_LoadKernel
 	jz    HaltSystem
 
-	; Load boot modules from disk
-
-	push  Kernel_Info 
-	push  Multiboot_MBI
-	call  Multiboot_LoadModules
-	add   esp, 0x8
-	test  al, al
-	mov   esi, ErrStr_LoadModules
-	jz    HaltSystem
-
-	; Store multiboot information
-
-	push Kernel_Info
-	push Multiboot_MBI
-	call Multiboot_SaveInfo
-	add  esp, 0x8
-	test al, al
-	mov  esi, ErrStr_MBI 
-	jz   HaltSystem
-	
 	; Store the pointer to the boot information table in EBX
 
 	mov  ebx, Multiboot_MBI
@@ -123,18 +76,9 @@ AVBL:
 	jmp  DWORD [Kernel_Info.entry]
 
     HaltSystem:
-    mov   edi, SCREEN_TEXT_BUFFER+80*23*2
-    .printchar:
-        lodsb
-        test  al, al
-        jz    .printdone
-        mov   ah, 0x04
-        stosw
-        jmp   .printchar
-    .printdone:
     cli
     hlt
-    jmp  .printdone
+    jmp  HaltSystem
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,14 +98,6 @@ Kernel_Info:
 	.multiboot_header  dd 0
 	.entry             dd 0
 	.size              dd 0
-
-; Error strings in case the boot loader runs into trouble
-
-Messages: 
-	ErrStr_Memory      db 'Unable to get memory information', 0
-	ErrStr_LoadKernel  db 'Unable to load kernel', 0
-	ErrStr_LoadModules db 'Unable to load boot modules', 0
-	ErrStr_MBI         db 'Unable to save multiboot information', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -121,12 +121,6 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 
 bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
-	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
-	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
-	struct Multiboot_E820_Entry* E820_Table = (struct Multiboot_E820_Entry*)(0x10 + (uintptr_t)mbi_name);
-	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
-	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return false;
-
     uintptr_t image         = kernel_info->start;
     size_t    file_size     = 0;
     uintptr_t start_addr    = image;
@@ -736,6 +730,27 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info
     }
 
 	if (!Multiboot_SaveGraphicsInfo(mbi_addr, multiboot_header_ptr)) return false;
+
+	return true;
+}
+
+bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+
+	Console_PrintBanner();
+
+	if (!Multiboot_CreateEmptyMBI(mbi_addr)) return Console_PrintError("Error creating multiboot information record");
+
+	if (!Multiboot_SaveMemoryMaps(mbi_addr)) return Console_PrintError("Error saving memory maps");
+
+	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
+	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return Console_PrintError("Unable to detect memory map");
+	struct Multiboot_E820_Entry* E820_Table = (struct Multiboot_E820_Entry*)(0x10 + (uintptr_t)mbi_name);
+	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
+	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS");
+
+	if (!Multiboot_LoadKernel (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel"); 
+	if (!Multiboot_LoadModules(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules"); 
+	if (!Multiboot_SaveInfo   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information");
 
 	return true;
 }

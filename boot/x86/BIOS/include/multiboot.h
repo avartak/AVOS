@@ -31,4 +31,6 @@ extern bool      Multiboot_SaveLoadBaseAddress   (uintptr_t mbi_addr, uintptr_t 
 extern bool      Multiboot_CheckForSupportFailure(uintptr_t multiboot_header_ptr);
 extern bool      Multiboot_SaveInfo              (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 
+extern bool      Multiboot_Boot                  (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
+
 #endif
