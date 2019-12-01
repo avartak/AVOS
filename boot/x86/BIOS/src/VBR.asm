@@ -254,7 +254,7 @@ VBR:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Padding of zeroes till offset 0x200-2-0x40 = 446 : location of the VBR partition table (if any)
-; We put a 16-byte entry at offset 446 corresponding to the 64-bit LBAs of the start and end sectors of the partition
+; We put a 16-byte entry at this offset in the VBR, corresponding to the 64-bit LBAs of the start and end sectors of the partition
 ; The address of this 16-byte entry is passed to the next step of the bootloader in the FS:BP registers
 
 times PART_TABLE-($-$$)   db 0
