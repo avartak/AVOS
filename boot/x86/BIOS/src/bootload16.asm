@@ -133,7 +133,7 @@ AVBL:
 
 	; Load a valid GDT (See the GDT description at the end)
 
-	lgdt [GDT_Desc]
+	lgdt  [GDT_Desc]
 	
 	; Enter protected mode by setting bit 0 of the CR0 register
 
