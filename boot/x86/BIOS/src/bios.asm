@@ -8,6 +8,8 @@ SEG16_DATA           equ 0x20
 REAL_MODE_STACK_SIZE equ 0x400
 INTERRUPTS_ENABLED   equ 0x200
 
+%define REL_ADDR(x)  (x-BIOS_Start)
+
 section .text
 
 BITS 32
@@ -122,7 +124,7 @@ BITS 16
 
 	; Lets set up a real mode stack
 
-	mov   [fs:BIOS_PM_ESP-BIOS_Start], esp
+	mov   [fs:REL_ADDR(BIOS_PM_ESP)], esp
 	mov   eax, BIOS_Stack_Segment
 	shr   eax, 4
 	mov   ss, ax
@@ -138,43 +140,43 @@ BITS 16
 	; Switch the code segment register to real mode with a far return, setting the base address of CS to BIOS_Start
 
 	push  fs
-	push  BIOS_Interrupt.RMode-BIOS_Start
+	push  REL_ADDR(BIOS_Interrupt.RMode)
 	retf
 
 	.RMode:
 
 	; Save the real mode stack pointer in case the BIOS routine trashes it
 
-	mov   [fs:BIOS_Regs16.esp-BIOS_Start], esp
+	mov   [fs:REL_ADDR(BIOS_Regs16.esp)], esp
 
 	; Prepare the stack for a call to the interrupt routine
 
-    mov   al, BYTE [fs:BIOS_Int_ID-BIOS_Start]
+    mov   al, BYTE [fs:REL_ADDR(BIOS_Int_ID)]
     mov   bl, 4
     mul   bl
 	mov   si, ax
 
     pushf
     push  cs
-    push  WORD BIOS_Interrupt.SwitchToPMode32-BIOS_Start
+    push  WORD REL_ADDR(BIOS_Interrupt.SwitchToPMode32)
     push  DWORD [si]
 
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
 
-	mov   ax, [fs:BIOS_Regs16.ds-BIOS_Start]
+	mov   ax, [fs:REL_ADDR(BIOS_Regs16.ds)]
 	mov   ds, ax
-	mov   ax, [fs:BIOS_Regs16.es-BIOS_Start]
+	mov   ax, [fs:REL_ADDR(BIOS_Regs16.es)]
 	mov   es, ax
 
 	; Store the designated values in the general purpose registers
 
-	mov   eax, [fs:BIOS_Regs16.eax-BIOS_Start]
-	mov   ebx, [fs:BIOS_Regs16.ebx-BIOS_Start]
-	mov   ecx, [fs:BIOS_Regs16.ecx-BIOS_Start]
-	mov   edx, [fs:BIOS_Regs16.edx-BIOS_Start]
-	mov   esi, [fs:BIOS_Regs16.esi-BIOS_Start]
-	mov   edi, [fs:BIOS_Regs16.edi-BIOS_Start]
-	mov   ebp, [fs:BIOS_Regs16.ebp-BIOS_Start]
+	mov   eax, [fs:REL_ADDR(BIOS_Regs16.eax)]
+	mov   ebx, [fs:REL_ADDR(BIOS_Regs16.ebx)]
+	mov   ecx, [fs:REL_ADDR(BIOS_Regs16.ecx)]
+	mov   edx, [fs:REL_ADDR(BIOS_Regs16.edx)]
+	mov   esi, [fs:REL_ADDR(BIOS_Regs16.esi)]
+	mov   edi, [fs:REL_ADDR(BIOS_Regs16.edi)]
+	mov   ebp, [fs:REL_ADDR(BIOS_Regs16.ebp)]
 
 	; Trigger the appropriate BIOS interrupt
 
@@ -185,27 +187,27 @@ BITS 16
 	; First we restore the stack pointer and store the register values (these represent the state immediately after the BIOS call) in the BIOS_Regs16 structure
 
 	.SwitchToPMode32:
-    mov   esp, [fs:BIOS_Regs16.esp-BIOS_Start]
-	mov   [fs:BIOS_Regs16.eax-BIOS_Start], eax	
-	mov   [fs:BIOS_Regs16.ebx-BIOS_Start], ebx	
-	mov   [fs:BIOS_Regs16.ecx-BIOS_Start], ecx	
-	mov   [fs:BIOS_Regs16.edx-BIOS_Start], edx	
-	mov   [fs:BIOS_Regs16.esi-BIOS_Start], esi	
-	mov   [fs:BIOS_Regs16.edi-BIOS_Start], edi	
-	mov   [fs:BIOS_Regs16.ebp-BIOS_Start], ebp	
+    mov   esp, [fs:REL_ADDR(BIOS_Regs16.esp)]
+	mov   [fs:REL_ADDR(BIOS_Regs16.eax)], eax	
+	mov   [fs:REL_ADDR(BIOS_Regs16.ebx)], ebx	
+	mov   [fs:REL_ADDR(BIOS_Regs16.ecx)], ecx	
+	mov   [fs:REL_ADDR(BIOS_Regs16.edx)], edx	
+	mov   [fs:REL_ADDR(BIOS_Regs16.esi)], esi	
+	mov   [fs:REL_ADDR(BIOS_Regs16.edi)], edi	
+	mov   [fs:REL_ADDR(BIOS_Regs16.ebp)], ebp	
 
 	; Also save the flags register
 
 	pushf
 	pop   ax
-	mov   [fs:BIOS_Regs16.flags-BIOS_Start], ax
+	mov   [fs:REL_ADDR(BIOS_Regs16.flags)], ax
 
 	; Save the segment registers
 
 	mov   ax, ds
-	mov   [fs:BIOS_Regs16.ds-BIOS_Start], ax	
+	mov   [fs:REL_ADDR(BIOS_Regs16.ds)], ax	
 	mov   ax, es
-	mov   [fs:BIOS_Regs16.es-BIOS_Start], ax	
+	mov   [fs:REL_ADDR(BIOS_Regs16.es)], ax	
 
 	; Switch to 32-bit protected mode
 
