@@ -167,10 +167,10 @@ void Console_PrintBanner() {
 }
 
 // Print message passed as an argument, and returns the boolean value also passed as argument
-bool Console_PrintError(const char* string) {
+bool Console_PrintError(const char* string, uint8_t line, bool retval) {
 
-	Console_PrintString(string, 23, 0, 4);
-	return false;
+	Console_PrintString(string, line, 0, 4);
+	return retval;
 }
 
 // Read a command string from the keyboard and print it on the screen
