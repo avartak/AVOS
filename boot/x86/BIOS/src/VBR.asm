@@ -66,9 +66,7 @@ VBR:
 	.Reserved2            dd 0
 
 	.Block1_LBA           dq 8
-	.Block1_Num_Sectors   dd 1
-	.Block2_LBA           dq 9
-	.Block2_Num_Sectors   dd 0x40-1
+	.Block1_Num_Sectors   dd 0x40
 
 	; Pad the remaining bytes up to VBR+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
 
