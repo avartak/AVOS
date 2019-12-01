@@ -59,7 +59,6 @@ AVBL:
     mov  [Kernel_Info.boot_partition], esi
     mov  [Kernel_Info.part_info_ptr], ebp
     mov  [Kernel_Info.blocklist_ptr], ebx
-    mov  [Kernel_Info.start], DWORD KERNEL_START
 
 	; Print the AVOS boot loader banner
 
@@ -151,7 +150,7 @@ Kernel_Info:
 	.boot_partition    dd 0
 	.part_info_ptr     dd 0
 	.blocklist_ptr     dd 0
-	.start             dd 0
+	.start             dd KERNEL_START
 	.multiboot_header  dd 0
 	.entry             dd 0
 	.size              dd 0
