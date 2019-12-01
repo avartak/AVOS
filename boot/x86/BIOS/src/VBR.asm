@@ -21,11 +21,11 @@ BOOTLOADER_ADDRESS     equ 0x7E00                          ; Starting location i
 PART_TABLE             equ 0x200-2-0x40                    ; Offset of the VBR partition table (contains one 16-byte entry containing the start and end LBAs of the partition)
 MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 
-DP_TABLE_SIZE          equ 0x1A                            ; Size of the disk geometry table
-DP_TABLE_START         equ VBR_ADDRESS-DP_TABLE_SIZE       ; Start location of the disk geometry table (just behind the VBR)
-DP_TABLE_SECTOR_SIZE   equ DP_TABLE_START + 0x18           ; Location of the word containing the sector size in bytes
+GEOM_TABLE_SIZE        equ 0x1A                            ; Size of the disk geometry table
+GEOM_TABLE_START       equ VBR_ADDRESS-GEOM_TABLE_SIZE     ; Start location of the disk geometry table (just behind the VBR)
+GEOM_TABLE_SECTOR_SIZE equ GEOM_TABLE_START + 0x18         ; Location of the word containing the sector size in bytes
 
-STACK_TOP              equ DP_TABLE_START                  ; Top of the stack
+STACK_TOP              equ GEOM_TABLE_START                ; Top of the stack
 
 BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
 
@@ -131,13 +131,13 @@ VBR:
 
 	; Save the disk geometry, and check that the sector size is the same as that specified in the blocklist
 
-	mov   ax, DP_TABLE_SIZE
-	mov   [DP_TABLE_START], ax
+	mov   ax, GEOM_TABLE_SIZE
+	mov   [GEOM_TABLE_START], ax
+	mov   si, GEOM_TABLE_START
 	mov   ah, 0x48
-	mov   si, DP_TABLE_START
 	int   0x13
 	jc    HaltSystem
-	mov   ax, [DP_TABLE_SECTOR_SIZE]	
+	mov   ax, [GEOM_TABLE_SECTOR_SIZE]	
 	cmp   ax, [BlockList.Sector_Size]
 	jne   HaltSystem
 
@@ -148,6 +148,8 @@ VBR:
 	; Loop on the blocklist to load the bootloader code from disk to memory
 
 	ReadLoop:
+	cmp   di, Code                                         ; Check that we are not at the end of the 128 bytes of the blocklist 
+	jge   HaltSystem
 	cmp   DWORD [di+8], 0                                  ; Check the number of sectors to be read out is 0 --> indicates the end of the block list
 	je    LaunchBootloader
 
@@ -247,7 +249,7 @@ VBR:
 
 
 	Messages:
-	.DiskIOErr            db 'Unable to load AVOS', 0
+	.DiskIOErr            db 'Boot error', 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
