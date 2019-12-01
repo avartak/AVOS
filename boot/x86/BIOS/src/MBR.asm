@@ -327,7 +327,7 @@ times 0x200-2-($-$$) db 0
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 
-Boot_Signature       dw   0xAA55
+Boot_Signature       dw 0xAA55
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -157,8 +157,7 @@ BITS 16
     pushf
     push  cs
     push  WORD BIOS_Interrupt.SwitchToPMode32-BIOS_Start
-    push  WORD [si+2]
-    push  WORD [si]
+    push  DWORD [si]
 
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
 

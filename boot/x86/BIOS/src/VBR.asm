@@ -18,12 +18,16 @@
 
 VBR_ADDRESS            equ 0x7C00                          ; This is where the VBR is loaded in memory
 BOOTLOADER_ADDRESS     equ 0x7E00                          ; Starting location in memory where the bootloader code gets loaded
+PART_TABLE             equ 0x200-2-0x40                    ; Offset of the VBR partition table (contains one 16-byte entry containing the start and end LBAs of the partition)
+MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 
-DP_TABLE_SIZE          equ 0x1A
-DP_TABLE_START         equ VBR_ADDRESS-DP_TABLE_SIZE
-DP_TABLE_SECTOR_SIZE   equ DP_TABLE_START + 0x18
+DP_TABLE_SIZE          equ 0x1A                            ; Size of the disk geometry table
+DP_TABLE_START         equ VBR_ADDRESS-DP_TABLE_SIZE       ; Start location of the disk geometry table (just behind the VBR)
+DP_TABLE_SECTOR_SIZE   equ DP_TABLE_START + 0x18           ; Location of the word containing the sector size in bytes
 
 STACK_TOP              equ DP_TABLE_START                  ; Top of the stack
+
+BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -62,7 +66,9 @@ VBR:
 	.Reserved2            dd 0
 
 	.Block1_LBA           dq 8
-	.Block1_Num_Sectors   dd 0x40
+	.Block1_Num_Sectors   dd 1
+	.Block2_LBA           dq 9
+	.Block2_Num_Sectors   dd 0x40-1
 
 	; Pad the remaining bytes up to VBR+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
 
@@ -98,15 +104,21 @@ VBR:
 	push  ds
 	push  si
 
-	; Save the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
+	; Save the 64-bit LBAs of the start and end sectors of this partition 
 	
 	mov   ebp, DWORD [si+0x08]
+	mov   [Partition], ebp
+	mov   [Partition+8], ebp
+
+	mov   ecx, [si+0x0C]
+	add   [Partition+8], ecx
+	adc   DWORD [Partition+0x10], 0
 
 	; Lets initialize the segment registers to the base address values that we want to use (0x0000)
 	
-	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
+	mov   fs, ax
 
 	; Check for BIOS extensions to read from disk using the LBA scheme
 
@@ -121,7 +133,7 @@ VBR:
 
 	; Save the disk geometry, and check that the sector size is the same as that specified in the blocklist
 
-	mov   ax, 0x1A
+	mov   ax, DP_TABLE_SIZE
 	mov   [DP_TABLE_START], ax
 	mov   ah, 0x48
 	mov   si, DP_TABLE_START
@@ -146,13 +158,13 @@ VBR:
 	mov   ecx, [di+4]
 
 	xor   eax, eax
-	mov   al, 0x7F
-	cmp   [di+8], ax
+	mov   al, MAX_SECTORS_READ
+	cmp   [di+8], eax
 	jg    PrepareRead
-	mov   ax, [di+8]
+	mov   eax, [di+8]
 	
 	PrepareRead:                                           ; Save the necessary information needed by (extended) BIOS routines to read from disk --> Fill the DAP
-	sub   [di+8], ax
+	sub   [di+8], eax
 	
 	add   [di], eax
 	adc   DWORD [di+4], 0
@@ -173,20 +185,20 @@ VBR:
 	; Check if we still need to loop
 
 	ReadLoopCheck:
-	mov   bx, [DAP.Memory_Segment]
+	movzx ebx, WORD [DAP.Memory_Segment]
 	shl   ebx, 4
 	add   ebx, [DAP.Memory_Offset]
-	mov   eax, [DAP.Sectors_Count]
+	movzx eax, BYTE [DAP.Sectors_Count]
 	movzx ecx, WORD [BlockList.Sector_Size]
 	mul   ecx
 	add   eax, ebx
-	mov   ax, 0x000F
 	mov   [DAP.Memory_Offset], ax
-	shr   eax, 4
+	shr   eax, 0x10
+	shl   eax, 0xC
 	mov   [DAP.Memory_Segment], ax
 	cmp   DWORD [di+8], 0
 	jne   DiskRead
-	add   di, 10
+	add   di, BLOCK_SIZE
 	jmp   ReadLoop
 	
 	; We reach here if the disk read was successful 
@@ -198,21 +210,9 @@ VBR:
 	pop   di
 	pop   es
 	pop   dx
-
-	mov   eax, [si+0x08]                                   ; Get the LBA (low DWORD) of the start sector of this partition from the MBR partition table [restricts us to 32-bit LBA]
-	mov   ecx, [si+0x0C]                                   ; Get the size of the partition in sectors from the MBR partition table [restricts us to 32-bits]
-	mov   [Partition], eax                                 ; Save the lower 4 bytes of the 64-bit LBA of the start sector of the partition
-	mov   [Partition+8], eax                               ; Save the 64-bit LBA of the end sector of the partition (start + size)
-	add   [Partition+8], ecx
-	adc   DWORD [Partition+0x10], 0
 	mov   bp, Partition
-	xor   ax, ax
-	mov   fs, ax
 
-	mov   ax, [BlockList+2]
-	push  ax
-	mov   ax, [BlockList]
-	push  ax
+	push  DWORD [BlockList]
 	retf
 	
 	; If we did not read what we wanted to we halt
@@ -253,25 +253,23 @@ VBR:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Padding of zeroes till offset 446 : location of the VBR partition table (if any)
+; Padding of zeroes till offset 0x200-2-0x40 = 446 : location of the VBR partition table (if any)
 ; We put a 16-byte entry at offset 446 corresponding to the 64-bit LBAs of the start and end sectors of the partition
 ; The address of this 16-byte entry is passed to the next step of the bootloader in the FS:BP registers
 
-	times 446-($-$$)      db 0
+times PART_TABLE-($-$$)   db 0
 
-	Partition:
-	times 16              db 0
+Partition times 0x10      db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 510-($-$$)          db 0 
+times 0x200-2-($-$$)      db 0 
 
 ; The last two bytes need to have the following boot signature -- MBR code typically checks for it
 
-Boot_Signature:
-dw   0xAA55
+Boot_Signature            dw 0xAA55
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
