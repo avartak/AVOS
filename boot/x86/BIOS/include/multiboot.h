@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_MULTIBOOT_H
-#define X86_BOOT_MULTIBOOT_H
+#ifndef BOOT_X86_BIOS_MULTIBOOT_H
+#define BOOT_X86_BIOS_MULTIBOOT_H
 
 #include <kernel/include/common.h>
 #include <kernel/include/multiboot.h>

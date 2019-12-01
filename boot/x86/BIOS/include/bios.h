@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_BIOS_H
-#define X86_BOOT_BIOS_H
+#ifndef BOOT_X86_BIOS_BIOS_H
+#define BOOT_X86_BIOS_BIOS_H
 
 #include <kernel/include/common.h>
 

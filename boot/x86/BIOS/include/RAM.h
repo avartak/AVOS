@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_RAM_H
-#define X86_BOOT_RAM_H
+#ifndef BOOT_X86_BIOS_RAM_H
+#define BOOT_X86_BIOS_RAM_H
 
 #include <kernel/include/common.h>
 #include <kernel/include/multiboot.h>

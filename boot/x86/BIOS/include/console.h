@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_CONSOLE_H
-#define X86_BOOT_CONSOLE_H
+#ifndef BOOT_X86_BIOS_CONSOLE_H
+#define BOOT_X86_BIOS_CONSOLE_H
 
 #include <kernel/include/common.h>
 

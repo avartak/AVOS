@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_DISCOVERY_H
-#define X86_BOOT_DISCOVERY_H
+#ifndef BOOT_X86_BIOS_DISCOVERY_H
+#define BOOT_X86_BIOS_DISCOVERY_H
 
 #include <kernel/include/common.h>
 

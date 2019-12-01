@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_DISKIO_H
-#define X86_BOOT_DISKIO_H
+#ifndef BOOT_X86_BIOS_DISKIO_H
+#define BOOT_X86_BIOS_DISKIO_H
 
 #include <kernel/include/common.h>
 

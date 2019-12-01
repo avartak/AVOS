@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_ELF_H
-#define X86_BOOT_ELF_H
+#ifndef BOOT_X86_BIOS_ELF_H
+#define BOOT_X86_BIOS_ELF_H
 
 #include <kernel/include/common.h>
 #include <kernel/include/elf.h>

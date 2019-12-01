@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_VBE_H
-#define X86_BOOT_VBE_H
+#ifndef BOOT_X86_BIOS_VBE_H
+#define BOOT_X86_BIOS_VBE_H
 
 #include <kernel/include/common.h>
 
