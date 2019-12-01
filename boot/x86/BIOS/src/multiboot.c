@@ -16,8 +16,8 @@ bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
 
 bool Multiboot_CreateEmptyMBI(uintptr_t mbi_addr) {
 
-	if (Multiboot_CheckForValidMBI(mbi_addr)) return true;
-	if (mbi_addr % 8 != 0) return false; 
+	if (Multiboot_CheckForValidMBI(mbi_addr)) return Console_PrintError("A valid multiboot information record already exists", 22, false);
+	if (mbi_addr % 8 != 0) return Console_PrintError("Require 8-byte alignment for multiboot information record", 22, false); 
 
     struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
 	mbi_start->total_size = 16;
