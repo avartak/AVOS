@@ -37,22 +37,22 @@ AVBL:
 
 	; Switch the data segment registers to protected mode data selectors
 
-	mov  ax, SEG32_DATA
-	mov  ds, ax
-	mov  es, ax
-	mov  fs, ax
-	mov  gs, ax
-	mov  ss, ax
+	mov   ax, SEG32_DATA
+	mov   ds, ax
+	mov   es, ax
+	mov   fs, ax
+	mov   gs, ax
+	mov   ss, ax
 
-	mov  esp, STACK_TOP
+	mov   esp, STACK_TOP
 
     ; Store information passed on by the VBR
 
-    mov  [Kernel_Info.boot_drive_ID], dl
-    mov  [Kernel_Info.pnpbios_check_ptr], edi
-    mov  [Kernel_Info.boot_partition], esi
-    mov  [Kernel_Info.part_info_ptr], ebp
-    mov  [Kernel_Info.blocklist_ptr], ebx
+    mov   [Kernel_Info.boot_drive_ID], dl
+    mov   [Kernel_Info.pnpbios_check_ptr], edi
+    mov   [Kernel_Info.boot_partition], esi
+    mov   [Kernel_Info.part_info_ptr], ebp
+    mov   [Kernel_Info.blocklist_ptr], ebx
 
 	; Boot OS 
 
@@ -65,20 +65,20 @@ AVBL:
 
 	; Store the pointer to the boot information table in EBX
 
-	mov  ebx, Multiboot_MBI
+	mov   ebx, Multiboot_MBI
 
 	; Store the Multiboot2 boot loader magic value in EAX
 
-	mov  eax, 0x36d76289
+	mov   eax, 0x36d76289
 
 	; Jump to the kernel
 
-	jmp  DWORD [Kernel_Info.entry]
+	jmp   DWORD [Kernel_Info.entry]
 
     HaltSystem:
     cli
     hlt
-    jmp  HaltSystem
+    jmp   HaltSystem
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
