@@ -1,5 +1,5 @@
-#ifndef X86_BOOT_BLOCKLIST_H
-#define X86_BOOT_BLOCKLIST_H
+#ifndef X86_BOOT_BOOT_H
+#define X86_BOOT_BOOT_H
 
 #include <kernel/include/common.h>
 
@@ -51,6 +51,5 @@ struct Boot_Kernel_Info {
     uintptr_t entry;
     size_t    size;
 }__attribute__((packed));
-
 
 #endif

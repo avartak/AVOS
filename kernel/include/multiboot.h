@@ -107,6 +107,18 @@ struct Multiboot_SMBIOS_EntryPointTable {
     uint8_t  revision_BCD;
 }__attribute__((packed));
 
+struct Multiboot_APM_Interface {
+	uint16_t version;
+	uint16_t cseg;
+	uint32_t offset;
+	uint16_t cseg_16;
+	uint16_t dseg;
+	uint16_t flags;
+	uint16_t cseg_len;
+	uint16_t cseg_16_len;
+	uint16_t dseg_len;
+}__attribute__((packed));
+
 struct Multiboot_Header_Magic_Fields {
     uint32_t magic;
     uint32_t architecture;
@@ -289,15 +301,7 @@ struct Multiboot_Info_ELF_Sections {
 struct Multiboot_Info_APM {
 	uint32_t type;
 	uint32_t size;
-	uint16_t version;
-	uint16_t cseg;
-	uint32_t offset;
-	uint16_t cseg_16;
-	uint16_t dseg;
-	uint16_t flags;
-	uint16_t cseg_len;
-	uint16_t cseg_16_len;
-	uint16_t dseg_len;
+	struct Multiboot_APM_Interface apm_interface;
 	uint16_t reserved1;
 	uint16_t reserved2;
 }__attribute__((packed));

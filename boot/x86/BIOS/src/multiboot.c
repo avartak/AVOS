@@ -622,12 +622,15 @@ bool Multiboot_SaveAPMInfo(uintptr_t mbi_addr) {
     mbi_apm->type = MULTIBOOT_TAG_TYPE_APM;
     mbi_apm->size = sizeof(struct Multiboot_Info_APM);
 
-    if (Discovery_StoreAPMInfo(8 + (uintptr_t)mbi_apm) == 8 + (uintptr_t)mbi_apm) {
+	struct Multiboot_APM_Interface* iapm = &(mbi_apm->apm_interface);
+    if (Discovery_StoreAPMInfo((uintptr_t)iapm) == (uintptr_t)iapm) {
         mbi_apm->size = 0;
         Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
         return false;
     }
     else {
+		mbi_apm->reserved1 = 0;
+		mbi_apm->reserved2 = 0;
         Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
         return true;
     }
