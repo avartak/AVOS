@@ -67,13 +67,13 @@ AVBL:
 
 	; Create an empty multiboot information (MBI) record
 
-	push Multiboot_Information_start
+	push Multiboot_MBI
 	call Multiboot_CreateEmptyMBI
 	add  esp, 0x4
 
 	; Save memory information in MBI
 
-	push Multiboot_Information_start
+	push Multiboot_MBI
 	call Multiboot_SaveMemoryMaps
 	add  esp, 0x4
 	test al, al
@@ -83,7 +83,7 @@ AVBL:
 	; Load kernel from disk
 
 	push  Kernel_Info 
-	push  Multiboot_Information_start
+	push  Multiboot_MBI
 	call  Multiboot_LoadKernel
 	add   esp, 0x8
 	test  al, al
@@ -93,7 +93,7 @@ AVBL:
 	; Load boot modules from disk
 
 	push  Kernel_Info 
-	push  Multiboot_Information_start
+	push  Multiboot_MBI
 	call  Multiboot_LoadModules
 	add   esp, 0x8
 	test  al, al
@@ -103,7 +103,7 @@ AVBL:
 	; Store multiboot information
 
 	push Kernel_Info
-	push Multiboot_Information_start
+	push Multiboot_MBI
 	call Multiboot_SaveInfo
 	add  esp, 0x8
 	test al, al
@@ -112,7 +112,7 @@ AVBL:
 	
 	; Store the pointer to the boot information table in EBX
 
-	mov  ebx, Multiboot_Information_start
+	mov  ebx, Multiboot_MBI
 
 	; Store the Multiboot2 boot loader magic value in EAX
 
@@ -172,6 +172,6 @@ align 8
 
 ; Multiboot information (MBI) table
 
-global Multiboot_Information_start
-Multiboot_Information_start:
+global Multiboot_MBI
+Multiboot_MBI:
 
