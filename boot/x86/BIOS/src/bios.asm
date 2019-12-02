@@ -20,18 +20,18 @@ BIOS_Start:
 
 ; The 40-byte "BIOS Registry" structure
 BIOS_Regs16:
-    .eax    dd   0
-    .ebx    dd   0
-    .ecx    dd   0
-    .edx    dd   0
-    .esi    dd   0
-    .edi    dd   0
-    .ebp    dd   0
-    .esp    dd   0
-    .ds     dw   0
-    .es     dw   0
-    .ss     dw   0
-    .flags  dw   0
+	.eax    dd   0
+	.ebx    dd   0
+	.ecx    dd   0
+	.edx    dd   0
+	.esi    dd   0
+	.edi    dd   0
+	.ebp    dd   0
+	.esp    dd   0
+	.ds     dw   0
+	.es     dw   0
+	.ss     dw   0
+	.flags  dw   0
 
 ; Interrupt number to be invoked
 BIOS_Int_ID db 0
