@@ -145,7 +145,7 @@ BITS 16
 	
 	.RMode:
 	
-	; Save the real mode stack pointer in case the BIOS routine trashes it
+	; Save the real mode stack pointer
 	
 	mov   [fs:REL_ADDR(BIOS_Regs16.esp)], esp
 	
