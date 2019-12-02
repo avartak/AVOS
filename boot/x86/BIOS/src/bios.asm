@@ -130,7 +130,7 @@ BITS 16
 	mov   ss, ax
 	mov   esp, BIOS_Stack_Pointer-BIOS_Stack_Segment
 	
-	; Lets set data segments (DS,ES,GS) all with base address 0
+	; Lets set data segments (DS,ES,GS) with base address 0
 	
 	xor   ax, ax
 	mov   ds, ax
