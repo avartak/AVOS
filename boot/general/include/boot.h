@@ -1,7 +1,7 @@
-#ifndef BOOT_X86_BIOS_BOOT_H
-#define BOOT_X86_BIOS_BOOT_H
+#ifndef BOOT_GENERAL_BOOT_H
+#define BOOT_GENERAL_BOOT_H
 
-#include <kernel/include/common.h>
+#include <boot/general/include/common.h>
 
 #define BOOT_BLOCKLIST_MAXBLOCKS128 9
 #define BOOT_BLOCKLIST_MAXBLOCKS512 41

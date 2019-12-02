@@ -1,7 +1,7 @@
 #ifndef BOOT_X86_BIOS_DISKIO_H
 #define BOOT_X86_BIOS_DISKIO_H
 
-#include <kernel/include/common.h>
+#include <boot/general/include/common.h>
 
 struct DiskIO_Geometry {
 	uint16_t  size;

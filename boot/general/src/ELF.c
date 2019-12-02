@@ -1,4 +1,4 @@
-#include <boot/x86/BIOS/include/ELF.h>
+#include <boot/general/include/ELF.h>
 #include <csupport/include/string.h>
 
 #define ELF_RELOC_ERR  0xFFFFFFFF

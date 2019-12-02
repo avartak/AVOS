@@ -2,9 +2,9 @@
 #include <boot/x86/BIOS/include/diskio.h>
 #include <boot/x86/BIOS/include/RAM.h>
 #include <boot/x86/BIOS/include/VBE.h>
-#include <boot/x86/BIOS/include/ELF.h>
 #include <boot/x86/BIOS/include/console.h>
 #include <boot/x86/BIOS/include/discovery.h>
+#include <boot/general/include/ELF.h>
 
 bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
 

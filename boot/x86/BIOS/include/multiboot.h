@@ -1,10 +1,10 @@
 #ifndef BOOT_X86_BIOS_MULTIBOOT_H
 #define BOOT_X86_BIOS_MULTIBOOT_H
 
-#include <kernel/include/common.h>
-#include <kernel/include/multiboot.h>
+#include <boot/general/include/common.h>
+#include <boot/general/include/multiboot.h>
+#include <boot/general/include/boot.h>
 #include <csupport/include/string.h>
-#include <boot/x86/BIOS/include/boot.h>
 
 extern bool      Multiboot_CheckForValidMBI      (uintptr_t mbi_addr);
 extern uintptr_t Multiboot_FindMBITagAddress     (uintptr_t mbi_addr, uint32_t tag_type);

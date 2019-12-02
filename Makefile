@@ -14,17 +14,20 @@ CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra 
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
-X86_BOOT=boot/x86/BIOS/src
-X86_BOOT_OBJS=\
-$(X86_BOOT)/bootload32.s.o \
-$(X86_BOOT)/bios.s.o \
-$(X86_BOOT)/diskio.c.o \
-$(X86_BOOT)/RAM.c.o  \
-$(X86_BOOT)/VBE.c.o  \
-$(X86_BOOT)/ELF.c.o  \
-$(X86_BOOT)/console.c.o  \
-$(X86_BOOT)/discovery.c.o  \
-$(X86_BOOT)/multiboot.c.o 
+BOOT_X86=boot/x86/BIOS/src
+BOOT_X86_OBJS=\
+$(BOOT_X86)/bootload32.s.o \
+$(BOOT_X86)/bios.s.o \
+$(BOOT_X86)/diskio.c.o \
+$(BOOT_X86)/RAM.c.o  \
+$(BOOT_X86)/VBE.c.o  \
+$(BOOT_X86)/console.c.o  \
+$(BOOT_X86)/discovery.c.o  \
+$(BOOT_X86)/multiboot.c.o 
+
+BOOT_GEN=boot/general/src
+BOOT_GEN_OBJS=\
+$(BOOT_GEN)/ELF.c.o
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
@@ -83,8 +86,8 @@ vbr.bin: boot/x86/BIOS/src/VBR.asm
 bootload16.bin: boot/x86/BIOS/src/bootload16.asm
 	$(AS) -f bin -o bootload16.bin boot/x86/BIOS/src/bootload16.asm
 
-bootload32.bin: $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(X86_BOOT_OBJS) $(CSUPPORT_OBJS)
+bootload32.bin: $(BOOT_X86_OBJS) $(BOOT_GEN_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_X86_OBJS) $(BOOT_GEN_OBJS) $(CSUPPORT_OBJS)
 
 bootloader.bin: bootload16.bin bootload32.bin
 	cat bootload16.bin bootload32.bin > bootloader.bin
