@@ -221,7 +221,7 @@ uintptr_t Elf32_GetSymbolValue(uintptr_t image, uintptr_t table, size_t idx) {
 	else if (symbol->st_shndx == SHN_ABS) return symbol->st_value;
 	else {
 		Elf32_Shdr* target = shdr + symbol->st_shndx;
-		return ((uintptr_t)hdr) + target->sh_offset + symbol->st_value;
+		return image + target->sh_offset + symbol->st_value;
 	}
 
 }
