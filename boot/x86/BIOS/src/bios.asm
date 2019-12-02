@@ -101,7 +101,7 @@ BIOS_Interrupt:
 BITS 16
 
 	; Switch the segment registers to 16-bit protected mode (1 MB address space)
-
+	
 	.PMode16:
 	mov   ax, SEG16_DATA
 	mov   ds, ax
@@ -109,21 +109,21 @@ BITS 16
 	mov   fs, ax
 	mov   gs, ax
 	mov   ss, ax
-
+	
 	; Switch to real mode by disabling the PE bit in the CR0 register
-
+	
 	mov   eax, cr0
 	and   al , 0xFE
 	mov   cr0, eax
-
+	
 	; Set the base address of FS to BIOS_Start
-
+	
 	mov   eax, BIOS_Start
 	shr   eax, 4
 	mov   fs, ax
-
+	
 	; Lets set up a real mode stack
-
+	
 	mov   [fs:REL_ADDR(BIOS_PM_ESP)], esp
 	mov   eax, BIOS_Stack_Segment
 	shr   eax, 4
@@ -131,45 +131,45 @@ BITS 16
 	mov   esp, BIOS_Stack_Pointer-BIOS_Stack_Segment
 	
 	; Lets set data segments (DS,ES,GS) all with base address 0
-
+	
 	xor   ax, ax
 	mov   ds, ax
 	mov   es, ax
 	mov   gs, ax
-
+	
 	; Switch the code segment register to real mode with a far return, setting the base address of CS to BIOS_Start
-
+	
 	push  fs
 	push  REL_ADDR(BIOS_Interrupt.RMode)
 	retf
-
+	
 	.RMode:
-
+	
 	; Save the real mode stack pointer in case the BIOS routine trashes it
-
+	
 	mov   [fs:REL_ADDR(BIOS_Regs16.esp)], esp
-
+	
 	; Prepare the stack for a call to the interrupt routine
-
-    mov   al, BYTE [fs:REL_ADDR(BIOS_Int_ID)]
-    mov   bl, 4
-    mul   bl
+	
+	mov   al, BYTE [fs:REL_ADDR(BIOS_Int_ID)]
+	mov   bl, 4
+	mul   bl
 	mov   si, ax
-
-    pushf
-    push  cs
-    push  WORD REL_ADDR(BIOS_Interrupt.SwitchToPMode32)
-    push  DWORD [si]
-
+	
+	pushf
+	push  cs
+	push  WORD REL_ADDR(BIOS_Interrupt.SwitchToPMode32)
+	push  DWORD [si]
+	
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
-
+	
 	mov   ax, [fs:REL_ADDR(BIOS_Regs16.ds)]
 	mov   ds, ax
 	mov   ax, [fs:REL_ADDR(BIOS_Regs16.es)]
 	mov   es, ax
-
+	
 	; Store the designated values in the general purpose registers
-
+	
 	mov   eax, [fs:REL_ADDR(BIOS_Regs16.eax)]
 	mov   ebx, [fs:REL_ADDR(BIOS_Regs16.ebx)]
 	mov   ecx, [fs:REL_ADDR(BIOS_Regs16.ecx)]
@@ -177,17 +177,17 @@ BITS 16
 	mov   esi, [fs:REL_ADDR(BIOS_Regs16.esi)]
 	mov   edi, [fs:REL_ADDR(BIOS_Regs16.edi)]
 	mov   ebp, [fs:REL_ADDR(BIOS_Regs16.ebp)]
-
+	
 	; Trigger the appropriate BIOS interrupt
-
+	
 	clc 
-    retf
-
+	retf
+	
 	; We are done with the BIOS routine; now we have to switch back to the protected mode
 	; First we restore the stack pointer and store the register values (these represent the state immediately after the BIOS call) in the BIOS_Regs16 structure
-
+	
 	.SwitchToPMode32:
-    mov   esp, [fs:REL_ADDR(BIOS_Regs16.esp)]
+	mov   esp, [fs:REL_ADDR(BIOS_Regs16.esp)]
 	mov   [fs:REL_ADDR(BIOS_Regs16.eax)], eax	
 	mov   [fs:REL_ADDR(BIOS_Regs16.ebx)], ebx	
 	mov   [fs:REL_ADDR(BIOS_Regs16.ecx)], ecx	
@@ -195,51 +195,51 @@ BITS 16
 	mov   [fs:REL_ADDR(BIOS_Regs16.esi)], esi	
 	mov   [fs:REL_ADDR(BIOS_Regs16.edi)], edi	
 	mov   [fs:REL_ADDR(BIOS_Regs16.ebp)], ebp	
-
+	
 	; Also save the flags register
-
+	
 	pushf
 	pop   ax
 	mov   [fs:REL_ADDR(BIOS_Regs16.flags)], ax
-
+	
 	; Save the segment registers
-
+	
 	mov   ax, ds
 	mov   [fs:REL_ADDR(BIOS_Regs16.ds)], ax	
 	mov   ax, es
 	mov   [fs:REL_ADDR(BIOS_Regs16.es)], ax	
-
+	
 	; Switch to 32-bit protected mode
-
-    mov   eax, cr0
-    or    al , 1
-    mov   cr0, eax
-
-    jmp   SEG32_CODE:BIOS_Interrupt.PMode32
+	
+	mov   eax, cr0
+	or    al , 1
+	mov   cr0, eax
+	
+	jmp   SEG32_CODE:BIOS_Interrupt.PMode32
 
 BITS 32
 
 	.PMode32:
-
+	
 	; Switch data segments to the 32-bit protected mode and restore the general purpose registers to their values at the time this function was called
-
+	
 	mov   ax, SEG32_DATA
 	mov   ds, ax
 	mov   es, ax
 	mov   fs, ax
 	mov   gs, ax
 	mov   ss, ax
-
+	
 	mov   esp, [BIOS_PM_ESP]
 	popad
 	popfd
-
+	
 	; Save the real mode register values in the structure whose pointer that was passed to this function as an argument
-
+	
 	push  esi
 	push  edi
 	push  ecx
-
+	
 	mov   esi, BIOS_Regs16
 	mov   edi, [ebp+12]
 	mov   ecx, 10
@@ -248,16 +248,16 @@ BITS 32
 	pop   ecx
 	pop   edi
 	pop   esi
-
+	
 	; Check if interrupts were enabled when BIOS_Interrupt was called
-
+	
 	pop   eax
 	test  eax, INTERRUPTS_ENABLED
 	jz    .return
 	sti
-
+	
 	; Return 
-
+	
 	.return:
 	mov   esp, ebp
 	pop   ebp
