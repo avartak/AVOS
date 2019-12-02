@@ -37,10 +37,10 @@ AVBL:
 	jmp   Code
 	nop
 	nop
-
-    BlockList:
-
-    ; We reserve the next 124 bytes for the blocklist master for the blocklists of the kernel and modules to be loaded from disk to memory
+	
+	BlockList:
+	
+	; We reserve the next 124 bytes for the blocklist master for the blocklists of the kernel and modules to be loaded from disk to memory
 	; This is basically a table containing (up to) 8 twelve-byte entries + 1 null entry (zero size)
 	; The first 8 bytes of the blocklist contain the 64-bit load address that can be ignored in this specific case
 	; Next 8-bytes are reserved
@@ -48,17 +48,17 @@ AVBL:
 	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' of the blocklists file
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
-
+	
 	.Load_Address         dq 0
 	.Sector_Size          dw 0x200
 	.Reserved1            dw 0
 	.Reserved2            dd 0
-
+	
 	.Block1_LBA           dq 0x1800
 	.Block1_Num_Sectors   dd 1
-
+	
 	; Pad the remaining bytes up to AVBL+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
-
+	
 	times 128-($-$$)      db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
