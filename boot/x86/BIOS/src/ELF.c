@@ -107,23 +107,22 @@ size_t Elf32_LoadSectionHeaderTable(uintptr_t image, uintptr_t start_addr, bool 
 
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Shdr *shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
-	
-	if (load_extra) {
-		if (!Elf32_IsValidELF(image)) return 8;
-		uint16_t* shinfo = (uint16_t*)start_addr;
-		shinfo[0] = hdr->e_shnum;
-		shinfo[1] = hdr->e_shentsize;
-		shinfo[2] = hdr->e_shstrndx;
-		shinfo[3] = 0;
-		
-		memmove((uint8_t*)(8+start_addr), (uint8_t*)shdr, hdr->e_shnum * hdr->e_shentsize);
-		return 8 + hdr->e_shnum * hdr->e_shentsize;
-	}
-	else {
-		if (!Elf32_IsValidELF(image)) return 0;
-		memmove((uint8_t*)(8+start_addr), (uint8_t*)shdr, hdr->e_shnum * hdr->e_shentsize);
-		return hdr->e_shnum * hdr->e_shentsize;
-	}
+
+	size_t retval = 0;
+	if (load_extra) retval = 8;
+	if (Elf32_IsValidELF(image)) {
+		if (load_extra) {
+			uint16_t* shinfo = (uint16_t*)start_addr;
+			shinfo[0] = hdr->e_shnum;
+			shinfo[1] = hdr->e_shentsize;
+			shinfo[2] = hdr->e_shstrndx;
+			shinfo[3] = 0;
+		}
+		memmove((uint8_t*)(retval+start_addr), (uint8_t*)shdr, hdr->e_shnum * hdr->e_shentsize);
+		retval += hdr->e_shnum * hdr->e_shentsize;
+	}	
+
+	return retval;
 }
 
 size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
@@ -140,8 +139,6 @@ size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
 			memset(mem, 0, shdr[i].sh_size);
 			mem      += shdr[i].sh_size;
 			bss_size += shdr[i].sh_size;
-			for (size_t j = 0; j < shdr[i].sh_size; j++) mem[i] = 0;
-			shdr[i].sh_offset = (uintptr_t)mem - image;
 		}
 	}
 	
