@@ -1,6 +1,8 @@
 #include <boot/x86/BIOS/include/VBE.h>
 #include <boot/x86/BIOS/include/bios.h>
 
+// Get the VBE information structure
+// This contains a pointer to the list of available video modes
 uintptr_t VBE_StoreInfo(uintptr_t addr) {
 
 	struct VBE_Info* vinfo = (struct VBE_Info*)(addr);
@@ -18,12 +20,13 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 	
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return addr;
+	if (BIOS_regs.eax != 0x4F) return addr;
 	if ((vinfo->signature)[0] != 'V' || (vinfo->signature)[1] != 'E' || (vinfo->signature)[2] != 'S' || (vinfo->signature)[3] != 'A') return addr;
 	
 	return addr + sizeof(struct VBE_Info);
 }
 
+// Get information about a certain video mode
 bool VBE_GetModeInfo(uint16_t mode, uintptr_t addr) {
 
 	if (mode == 0xFFFF || addr == (uintptr_t)MEMORY_NULL_PTR) return false;
@@ -42,6 +45,7 @@ bool VBE_GetModeInfo(uint16_t mode, uintptr_t addr) {
 	else return true;
 }
 
+// Set the video mode to a specific choice
 bool VBE_SetMode(uint16_t mode) {
 
 	if (mode == 0xFFFF) return false;
@@ -58,6 +62,7 @@ bool VBE_SetMode(uint16_t mode) {
 	else return true;
 }
 
+// Get the current video mode
 uint16_t VBE_GetCurrentMode() {
 
 	struct BIOS_Registers BIOS_regs;
@@ -70,6 +75,7 @@ uint16_t VBE_GetCurrentMode() {
 	else return (uint16_t)BIOS_regs.ebx;
 }
 
+// Pointers to certain code/functions that can be run from protected mode
 uintptr_t VBE_StorePModeInfo(uintptr_t addr) {
 
 	struct VBE_PMode_Info* pminfo = (struct VBE_PMode_Info*)(addr);
@@ -90,6 +96,15 @@ uintptr_t VBE_StorePModeInfo(uintptr_t addr) {
 
 }
 
+// Get the text mode with the desired attributes
+// * width  : Number of characters in a line
+// * height : Number of lines
+// If width and height are set to 0
+// * We first try to find the 'standard' 80x25 text mode 3  
+// * If not found, we try to find any available 80x25 text mode
+// * If not found, we try to find any available text mode
+// If either width or height are non-zero then we find the first available text mode with matching attributes (0 means any)
+// Note : A video mode is a text mode if the 5th least significant bit of the attributes word is clear (graphics mode if it is set) 
 uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height) {
 
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
@@ -119,6 +134,20 @@ uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height)
 	return 0xFFFF;
 }
 
+// Get the video mode with the desired attributes
+// * width  : width in pixels
+// * height : height in pixels
+// * depth  : color bits per pixel
+// If width, height and depth are set to 0
+// * We first try to find the 'standard' 80x25 text mode 3  
+// * If not found, we try to find any available 80x25 text mode
+// * If not found, we try to find any available text mode
+// * If not found, we try to find any available mode
+// If width or height are nonzero but depth is 0
+// * We first try to find the text mode consistent with the width and height attributes (0 means any)
+// * If not found, we try to find any mode consistent with the width and height attributes (0 means any)
+// If depth is nonzero
+// * We try to find any mode consistent with the width, height and depth attributes (0 means any)
 uint16_t VBE_GetMode(uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth) {
 
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
@@ -133,6 +162,10 @@ uint16_t VBE_GetMode(uint16_t* video_modes, uint32_t width, uint32_t height, uin
 		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
 		    if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
 		    if ((VBE_ModeBuffer.attributes & 0x10) == 0 && VBE_ModeBuffer.width == 80 && VBE_ModeBuffer.height == 25) return video_modes[i];
+		}
+		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
+		    if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
+		    if ((VBE_ModeBuffer.attributes & 0x10) == 0) return video_modes[i];
 		}
 		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
 		    if (!VBE_GetModeInfo(video_modes[i], (uintptr_t)(&VBE_ModeBuffer))) continue;
