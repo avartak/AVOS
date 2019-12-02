@@ -149,16 +149,21 @@ BITS 16
 	
 	mov   [fs:REL_ADDR(BIOS_Regs16.esp)], esp
 	
-	; Prepare the stack for a call to the interrupt routine
+	; Save the pointer to the interrupt routine in SI (4 bytes : first two bytes offset, next two bytes segment)
 	
 	mov   al, BYTE [fs:REL_ADDR(BIOS_Int_ID)]
 	mov   bl, 4
 	mul   bl
 	mov   si, ax
 	
+	; Set up the stack to return from the interrupt routine at the appropriate point
+
 	pushf
 	push  cs
 	push  WORD REL_ADDR(BIOS_Interrupt.SwitchToPMode32)
+
+	; Push the address of the interrupt routine on the stack so that we can call the routine with a far return
+
 	push  DWORD [si]
 	
 	; Store the designated values in DS and ES (taken from BIOS_Regs16)
