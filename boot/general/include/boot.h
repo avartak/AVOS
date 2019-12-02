@@ -7,6 +7,16 @@
 #define BOOT_BLOCKLIST_MAXBLOCKS512 41
 #define BOOT_BLOCKLIST_MAXBLOCKS272 21
 
+struct Boot_Block32_Entry {
+    uintptr_t address;
+    size_t    size;
+}__attribute__((packed));
+
+struct Boot_Block64_Entry {
+    uint64_t address;
+    uint64_t    size;
+}__attribute__((packed));
+
 struct Boot_Block {
 	uint64_t  lba;
 	size_t    num_sectors;
