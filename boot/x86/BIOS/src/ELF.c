@@ -83,23 +83,19 @@ size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
 	
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
-	
-	for (size_t i = 0; i < hdr->e_phnum; i++) {
-		if (phdr[i].p_type != PT_LOAD) continue;
-		if (phdr[i].p_paddr != start_addr) return load_size;
-	}
-	
+
+	uint8_t* p_mem_addr = (uint8_t*)start_addr;
 	for (size_t i = 0; i < hdr->e_phnum; i++) {
 		if (phdr[i].p_type != PT_LOAD) continue;
 		
 		uint8_t* p_img_addr = (uint8_t*)(image + phdr[i].p_offset);
-		uint8_t* p_mem_addr = (uint8_t*)phdr[i].p_paddr;
-		
-		size_t  p_img_size = phdr[i].p_filesz;
-		size_t  p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
+		size_t   p_img_size = phdr[i].p_filesz;
+		size_t   p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
 		
 		memmove(p_mem_addr, p_img_addr, p_img_size);
+		p_mem_addr += p_img_size;
 		memset(p_mem_addr, 0, p_pad_size);
+		p_mem_addr += p_pad_size;
 		load_size += p_img_size + p_pad_size;
 	}
 	
