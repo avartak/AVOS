@@ -473,29 +473,29 @@ bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, struct Boot_Kernel_Info* 
 bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
-
+	
 	if (multiboot_header_ptr == 0) return false;
-
+	
 	bool graphics_mbi_mandatory = false;
 	bool vbe_mbi_requested = false;
 	bool vbe_mbi_mandatory = false;
 	bool framebuffer_mbi_requested = false;
 	bool framebuffer_mbi_mandatory = false;
 	bool EGA_text_supported = false;
-
+	
 	uint32_t width_requested  = 0;
 	uint32_t height_requested = 0;
 	uint32_t depth_requested  = 0;
-
-    struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
-    struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
-
-    while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
-        if ((header_tag->flags & 1) == 0 && header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
-            struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
-            size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
-            for (size_t i = 0; i < nrequests; i++) {
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_VBE) {
+	
+	struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
+	struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
+	
+	while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
+		if ((header_tag->flags & 1) == 0 && header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
+			struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
+			size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
+			for (size_t i = 0; i < nrequests; i++) {
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_VBE) {
 					vbe_mbi_requested = true;
 					if ((header_requests->flags & 1) == 0) vbe_mbi_mandatory = true;
 				}
@@ -503,27 +503,27 @@ bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* ker
 					framebuffer_mbi_requested = true;
 					if ((header_requests->flags & 1) == 0) framebuffer_mbi_mandatory = true;
 				}
-            }
-        }
-        else if (header_tag->type == MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS) {
-            struct Multiboot_Header_Tag_Console* header_tag_console = (struct Multiboot_Header_Tag_Console*)header_tag;
+			}
+		}
+		else if (header_tag->type == MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS) {
+			struct Multiboot_Header_Tag_Console* header_tag_console = (struct Multiboot_Header_Tag_Console*)header_tag;
 			if (header_tag_console->console_flags & MULTIBOOT_CONSOLE_FLAGS_CONSOLE_REQUIRED  ) graphics_mbi_mandatory = true;
 			if (header_tag_console->console_flags & MULTIBOOT_CONSOLE_FLAGS_EGA_TEXT_SUPPORTED) EGA_text_supported = true;
-        }
+		}
 		else if (header_tag->type == MULTIBOOT_HEADER_TAG_FRAMEBUFFER) {
 			struct Multiboot_Header_Tag_Framebuffer* header_tag_framebuffer = (struct Multiboot_Header_Tag_Framebuffer*)header_tag;
 			width_requested  = header_tag_framebuffer->width;
 			height_requested = header_tag_framebuffer->height;
 			depth_requested  = header_tag_framebuffer->depth;
 		}
-        header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
-    }
-
+		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
+	}
+	
 	if (!graphics_mbi_mandatory && !vbe_mbi_requested && !framebuffer_mbi_requested) return true;
-
+	
 	struct Multiboot_Info_VBE* mbi_vbe = (struct Multiboot_Info_VBE*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_VBE);
 	if (mbi_vbe == MEMORY_NULL_PTR || mbi_vbe->type != 0) return false;
-
+	
 	mbi_vbe->type = MULTIBOOT_TAG_TYPE_VBE;
 	mbi_vbe->size = 784;
 	for (size_t i = 0; i < 0x200; i++) mbi_vbe->vbe_control_info[i] = 0;
@@ -535,17 +535,17 @@ bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* ker
 		if (graphics_mbi_mandatory || vbe_mbi_mandatory || framebuffer_mbi_mandatory) return false;
 		return true;
 	}
-
+	
 	mbi_vbe->vbe_mode = 0xFFFF;	
 	mbi_vbe->vbe_interface_seg = 0;	
 	mbi_vbe->vbe_interface_off = 0;	
 	mbi_vbe->vbe_interface_len = 0;	
 	VBE_StorePModeInfo((uintptr_t)(&(mbi_vbe->vbe_interface_seg)));
-
-    struct VBE_Info* vbe_info = (struct VBE_Info*)(16 + (uintptr_t)mbi_vbe);
-    uintptr_t vmodes = (uintptr_t)(vbe_info->video_modes);
-    uint16_t* video_modes = (uint16_t*)(((vmodes >> 16) << 4) + (vmodes & 0xFFFF));
-
+	
+	struct VBE_Info* vbe_info = (struct VBE_Info*)(16 + (uintptr_t)mbi_vbe);
+	uintptr_t vmodes = (uintptr_t)(vbe_info->video_modes);
+	uint16_t* video_modes = (uint16_t*)(((vmodes >> 16) << 4) + (vmodes & 0xFFFF));
+	
 	uint16_t preferred_mode;
 	if (width_requested == 0 && height_requested == 0 && depth_requested == 0) {
 		if (EGA_text_supported) preferred_mode = VBE_GetTextMode(video_modes, 80, 25);
@@ -556,7 +556,7 @@ bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* ker
 	}
 	else preferred_mode = VBE_GetMode(video_modes, width_requested, height_requested, depth_requested);
 	mbi_vbe->vbe_mode = preferred_mode;
-
+	
 	if (preferred_mode == 0xFFFF) preferred_mode = VBE_GetCurrentMode();
 	if (preferred_mode == 0xFFFF || VBE_GetModeInfo(preferred_mode, (uintptr_t)mbi_vbe->vbe_mode_info) == false) {
 		mbi_vbe->size = 0;
@@ -564,14 +564,14 @@ bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* ker
 		if (graphics_mbi_mandatory || vbe_mbi_mandatory || framebuffer_mbi_mandatory) return false;
 		return true;
 	}
-
+	
 	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_vbe);
-
+	
 	if (!graphics_mbi_mandatory && !framebuffer_mbi_requested) return true;
-
+	
 	struct Multiboot_Info_Framebuffer* mbi_fbuf = (struct Multiboot_Info_Framebuffer*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_FRAMEBUFFER);
-    if (mbi_fbuf == MEMORY_NULL_PTR || mbi_fbuf->type != 0) return false;
-
+	if (mbi_fbuf == MEMORY_NULL_PTR || mbi_fbuf->type != 0) return false;
+	
 	struct VBE_Mode_Info* mode_info = (struct VBE_Mode_Info*)(mbi_vbe->vbe_mode_info);
 	mbi_fbuf->type = MULTIBOOT_TAG_TYPE_FRAMEBUFFER;
 	mbi_fbuf->framebuffer_addr   = mode_info->framebuffer;
@@ -589,9 +589,9 @@ bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* ker
 	mbi_fbuf->framebuffer_blue_field_position  = mode_info->blue_position;
 	mbi_fbuf->framebuffer_blue_mask_size       = mode_info->green_position;
 	mbi_fbuf->size = sizeof(*mbi_fbuf);
-
+	
 	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_fbuf);
-
+	
 	if (!VBE_SetMode(preferred_mode)) return false;
 	return true;
 }
