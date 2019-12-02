@@ -147,21 +147,21 @@ AVBL:
 	
 	; Halt the system in case of trouble
 
-    HaltSystem:
-    mov   si, Messages.A20EnableErr
-    .printchar:
-    lodsb
-    test  al, al
-    jz    .printdone
-    mov   ah, 0x0E
-    mov   bx, 0x0007
-    int   0x10
-    jmp   .printchar
-
-    .printdone:
-    cli
-    hlt
-    jmp   .printdone
+	HaltSystem:
+	mov   si, Messages.A20EnableErr
+	.printchar:
+	lodsb
+	test  al, al
+	jz    .printdone
+	mov   ah, 0x0E
+	mov   bx, 0x0007
+	int   0x10
+	jmp   .printchar
+	
+	.printdone:
+	cli
+	hlt
+	jmp   .printdone
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
