@@ -70,7 +70,7 @@ AVBL:
 	; Expect the stack to be appropriately set up when control is handed over here
 	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
 	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
-    ; Save these registers on the stack
+	; Save these registers on the stack
 
 	push  dx
 	push  es
