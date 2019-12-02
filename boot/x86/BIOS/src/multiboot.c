@@ -433,40 +433,40 @@ bool Multiboot_SaveBasicMemoryInfo(uintptr_t mbi_addr) {
 
 bool Multiboot_SaveBootDeviceInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
-    struct Multiboot_Info_BootDevice* mbi_bootdev = (struct Multiboot_Info_BootDevice*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_BOOTDEV);
+	struct Multiboot_Info_BootDevice* mbi_bootdev = (struct Multiboot_Info_BootDevice*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_BOOTDEV);
 	if (mbi_bootdev == MEMORY_NULL_PTR || mbi_bootdev->type != 0) return false;
-
+	
 	uint16_t* part = (uint16_t*)(kernel_info->boot_partition);
 	for (size_t i = 0; i < 5; i++) {
 		if (part[0] == 0xAA55) break;
 		part += 8;
 	}
 	if (part[0] != 0xAA55) return false;
-
+	
 	mbi_bootdev->type = MULTIBOOT_TAG_TYPE_BOOTDEV;
 	mbi_bootdev->size = 24;
 	mbi_bootdev->biosdev = kernel_info->boot_drive_ID;
 	mbi_bootdev->partition = 4 - ((uint32_t)part - kernel_info->boot_partition)/16;
 	mbi_bootdev->sub_partition = 0xFFFFFFFF;
-
-    Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_bootdev);
-
+	
+	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_bootdev);
+	
 	return true;
 }
 
 bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
-    struct Multiboot_Info_LoadBaseAddress* mbi_mem_base = (struct Multiboot_Info_LoadBaseAddress*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
-    if (mbi_mem_base == MEMORY_NULL_PTR || mbi_mem_base->type != 0) return false;
-
-    mbi_mem_base->type = MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR;
-    mbi_mem_base->size = 16;
-    mbi_mem_base->load_base_addr = kernel_info->start;
-    mbi_mem_base->reserved = 0;
-
-    Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_base);
-
-    return true;
+	struct Multiboot_Info_LoadBaseAddress* mbi_mem_base = (struct Multiboot_Info_LoadBaseAddress*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
+	if (mbi_mem_base == MEMORY_NULL_PTR || mbi_mem_base->type != 0) return false;
+	
+	mbi_mem_base->type = MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR;
+	mbi_mem_base->size = 16;
+	mbi_mem_base->load_base_addr = kernel_info->start;
+	mbi_mem_base->reserved = 0;
+	
+	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_base);
+	
+	return true;
 }
 
 
@@ -600,75 +600,75 @@ bool Multiboot_SaveELFSectionHeaders(uintptr_t mbi_addr, uintptr_t image) {
 
 	struct Multiboot_Info_ELF_Sections* mbi_elf_shdr = (struct Multiboot_Info_ELF_Sections*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_ELF_SECTIONS);
 	if (mbi_elf_shdr == MEMORY_NULL_PTR || mbi_elf_shdr->type != 0) return false;
-
-    mbi_elf_shdr->type    = MULTIBOOT_TAG_TYPE_ELF_SECTIONS;
+	
+	mbi_elf_shdr->type    = MULTIBOOT_TAG_TYPE_ELF_SECTIONS;
 	mbi_elf_shdr->num     = 0;
 	mbi_elf_shdr->entsize = 0;
 	mbi_elf_shdr->shndx   = 0;
-    mbi_elf_shdr->size    = Elf32_LoadSectionHeaderTable(image, 8 + (uintptr_t)mbi_elf_shdr, true) + 8;
-
+	mbi_elf_shdr->size    = Elf32_LoadSectionHeaderTable(image, 8 + (uintptr_t)mbi_elf_shdr, true) + 8;
+	
 	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_elf_shdr);
-
+	
 	return true;
 }
 
 bool Multiboot_SaveAPMInfo(uintptr_t mbi_addr) {
 
-    struct Multiboot_Info_APM* mbi_apm = (struct Multiboot_Info_APM*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_APM);
-    if (mbi_apm == MEMORY_NULL_PTR || mbi_apm->type != 0) return false;
-
-    mbi_apm->type = MULTIBOOT_TAG_TYPE_APM;
-    mbi_apm->size = sizeof(struct Multiboot_Info_APM);
-
+	struct Multiboot_Info_APM* mbi_apm = (struct Multiboot_Info_APM*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_APM);
+	if (mbi_apm == MEMORY_NULL_PTR || mbi_apm->type != 0) return false;
+	
+	mbi_apm->type = MULTIBOOT_TAG_TYPE_APM;
+	mbi_apm->size = sizeof(struct Multiboot_Info_APM);
+	
 	struct Multiboot_APM_Interface* iapm = &(mbi_apm->apm_interface);
-    if (Discovery_StoreAPMInfo((uintptr_t)iapm) == (uintptr_t)iapm) {
-        mbi_apm->size = 0;
-        Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
-        return false;
-    }
-    else {
+	if (Discovery_StoreAPMInfo((uintptr_t)iapm) == (uintptr_t)iapm) {
+		mbi_apm->size = 0;
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
+		return false;
+	}
+	else {
 		mbi_apm->reserved1 = 0;
 		mbi_apm->reserved2 = 0;
-        Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
-        return true;
-    }
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
+		return true;
+	}
 
 }
 
 bool Multiboot_SaveSMBIOSInfo(uintptr_t mbi_addr) {
 
-    struct Multiboot_Info_SMBIOS* mbi_smbios = (struct Multiboot_Info_SMBIOS*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_SMBIOS);
-    if (mbi_smbios == MEMORY_NULL_PTR || mbi_smbios->type != 0) return false;
-
-    mbi_smbios->type = MULTIBOOT_TAG_TYPE_SMBIOS;
-    mbi_smbios->size = Discovery_StoreSMBIOSInfo(8 + (uintptr_t)mbi_smbios) - (uintptr_t)mbi_smbios;
-
+	struct Multiboot_Info_SMBIOS* mbi_smbios = (struct Multiboot_Info_SMBIOS*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_SMBIOS);
+	if (mbi_smbios == MEMORY_NULL_PTR || mbi_smbios->type != 0) return false;
+	
+	mbi_smbios->type = MULTIBOOT_TAG_TYPE_SMBIOS;
+	mbi_smbios->size = Discovery_StoreSMBIOSInfo(8 + (uintptr_t)mbi_smbios) - (uintptr_t)mbi_smbios;
+	
 	if (mbi_smbios->size <= 8) {
-        mbi_smbios->size = 0;
-        Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_smbios);
-        return false;
+		mbi_smbios->size = 0;
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_smbios);
+		return false;
 	}
 	else {
-        Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_smbios);
-        return true;
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_smbios);
+		return true;
 	}
 }
 
 bool Multiboot_SaveACPIInfo(uintptr_t mbi_addr, bool old) {
 
-    struct Multiboot_Info_ACPIv1* mbi_acpiv1 = (struct Multiboot_Info_ACPIv1*)Multiboot_FindMBITagAddress(mbi_addr, (old ? MULTIBOOT_TAG_TYPE_ACPI_OLD : MULTIBOOT_TAG_TYPE_ACPI_NEW));
-    if (mbi_acpiv1 == MEMORY_NULL_PTR || mbi_acpiv1->type != 0) return false;
-
-    mbi_acpiv1->type = (old ? MULTIBOOT_TAG_TYPE_ACPI_OLD : MULTIBOOT_TAG_TYPE_ACPI_NEW);
-    mbi_acpiv1->size = (old ? sizeof(struct Multiboot_Info_ACPIv1) : sizeof(struct Multiboot_Info_ACPIv2));
-
+	struct Multiboot_Info_ACPIv1* mbi_acpiv1 = (struct Multiboot_Info_ACPIv1*)Multiboot_FindMBITagAddress(mbi_addr, (old ? MULTIBOOT_TAG_TYPE_ACPI_OLD : MULTIBOOT_TAG_TYPE_ACPI_NEW));
+	if (mbi_acpiv1 == MEMORY_NULL_PTR || mbi_acpiv1->type != 0) return false;
+	
+	mbi_acpiv1->type = (old ? MULTIBOOT_TAG_TYPE_ACPI_OLD : MULTIBOOT_TAG_TYPE_ACPI_NEW);
+	mbi_acpiv1->size = (old ? sizeof(struct Multiboot_Info_ACPIv1) : sizeof(struct Multiboot_Info_ACPIv2));
+	
 	if (Discovery_StoreACPIInfo(8 + (uintptr_t)mbi_acpiv1, old) == 8 + (uintptr_t)mbi_acpiv1) {
 		mbi_acpiv1->size = 0;
-    	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_acpiv1);
-    	return false;
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_acpiv1);
+		return false;
 	}
 	else {
-    	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_acpiv1);
+		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_acpiv1);
 		return true;
 	}
 }
@@ -676,29 +676,29 @@ bool Multiboot_SaveACPIInfo(uintptr_t mbi_addr, bool old) {
 bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
-
-    struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
-    struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
-
-    while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
+	
+	struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
+	struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
+	
+	while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
 		bool quit = (header_tag->flags & 1) == 0;
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_EFI_BS             ) {if (quit) return false;}
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI32) {if (quit) return false;}
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64) {if (quit) return false;}
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
-            struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
-            size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
-            for (size_t i = 0; i < nrequests; i++) {
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_CMDLINE         ) Multiboot_SaveBootCommand(mbi_addr);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME) Multiboot_SaveBootLoaderInfo(mbi_addr);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO   ) Multiboot_SaveBasicMemoryInfo(mbi_addr);
+		if (header_tag->type == MULTIBOOT_HEADER_TAG_EFI_BS             ) {if (quit) return false;}
+		if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI32) {if (quit) return false;}
+		if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64) {if (quit) return false;}
+		if (header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
+			struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
+			size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
+			for (size_t i = 0; i < nrequests; i++) {
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_CMDLINE         ) Multiboot_SaveBootCommand(mbi_addr);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME) Multiboot_SaveBootLoaderInfo(mbi_addr);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO   ) Multiboot_SaveBasicMemoryInfo(mbi_addr);
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOTDEV         ) Multiboot_SaveBootDeviceInfo(mbi_addr, kernel_info);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_APM             ) Multiboot_SaveAPMInfo(mbi_addr);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_SMBIOS          ) Multiboot_SaveSMBIOSInfo(mbi_addr);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_OLD        ) Multiboot_SaveACPIInfo(mbi_addr, true);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_NEW        ) Multiboot_SaveACPIInfo(mbi_addr, false);
-                if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR  ) Multiboot_SaveLoadBaseAddress(mbi_addr, kernel_info);
-
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_APM             ) Multiboot_SaveAPMInfo(mbi_addr);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_SMBIOS          ) Multiboot_SaveSMBIOSInfo(mbi_addr);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_OLD        ) Multiboot_SaveACPIInfo(mbi_addr, true);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_NEW        ) Multiboot_SaveACPIInfo(mbi_addr, false);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR  ) Multiboot_SaveLoadBaseAddress(mbi_addr, kernel_info);
+				
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32           ) {if (quit) return false;}
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64           ) {if (quit) return false;}
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI_MMAP        ) {if (quit) return false;}
@@ -706,33 +706,33 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32_IH        ) {if (quit) return false;}
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64_IH        ) {if (quit) return false;}
 				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_NETWORK         ) {if (quit) return false;}
-            }
-        }
-        header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
-    }
-
+			}
+		}
+		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
+	}
+	
 	if (!Multiboot_SaveGraphicsInfo(mbi_addr, kernel_info)) return false;
-
+	
 	return true;
 }
 
 bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	Console_PrintBanner();
-
+	
 	if (!Multiboot_CreateEmptyMBI(mbi_addr)) return Console_PrintError("Error creating multiboot information record", false);
-
+	
 	if (!Multiboot_SaveMemoryMaps(mbi_addr)) return Console_PrintError("Error saving memory maps", false);
-
+	
 	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
 	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return Console_PrintError("Unable to detect memory map", false);
 	struct Multiboot_E820_Entry* E820_Table = (struct Multiboot_E820_Entry*)(0x10 + (uintptr_t)mbi_name);
 	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
 	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS", false);
-
+	
 	if (!Multiboot_LoadKernel (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
 	if (!Multiboot_LoadModules(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules", false); 
 	if (!Multiboot_SaveInfo   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information", false);
-
+	
 	return true;
 }
