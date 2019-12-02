@@ -13,7 +13,7 @@ extern void Console_PrintString(const char* string, uint8_t line, uint8_t column
 extern char Console_ReadChar();
 
 extern void Console_PrintBanner();
-extern bool Console_PrintError(const char* string, uint8_t line, bool retval);
+extern bool Console_PrintError(const char* string, bool retval);
 extern void Console_ReadCommand(char* buffer);
 
 #endif

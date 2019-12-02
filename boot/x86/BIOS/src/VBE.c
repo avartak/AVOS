@@ -1,8 +1,6 @@
 #include <boot/x86/BIOS/include/VBE.h>
 #include <boot/x86/BIOS/include/bios.h>
 
-struct VBE_Mode_Info VBE_ModeBuffer;
-
 uintptr_t VBE_StoreInfo(uintptr_t addr) {
 
 	struct VBE_Info* vinfo = (struct VBE_Info*)(addr);
@@ -27,6 +25,7 @@ uintptr_t VBE_StoreInfo(uintptr_t addr) {
 }
 
 bool VBE_GetModeInfo(uint16_t mode, uintptr_t addr) {
+
 	if (mode == 0xFFFF || addr == (uintptr_t)MEMORY_NULL_PTR) return false;
 
     struct BIOS_Registers BIOS_regs;
@@ -44,6 +43,7 @@ bool VBE_GetModeInfo(uint16_t mode, uintptr_t addr) {
 }
 
 bool VBE_SetMode(uint16_t mode) {
+
     if (mode == 0xFFFF) return false;
 
     struct BIOS_Registers BIOS_regs;
@@ -90,12 +90,11 @@ uintptr_t VBE_StorePModeInfo(uintptr_t addr) {
 
 }
 
-uintptr_t VBE_GetModeBuffer() {
-	return (uintptr_t)(&VBE_ModeBuffer);
-}
-
 uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height) {
+
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
+
+	struct VBE_Mode_Info VBE_ModeBuffer;
 	if (width == 0 && height == 0) {
 		for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
 			if (video_modes[i] != 3) continue;
@@ -121,7 +120,10 @@ uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height)
 }
 
 uint16_t VBE_GetMode(uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth) {
+
 	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
+
+	struct VBE_Mode_Info VBE_ModeBuffer;
 	if (width == 0 && height == 0 && depth == 0) {
         for (size_t i = 0; video_modes[i] != 0xFFFF; i++) {
             if (video_modes[i] != 3) continue;

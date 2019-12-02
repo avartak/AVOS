@@ -7,23 +7,24 @@
 #include <boot/x86/BIOS/include/discovery.h>
 
 bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
-    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
 
-    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
-    if ((mbi_addr % 8) == 0 && mbi_start->reserved == 0 && mbi_start->total_size >= 16 && mbi_term_tag->type == 0 && mbi_term_tag->size == 8) return true;
-    else return false;
+    struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
+	if ((mbi_addr % 8) != 0 || mbi_start->reserved != 0 || mbi_start->total_size < 16 || (mbi_start->total_size % 8) != 0) return false;
+
+    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + mbi_addr - 8);
+    if (mbi_term_tag->type != 0 || mbi_term_tag->size != 8) return false;
+    else return true;
 }
 
 bool Multiboot_CreateEmptyMBI(uintptr_t mbi_addr) {
 
-	if (Multiboot_CheckForValidMBI(mbi_addr)) return Console_PrintError("A valid multiboot information record already exists", 22, false);
-	if (mbi_addr % 8 != 0) return Console_PrintError("Require 8-byte alignment for multiboot information record", 22, false); 
+	if (mbi_addr % 8 != 0) return false;
 
     struct Multiboot_Info_Start* mbi_start = (struct Multiboot_Info_Start*)mbi_addr;
 	mbi_start->total_size = 16;
 	mbi_start->reserved   = 0;
 
-    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_start->total_size + (uintptr_t)mbi_addr - 8);
+    struct Multiboot_Info_Tag* mbi_term_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8);
 	mbi_term_tag->type = 0;
 	mbi_term_tag->size = 8;
 
@@ -121,9 +122,8 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 
 bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
-    uintptr_t image         = kernel_info->start;
+    uintptr_t image         = 0;
     size_t    file_size     = 0;
-    uintptr_t start_addr    = image;
 
     struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
     uint8_t blocklist[0x1000];
@@ -143,8 +143,8 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 				if (blocklist512->jump != 0x9001FDE9) continue;
 				char* marker = blocklist512->reserved;
 				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
+					image = blocklist512->load_address_lo;
 				    kernel_found = true;
-				    if (image != blocklist512->load_address_lo) return false;
 				    for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
 				        uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
 						bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), image, kern_lba, blocklist512->blocks[k].num_sectors);
@@ -161,6 +161,7 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
     if (!kernel_found) return false;
 
 
+    uintptr_t start_addr    = kernel_info->start;
 	bool      reloc         = false;
 	uintptr_t start_min     = start_addr;
 	uintptr_t end_max       = start_addr + file_size;
@@ -680,14 +681,13 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info
 
     while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
 		bool quit = (header_tag->flags & 1) == 0;
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_EFI_BS             ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI32) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
+        if (header_tag->type == MULTIBOOT_HEADER_TAG_EFI_BS             ) {if (quit) return false;}
+        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI32) {if (quit) return false;}
+        if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64) {if (quit) return false;}
         if (header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
             struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
             size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
             for (size_t i = 0; i < nrequests; i++) {
-
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_CMDLINE         ) Multiboot_SaveBootCommand(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME) Multiboot_SaveBootLoaderInfo(mbi_addr);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO   ) Multiboot_SaveBasicMemoryInfo(mbi_addr);
@@ -698,14 +698,13 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ACPI_NEW        ) Multiboot_SaveACPIInfo(mbi_addr, false);
                 if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR  ) Multiboot_SaveLoadBaseAddress(mbi_addr, kernel_info);
 
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_NETWORK         ) {if (Console_PrintError("Net not supported" , 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32           ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64           ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI_MMAP        ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI_BS          ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32_IH        ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64_IH        ) {if (Console_PrintError("UEFI not supported", 22, quit)) return false;}
-				if (header_requests->requests[i]  > 21 && header_requests->requests[i] != MULTIBOOT_TAG_TYPE_RAM_INFO) Console_PrintError("Unrecognized request", 22, true);
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32           ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64           ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI_MMAP        ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI_BS          ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI32_IH        ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_EFI64_IH        ) {if (quit) return false;}
+				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_NETWORK         ) {if (quit) return false;}
             }
         }
         header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
@@ -720,19 +719,19 @@ bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	Console_PrintBanner();
 
-	if (!Multiboot_CreateEmptyMBI(mbi_addr)) return Console_PrintError("Error creating multiboot information record", 23, false);
+	if (!Multiboot_CreateEmptyMBI(mbi_addr)) return Console_PrintError("Error creating multiboot information record", false);
 
-	if (!Multiboot_SaveMemoryMaps(mbi_addr)) return Console_PrintError("Error saving memory maps", 23, false);
+	if (!Multiboot_SaveMemoryMaps(mbi_addr)) return Console_PrintError("Error saving memory maps", false);
 
 	struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
-	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return Console_PrintError("Unable to detect memory map", 23, false);
+	if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return Console_PrintError("Unable to detect memory map", false);
 	struct Multiboot_E820_Entry* E820_Table = (struct Multiboot_E820_Entry*)(0x10 + (uintptr_t)mbi_name);
 	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
-	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS", 23, false);
+	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS", false);
 
-	if (!Multiboot_LoadKernel (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", 23, false); 
-	if (!Multiboot_LoadModules(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules", 23, false); 
-	if (!Multiboot_SaveInfo   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information", 23, false);
+	if (!Multiboot_LoadKernel (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
+	if (!Multiboot_LoadModules(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules", false); 
+	if (!Multiboot_SaveInfo   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information", false);
 
 	return true;
 }

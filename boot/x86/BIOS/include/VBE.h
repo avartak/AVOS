@@ -62,8 +62,6 @@ struct VBE_PMode_Info {
     uint16_t length;
 }__attribute__((packed));
 
-extern struct VBE_Mode_Info VBE_ModeBuffer;
-
 extern uintptr_t VBE_StoreInfo     (uintptr_t addr);
 extern uintptr_t VBE_StorePModeInfo(uintptr_t addr);
 extern uint16_t  VBE_GetCurrentMode();
