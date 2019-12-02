@@ -123,8 +123,8 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 
 bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
-	uintptr_t image         = 0;
-	size_t    file_size     = 0;
+	uintptr_t image     = 0;
+	size_t    file_size = 0;
 	
 	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
@@ -211,7 +211,7 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 			}
 			else {
 				if (header_tag_address->header_addr < load_addr) return false;
-				load_start = multiboot_header_ptr - (header_tag_address->header_addr - header_tag_address->load_addr);
+				load_start = multiboot_header_ptr - (header_tag_address->header_addr - load_addr);
 			}
 
 			if (header_tag_address->load_end_addr != 0 && header_tag_address->load_end_addr < load_addr) return false; 
