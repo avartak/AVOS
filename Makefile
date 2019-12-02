@@ -109,5 +109,6 @@ clean:
 	rm kernel/src/*.o
 	rm csupport/src/*.o
 	rm boot/x86/BIOS/src/*.o
+	rm boot/general/src/*.o
 	rm *.bin
 
