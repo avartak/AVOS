@@ -290,6 +290,7 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 		uintptr_t end_addr = start_addr + load_size + bss_size;
 		uintptr_t image_cleanup_start = (end_addr > image ? end_addr : image);
 		if (image_cleanup_start < image + file_size) memset((uint8_t*)image_cleanup_start, 0, image + file_size - image_cleanup_start);
+		if (image < start_addr) memset((uint8_t*)image, 0, (start_addr - image) > file_size ? file_size : (start_addr - image));
 		
 		kernel_info->start = start_addr;
 		kernel_info->size = load_size + bss_size;
