@@ -213,19 +213,19 @@ MBR:
 	; The character byte is stored in AL ; BH contains the display page number ; BL contains the display color for the character
 
 	HaltSystem:
-    .printchar:
-    lodsb
-    test  al, al
-    jz    .printdone
-    mov   ah, 0x0E
-    mov   bx, 0x0007
-    int   0x10
-    jmp   .printchar
-
-    .printdone:
-    cli
-    hlt
-    jmp   .printdone
+	.printchar:
+	lodsb
+	test  al, al
+	jz    .printdone
+	mov   ah, 0x0E
+	mov   bx, 0x0007
+	int   0x10
+	jmp   .printchar
+	
+	.printdone:
+	cli
+	hlt
+	jmp   .printdone
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
