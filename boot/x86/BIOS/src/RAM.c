@@ -132,7 +132,7 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 
 uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
     size_t table_size  = 0;
-    struct Boot_Block64_Entry* table_ptr = (struct Boot_Block64_Entry*)(addr);
+    struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);
     table_ptr->address = 0;
     table_ptr->size = 0;
 
@@ -160,7 +160,7 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 	}
 
 	// Adjust the entries on 4KB boundaries
-    table_ptr = (struct Boot_Block64_Entry*)(addr);
+    table_ptr = (struct Boot_Block64*)(addr);
 	for (size_t i = 0; i < table_size; i++) {
 		uint64_t min_addr = table_ptr[i].address;
 		uint64_t mask = ~((uint64_t)(0xFFF));
@@ -187,6 +187,6 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 		}
 	}
 
-    return addr + table_size * sizeof(struct Boot_Block64_Entry);
+    return addr + table_size * sizeof(struct Boot_Block64);
 }
 
