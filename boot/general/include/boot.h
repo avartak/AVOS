@@ -57,9 +57,12 @@ struct Boot_Kernel_Info {
     uintptr_t part_info_ptr;
     uintptr_t blocklist_ptr;
     uintptr_t start;
+    size_t    size;
+    size_t    bss_size;
     uintptr_t multiboot_header;
     uintptr_t entry;
-    size_t    size;
+    uintptr_t file_addr;
+    size_t    file_size;
 }__attribute__((packed));
 
 #endif

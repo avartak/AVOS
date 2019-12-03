@@ -95,9 +95,12 @@ Kernel_Info:
 	.part_info_ptr     dd 0
 	.blocklist_ptr     dd 0
 	.start             dd KERNEL_START
+	.size              dd 0
+	.bss_size          dd 0
 	.multiboot_header  dd 0
 	.entry             dd 0
-	.size              dd 0
+	.file_addr         dd 0
+	.file_size         dd 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

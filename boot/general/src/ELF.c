@@ -125,6 +125,33 @@ size_t Elf32_LoadSectionHeaderTable(uintptr_t image, uintptr_t start_addr, bool 
 	return retval;
 }
 
+size_t Elf32_SizeBSSLikeSections(uintptr_t image) {
+
+	if (!Elf32_IsValidELF(image)) return 0;
+	
+	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
+	Elf32_Shdr* shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
+	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
+	
+	size_t bss_size = 0;
+	
+	if (hdr->e_shnum > 0) {
+		for (size_t i = 0; i < hdr->e_shnum; i++) {
+			if(shdr[i].sh_type == SHT_NOBITS && (shdr[i].sh_flags & SHF_ALLOC) && shdr[i].sh_size > 0) bss_size += shdr[i].sh_size;
+		}
+	}
+	else {
+		for (size_t i = 0; i < hdr->e_phnum; i++) {
+			if (phdr[i].p_type != PT_LOAD) continue;
+			if (phdr[i].p_filesz != 0) continue;
+			bss_size += phdr[i].p_memsz;	
+		}
+	}
+	
+	return bss_size;
+
+}
+
 size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
 
 	if (!Elf32_IsValidELF(image)) return 0;
@@ -145,6 +172,7 @@ size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
 	return bss_size;
 
 }
+
 
 bool Elf32_Relocate(uintptr_t image) {
 
