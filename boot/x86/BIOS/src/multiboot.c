@@ -142,12 +142,19 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 				if (blocklist512->jump != 0x9001FDE9) continue;
 				char* marker = blocklist512->reserved;
 				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
-					kernel_info->file_addr = blocklist512->load_address_lo;
+					kernel_info->file_size = 0;
 					for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
+						if (k == BOOT_BLOCKLIST_MAXBLOCKS512) return false;
+						kernel_info->file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
+					}
+
+					/* Now that we know the file size, this would be the place to figure out where the kernel file can be loaded in high memory */
+					kernel_info->file_addr = blocklist512->load_address_lo;
+					/* For now simply take the address from the block list ; this should be improved by deciding on the basis of the memory map (to avoid unavailable regions) */
+
+					for (size_t k = 0; blocklist512->blocks[k].num_sectors > 0; k++) {
 						uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
-						bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, kern_lba, blocklist512->blocks[k].num_sectors);
-						if (bytes_read != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
-						kernel_info->file_size += bytes_read;
+						if (DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, kern_lba, blocklist512->blocks[k].num_sectors) != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
 					}
 					file_loaded = true;
 				}

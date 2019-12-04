@@ -130,6 +130,26 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 	return false;
 }
 
+uint64_t RAM_MemoryBlockAboveAddress(uint64_t addr, uint64_t size, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
+
+	uint64_t addr_limit = ~((uint64_t)0);
+    uint64_t mem = addr_limit;
+
+    if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem;
+    for (size_t i = 0; i < E820_Table_size; i++) {
+        if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
+        if (E820_Table[i].base <= addr && E820_Table[i].base + E820_Table[i].size > addr + size) return addr;
+    }
+    for (size_t i = 0; i < E820_Table_size; i++) {
+        if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
+        if (E820_Table[i].base >= addr && E820_Table[i].size >= size && E820_Table[i].base < mem) mem = E820_Table[i].base;
+        if (E820_Table[i].base >= addr && E820_Table[i].size  < size && E820_Table[i].base < mem) {
+			if (RAM_IsMemoryPresent(E820_Table[i].base + E820_Table[i].size, size - E820_Table[i].size, E820_Table, E820_Table_size)) mem = E820_Table[i].base;
+		}
+    }
+	return mem;
+}
+
 uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
     size_t table_size  = 0;
     struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);
