@@ -120,7 +120,9 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 	return kernel_entry;
 }
 
-bool Multiboot_LoadKernelFile(struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+
+	bool file_loaded = false;
 
 	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
@@ -146,15 +148,38 @@ bool Multiboot_LoadKernelFile(struct Boot_Kernel_Info* kernel_info) {
 						if (bytes_read != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
 						kernel_info->file_size += bytes_read;
 					}
-					return true;
+					file_loaded = true;
 				}
 			}
 		}
 	}
+
+	if (file_loaded) {
+		uintptr_t multiboot_header_ptr = Multiboot_GetHeader(kernel_info->file_addr, kernel_info->file_size);
+		if (multiboot_header_ptr == 0) return false;
+		
+		struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
+		struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
+		
+		while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
+			if (header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
+				struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
+				size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
+				for (size_t i = 0; i < nrequests; i++) {
+					if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ELF_SECTIONS) {
+						if (!Multiboot_SaveELFSectionHeaders(mbi_addr, kernel_info->file_addr) && (header_tag->flags & 1) == 0) return false;
+					}
+				}
+			}
+			header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
+		}
+		return true;
+	}
+
 	return false;
 }
 
-bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info) {
 
 	// Kernel load parameters
 	uintptr_t file_addr     = kernel_info->file_addr;
@@ -177,15 +202,6 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
 	
 	while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
-		if (header_tag->type == MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST) {
-			struct Multiboot_Header_Tag_Information* header_requests = (struct Multiboot_Header_Tag_Information*)header_tag;
-			size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
-			for (size_t i = 0; i < nrequests; i++) {
-				if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ELF_SECTIONS) {
-					if (!Multiboot_SaveELFSectionHeaders(mbi_addr, file_addr) && (header_tag->flags & 1) == 0) return false;
-				}
-			}
-		}
 		if (header_tag->type == MULTIBOOT_HEADER_TAG_RELOCATABLE) {
 			struct Multiboot_Header_Tag_Relocatable* header_reloc = (struct Multiboot_Header_Tag_Relocatable*)header_tag;
 			reloc       = true;
@@ -698,8 +714,8 @@ bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 	size_t E820_Table_size = (mbi_name->size - 0x10)/sizeof(struct Multiboot_E820_Entry);
 	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS", false);
 	
-	if (!Multiboot_LoadKernelFile(          kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
-	if (!Multiboot_LoadKernel    (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
+	if (!Multiboot_LoadKernelFile(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
+	if (!Multiboot_LoadKernel    (          kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
 	if (!Multiboot_LoadModules   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules", false); 
 	if (!Multiboot_SaveInfo      (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information", false);
 	
