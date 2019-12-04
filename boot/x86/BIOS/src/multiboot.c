@@ -122,42 +122,36 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 
 bool Multiboot_LoadKernelFile(struct Boot_Kernel_Info* kernel_info) {
 
-    struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
-    uint8_t blocklist[0x1000];
-    bool kernel_found = false;
-    for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
-        for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
-            uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
-            uint64_t offset = blocklist_mst->blocks[i].lba + j;
-            uint64_t lba = part_start + offset;
-
-            size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
-            if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
-
-            struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist) - 1;
-            for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
-                blocklist512++;
-                if (blocklist512->jump != 0x9001FDE9) continue;
-                char* marker = blocklist512->reserved;
-                if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
-                    kernel_info->file_addr = blocklist512->load_address_lo;
-                    kernel_found = true;
-                    for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
-                        uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
-                        bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, kern_lba, blocklist512->blocks[k].num_sectors);
-                        if (bytes_read != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
-                        kernel_info->file_size += bytes_read;
-                    }
-                }
-                if (kernel_found) break;
-            }
-            if (kernel_found) break;
-        }
-        if (kernel_found) break;
-    }
-    if (!kernel_found) return false;
-
-	return true;
+	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
+	uint8_t blocklist[0x1000];
+	for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
+		for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
+			uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
+			uint64_t offset = blocklist_mst->blocks[i].lba + j;
+			uint64_t lba = part_start + offset;
+			
+			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
+			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
+			
+			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist) - 1;
+			for (size_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
+				blocklist512++;
+				if (blocklist512->jump != 0x9001FDE9) continue;
+				char* marker = blocklist512->reserved;
+				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') {
+					kernel_info->file_addr = blocklist512->load_address_lo;
+					for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS512 && blocklist512->blocks[k].num_sectors > 0; k++) {
+						uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
+						bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, kern_lba, blocklist512->blocks[k].num_sectors);
+						if (bytes_read != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
+						kernel_info->file_size += bytes_read;
+					}
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
@@ -173,7 +167,6 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	uint32_t  start_align   = 0x1000;
 	
 	bool      load_info     = false;
-	uintptr_t load_addr     = kernel_info->start;
 	uintptr_t load_start    = file_addr;
 	
 	// Set up kernel load parameters from the information in the multiboot header
@@ -205,21 +198,20 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 			struct Multiboot_Header_Tag_Address* header_tag_address = (struct Multiboot_Header_Tag_Address*)header_tag;
 			if (header_tag_address->load_addr > header_tag_address->header_addr) return false;
 			
-			load_addr  = header_tag_address->load_addr;	
-			if (load_addr == (uint32_t)(-1)) {
+			if (header_tag_address->load_addr == (uint32_t)(-1)) {
 				load_start = file_addr;
-				load_addr = header_tag_address->header_addr - (multiboot_header_ptr - file_addr);
+				kernel_info->start = header_tag_address->header_addr - (multiboot_header_ptr - file_addr);
 			}
 			else {
-				if (header_tag_address->header_addr < load_addr) return false;
-				load_start = multiboot_header_ptr - (header_tag_address->header_addr - load_addr);
+				load_start = multiboot_header_ptr - (header_tag_address->header_addr - header_tag_address->load_addr);
+				kernel_info->start = header_tag_address->load_addr;
 			}
 
-			if (header_tag_address->load_end_addr != 0 && header_tag_address->load_end_addr < load_addr) return false; 
-			kernel_info->size  = (header_tag_address->load_end_addr == 0  ? file_size : header_tag_address->load_end_addr - load_addr);
+			if (header_tag_address->load_end_addr != 0 && header_tag_address->load_end_addr < kernel_info->start) return false; 
+			kernel_info->size  = (header_tag_address->load_end_addr == 0  ? file_size : header_tag_address->load_end_addr - kernel_info->start);
 
-			if (header_tag_address->bss_end_addr != 0 && header_tag_address->bss_end_addr < (load_addr + kernel_info->size)) return false;		
-			kernel_info->bss_size   = (header_tag_address->bss_end_addr  == 0  ? 0 : header_tag_address->bss_end_addr - (load_addr + kernel_info->size));
+			if (header_tag_address->bss_end_addr != 0 && header_tag_address->bss_end_addr < (kernel_info->start + kernel_info->size)) return false;		
+			kernel_info->bss_size = (header_tag_address->bss_end_addr  == 0  ? 0 : header_tag_address->bss_end_addr - (kernel_info->start + kernel_info->size));
 			kernel_info->size += kernel_info->bss_size;
 
 			load_info  = true; 
@@ -227,14 +219,10 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
 	}
 	
-	kernel_info->start = load_addr;
-	if (!load_info && Elf32_IsValidiStaticExecutable(file_addr)) {
-		kernel_info->size = Elf32_StaticExecutableLoadSize(file_addr);
-		kernel_info->bss_size = Elf32_SizeBSSLikeSections(file_addr);
-	}
-	if (!load_info && Elf32_IsValidiStaticExecutable(file_addr)) {
-		kernel_info->size = file_size;
-		kernel_info->bss_size = 0;
+	if (!load_info) {
+		bool isELF = Elf32_IsValidiStaticExecutable(file_addr);
+		kernel_info->size     = isELF ? Elf32_StaticExecutableLoadSize(file_addr) : file_size;
+		kernel_info->bss_size = isELF ? Elf32_SizeBSSLikeSections(file_addr) : 0;
 	}
 	if (kernel_info->size == 0) return false;
 	if (reloc && end_max - start_min < kernel_info->size) return false;
@@ -242,24 +230,12 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	// Adjust the start address of the kernel if possible/requested/needed
 	if (!load_info && reloc) {
 		uintptr_t kstart = kernel_info->start;
-		if (load_pref == 0) {
-			if (kstart < start_min) {
-				kstart = start_min;
-				if (start_align > 1 && kstart % start_align != 0) kstart += start_align - kstart % start_align;
-				if (kstart + kernel_info->size > end_max) return false;
-			}
-			else if (kstart + kernel_info->size > end_max) {
-				kstart = end_max - kernel_info->size;
-				if (start_align > 1 && kstart % start_align != 0) kstart -= kstart % start_align;
-				if (kstart < start_min) return false;
-			}
-		}		
-		else if (load_pref == 1) {
+		if ((load_pref == 0 && kstart < start_min) || load_pref == 1) {
 			kstart = start_min;
 			if (start_align > 1 && kstart % start_align != 0) kstart += start_align - kstart % start_align;
 			if (kstart + kernel_info->size > end_max) return false;
 		}
-		else if (load_pref == 2) {
+		else if ((load_pref == 0 && kstart + kernel_info->size > end_max) || load_pref == 2) {
 			kstart = end_max - kernel_info->size;
 			if (start_align > 1 && kstart % start_align != 0) kstart -= kstart % start_align;
 			if (kstart < start_min) return false;
@@ -268,34 +244,12 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	}
 	
 	// Load the kernel from the kernel file in memory
-	bool kernel_loaded = false;
-	header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
-	while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
-		if (header_tag->type == MULTIBOOT_HEADER_TAG_ADDRESS) {
-			struct Multiboot_Header_Tag_Address* header_tag_address = (struct Multiboot_Header_Tag_Address*)header_tag;
-			uintptr_t load_header_addr = header_tag_address->header_addr;
-			
-			memmove((uint8_t*)(kernel_info->start), (uint8_t*)load_start, kernel_info->size - kernel_info->bss_size);
-			memset ((uint8_t*)(kernel_info->start + kernel_info->size - kernel_info->bss_size), 0, kernel_info->bss_size);
-			
-			kernel_loaded = true;
-			header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + load_header_addr - multiboot_header_ptr);
-			break;
-		}
-		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
+	if (load_info) {
+		memmove((uint8_t*)(kernel_info->start), (uint8_t*)load_start, kernel_info->size - kernel_info->bss_size);
+		memset ((uint8_t*)(kernel_info->start + kernel_info->size - kernel_info->bss_size), 0, kernel_info->bss_size);
 	}
-	if (!kernel_loaded) {
-		if (Elf32_IsValidiStaticExecutable(file_addr)) {
-			kernel_info->size = Elf32_LoadStaticExecutable(file_addr, kernel_info->start);
-			kernel_info->bss_size = Elf32_SizeBSSLikeSections(file_addr);
-			if (kernel_info->size > 0 && (!reloc || kernel_info->start + kernel_info->size <= end_max)) kernel_loaded = true;
-		}
-		else {
-			memmove((uint8_t*)(kernel_info->start), (uint8_t*)load_start, kernel_info->size);
-			if (kernel_info->size > 0 && (!reloc || kernel_info->start + kernel_info->size <= end_max)) kernel_loaded = true;
-		}
-		if (!kernel_loaded) return false;
-	}
+	else if (Elf32_IsValidiStaticExecutable(file_addr)) Elf32_LoadStaticExecutable(file_addr, kernel_info->start);
+	else memmove((uint8_t*)(kernel_info->start), (uint8_t*)load_start, kernel_info->size);
 	
 	// Clean up traces of the kernel file image in memory
 	uintptr_t end_addr = kernel_info->start + kernel_info->size;
@@ -308,6 +262,7 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	if (kernel_info->multiboot_header == 0) return false;
 	uintptr_t entry = Multiboot_GetKernelEntry(kernel_info->multiboot_header);
 	kernel_info->entry = (entry == (uintptr_t)MEMORY_NULL_PTR ? kernel_info->start : entry);
+
 	return true;
 	
 }
