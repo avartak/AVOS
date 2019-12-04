@@ -124,6 +124,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 
 	bool file_loaded = false;
 
+	// Load the kernel file in memory
 	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
 	for (size_t i = 0; i < BOOT_BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
@@ -154,6 +155,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 		}
 	}
 
+	// Save information of ELF sectiomn headers in the MBI (if requested)
 	if (file_loaded) {
 		uintptr_t multiboot_header_ptr = Multiboot_GetHeader(kernel_info->file_addr, kernel_info->file_size);
 		if (multiboot_header_ptr == 0) return false;
@@ -182,17 +184,21 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info) {
 
 	// Kernel load parameters
-	uintptr_t file_addr     = kernel_info->file_addr;
-	size_t    file_size     = kernel_info->file_size;
+	uintptr_t file_addr   = kernel_info->file_addr;
+	size_t    file_size   = kernel_info->file_size;
 	
-	bool      reloc         = false;
-	uintptr_t start_min     = kernel_info->start;
-	uintptr_t end_max       = kernel_info->start + file_size;
-	uint32_t  load_pref     = 0;
-	uint32_t  start_align   = 0x1000;
+	bool      reloc       = false;
+	uintptr_t start_min   = kernel_info->start;
+	uintptr_t end_max     = kernel_info->start + file_size;
+	uint32_t  load_pref   = 0;
+	uint32_t  start_align = 0x1000;
 	
-	bool      load_info     = false;
-	uintptr_t load_start    = file_addr;
+	bool      load_info   = false;
+	uintptr_t load_start  = file_addr;
+
+	bool isELF            = Elf32_IsValidiStaticExecutable(file_addr);
+	kernel_info->size     = isELF ? Elf32_StaticExecutableLoadSize(file_addr) : file_size;
+	kernel_info->bss_size = isELF ? Elf32_SizeBSSLikeSections(file_addr) : 0;
 	
 	// Set up kernel load parameters from the information in the multiboot header
 	uintptr_t multiboot_header_ptr = Multiboot_GetHeader(file_addr, file_size);
@@ -235,11 +241,6 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info) {
 		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
 	}
 	
-	if (!load_info) {
-		bool isELF = Elf32_IsValidiStaticExecutable(file_addr);
-		kernel_info->size     = isELF ? Elf32_StaticExecutableLoadSize(file_addr) : file_size;
-		kernel_info->bss_size = isELF ? Elf32_SizeBSSLikeSections(file_addr) : 0;
-	}
 	if (kernel_info->size == 0) return false;
 	if (reloc && end_max - start_min < kernel_info->size) return false;
 
