@@ -122,6 +122,12 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 
 bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
+	// Set up access to the memory map (so that we can find a good place to load the kernel file)
+    struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
+    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uintptr_t)mbi_name);
+    size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
+
 	bool file_loaded = false;
 
 	// Load the kernel file in memory
@@ -148,9 +154,8 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 						kernel_info->file_size += blocklist512->blocks[k].num_sectors * blocklist512->sector_size;
 					}
 
-					/* Now that we know the file size, this would be the place to figure out where the kernel file can be loaded in high memory */
-					kernel_info->file_addr = blocklist512->load_address_lo;
-					/* For now simply take the address from the block list ; this should be improved by deciding on the basis of the memory map (to avoid unavailable regions) */
+					kernel_info->file_addr = RAM_MemoryBlockAboveAddress(RAM_HIGH_MEMORY_START, kernel_info->file_size, 1, mmap, mmap_size);
+					if (kernel_info->file_addr == RAM_32BIT_MEMORY_LIMIT) return false;
 
 					for (size_t k = 0; blocklist512->blocks[k].num_sectors > 0; k++) {
 						uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
@@ -162,7 +167,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 		}
 	}
 
-	// Save information of ELF sectiomn headers in the MBI (if requested)
+	// Save information of ELF section headers in the MBI (if requested)
 	if (file_loaded) {
 		uintptr_t multiboot_header_ptr = Multiboot_GetHeader(kernel_info->file_addr, kernel_info->file_size);
 		if (multiboot_header_ptr == 0) return false;
@@ -188,7 +193,13 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 	return false;
 }
 
-bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+
+    // Set up access to the memory map
+    struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
+    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uintptr_t)mbi_name);
+    size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
 
 	// Kernel load parameters
 	uintptr_t file_addr   = kernel_info->file_addr;
@@ -253,16 +264,14 @@ bool Multiboot_LoadKernel(struct Boot_Kernel_Info* kernel_info) {
 
 	// Adjust the start address of the kernel if possible/requested/needed
 	if (!load_info && reloc) {
-		uintptr_t kstart = kernel_info->start;
-		if ((load_pref == 0 && kstart < start_min) || load_pref == 1) {
-			kstart = start_min;
-			if (start_align > 1 && kstart % start_align != 0) kstart += start_align - kstart % start_align;
-			if (kstart + kernel_info->size > end_max) return false;
+		uint32_t kstart = kernel_info->start;
+		if (load_pref == 0 || load_pref == 1) {
+			kstart = RAM_MemoryBlockAboveAddress(start_min, kernel_info->file_size, start_align, mmap, mmap_size);
+			if (kstart == RAM_32BIT_MEMORY_LIMIT || kstart + kernel_info->size > end_max) return false;
 		}
-		else if ((load_pref == 0 && kstart + kernel_info->size > end_max) || load_pref == 2) {
-			kstart = end_max - kernel_info->size;
-			if (start_align > 1 && kstart % start_align != 0) kstart -= kstart % start_align;
-			if (kstart < start_min) return false;
+		else if (load_pref == 2) {
+			kstart = RAM_MemoryBlockBelowAddress(  end_max, kernel_info->file_size, start_align, mmap, mmap_size);
+			if (kstart == RAM_32BIT_MEMORY_LIMIT || kstart < start_min) return false;
 		}
 		kernel_info->start = kstart;
 	}
@@ -399,13 +408,25 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	
 	if (mbi_mem_e820->size == 16) return false;
 	
-	uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
+    struct Multiboot_Info_Memory_E820* mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
+    if (mbi_mem_ram->type != 0) return false;
+   
+    mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, false, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
+    mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
+    mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
+    mbi_mem_ram->entry_version = 0;
+   
+    Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
+
+	mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED);
 	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
-	struct Multiboot_Info_Memory_E820* mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
+	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
-	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
+	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, true, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
+	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED;
 	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
 	mbi_mem_ram->entry_version = 0;
 	
@@ -723,7 +744,7 @@ bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 	if (!RAM_IsMemoryPresent(0x100000, 0xC00000, E820_Table, E820_Table_size)) return Console_PrintError("Insufficient memory to load OS", false);
 	
 	if (!Multiboot_LoadKernelFile(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
-	if (!Multiboot_LoadKernel    (          kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
+	if (!Multiboot_LoadKernel    (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel", false); 
 	if (!Multiboot_LoadModules   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS modules", false); 
 	if (!Multiboot_SaveInfo      (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information", false);
 	

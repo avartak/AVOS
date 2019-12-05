@@ -366,7 +366,7 @@ void Memory_Physical_MakeMap(struct Memory_Map* mem_map, uintptr_t mem_start, ui
     struct Multiboot_Info_Tag* mbi_tag;
     uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
     for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
-        if (mbi_tag->type != MULTIBOOT_TAG_TYPE_RAM_INFO) continue;
+        if (mbi_tag->type != MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED) continue;
         table_size = (mbi_tag->size - 16)/sizeof(struct Block64_Entry);
         table_ptr  = (struct Block64_Entry*)(16 + (uintptr_t)mbi_tag);
     }

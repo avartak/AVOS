@@ -130,27 +130,59 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 	return false;
 }
 
-uint64_t RAM_MemoryBlockAboveAddress(uint64_t addr, uint64_t size, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
+uint32_t RAM_MemoryBlockAboveAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size) {
 
-	uint64_t addr_limit = ~((uint64_t)0);
-    uint64_t mem = addr_limit;
+	if (addr == RAM_32BIT_MEMORY_LIMIT || addr + size < addr) return RAM_32BIT_MEMORY_LIMIT;
 
-    if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem;
-    for (size_t i = 0; i < E820_Table_size; i++) {
-        if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-        if (E820_Table[i].base <= addr && E820_Table[i].base + E820_Table[i].size > addr + size) return addr;
-    }
-    for (size_t i = 0; i < E820_Table_size; i++) {
-        if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-        if (E820_Table[i].base >= addr && E820_Table[i].size >= size && E820_Table[i].base < mem) mem = E820_Table[i].base;
-        if (E820_Table[i].base >= addr && E820_Table[i].size  < size && E820_Table[i].base < mem) {
-			if (RAM_IsMemoryPresent(E820_Table[i].base + E820_Table[i].size, size - E820_Table[i].size, E820_Table, E820_Table_size)) mem = E820_Table[i].base;
-		}
+	uint32_t addr_limit = RAM_32BIT_MEMORY_LIMIT;
+    uint32_t mem = addr_limit;
+
+	uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr : align * (1 + addr/align));
+
+    if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
+    for (size_t i = 0; i < mmap_size; i++) {
+		if (mmap[i].address >= RAM_32BIT_MEMORY_LIMIT) continue;
+
+		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
+		uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > RAM_32BIT_MEMORY_LIMIT ? (RAM_32BIT_MEMORY_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
+		if (mmap_entry_size < size) continue;
+
+		uint32_t aligned_base = (mmap_entry_base % align == 0 || align <= 1 ? mmap_entry_base : align * (1 + mmap_entry_base/align));
+		if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
+		uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
+
+        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
+        if (aligned_base >= addr && aligned_size >= size && aligned_base < mem) mem = aligned_base;
     }
 	return mem;
 }
 
-uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
+uint32_t RAM_MemoryBlockBelowAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size) {
+
+    uint32_t mem = 0;
+	uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr - size + 1 : align * ((addr - size + 1)/align));
+
+    if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
+    for (size_t i = 0; i < mmap_size; i++) {
+        if (mmap[i].address >= RAM_32BIT_MEMORY_LIMIT) continue;
+
+        uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
+        uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > RAM_32BIT_MEMORY_LIMIT ? (RAM_32BIT_MEMORY_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
+		if (mmap_entry_size < size) continue;
+
+		uint32_t shifted_base = mmap_entry_base + mmap_entry_size - size;
+        uint32_t aligned_base = (shifted_base % align == 0 || align <= 1 ? aligned_base : align * (1 + shifted_base/align));
+        if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
+        uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
+
+        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
+        if (aligned_base <= addr - size + 1 && aligned_size >= size && aligned_base > mem) mem = aligned_base;
+    }
+    return mem;
+}
+
+
+uintptr_t RAM_StoreInfo(uintptr_t addr, bool page_align, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
     size_t table_size  = 0;
     struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);
     table_ptr->address = 0;
@@ -173,26 +205,29 @@ uintptr_t RAM_StoreInfo(uintptr_t addr, struct Multiboot_E820_Entry* E820_Table,
 			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
 			uint64_t e820_entry_end = E820_Table[i].base + E820_Table[i].size;
 			if (E820_Table[i].base <= table_ptr->address && e820_entry_end >= table_ptr->address + table_ptr->size) table_ptr->size = e820_entry_end - table_ptr->address;
+			if (E820_Table[i].base >  table_ptr->address && e820_entry_end >= table_ptr->address + table_ptr->size && E820_Table[i].base < table_ptr->address + table_ptr->size) table_ptr->size = e820_entry_end - table_ptr->address;
 		}
 		table_ptr++;
 		table_size++;
 		table_ptr->address = (table_ptr-1)->address + (table_ptr-1)->size + 1;
 	}
+    table_ptr = (struct Boot_Block64*)(addr);
 
 	// Adjust the entries on 4KB boundaries
-    table_ptr = (struct Boot_Block64*)(addr);
-	for (size_t i = 0; i < table_size; i++) {
-		uint64_t min_addr = table_ptr[i].address;
-		uint64_t mask = ~((uint64_t)(0xFFF));
-		if ((min_addr & mask) < min_addr) min_addr = (min_addr & mask) + 0x1000;
-		uint64_t max_addr = (table_ptr[i].address + table_ptr[i].size) & mask;
-		if (max_addr > min_addr) {
-			table_ptr[i].address = min_addr;
-			table_ptr[i].size = max_addr - min_addr;
-		}
-		else {
-			table_ptr[i].address = 0;
-			table_ptr[i].size = 0;
+	if (page_align) {
+		for (size_t i = 0; i < table_size; i++) {
+			uint64_t min_addr = table_ptr[i].address;
+			uint64_t mask = ~((uint64_t)(0xFFF));
+			if ((min_addr & mask) < min_addr) min_addr = (min_addr & mask) + 0x1000;
+			uint64_t max_addr = (table_ptr[i].address + table_ptr[i].size) & mask;
+			if (max_addr > min_addr) {
+				table_ptr[i].address = min_addr;
+				table_ptr[i].size = max_addr - min_addr;
+			}
+			else {
+				table_ptr[i].address = 0;
+				table_ptr[i].size = 0;
+			}
 		}
 	}
 

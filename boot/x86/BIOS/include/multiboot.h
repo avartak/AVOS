@@ -14,7 +14,7 @@ extern bool      Multiboot_TerminateTag          (uintptr_t mbi_addr, uintptr_t 
 extern uintptr_t Multiboot_GetHeader             (uintptr_t start_addr, size_t size);
 extern uintptr_t Multiboot_GetKernelEntry        (uintptr_t multiboot_header_ptr);
 extern bool      Multiboot_LoadKernelFile        (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
-extern bool      Multiboot_LoadKernel            (struct Boot_Kernel_Info* kernel_info);
+extern bool      Multiboot_LoadKernel            (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 extern bool      Multiboot_LoadModules           (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 
 extern bool      Multiboot_SaveBootLoaderInfo    (uintptr_t mbi_addr);
