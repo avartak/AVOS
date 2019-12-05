@@ -178,7 +178,8 @@ uint32_t RAM_MemoryBlockBelowAddress(uint32_t addr, uint32_t size, uint32_t alig
         if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
         if (aligned_base <= addr - size + 1 && aligned_size >= size && aligned_base > mem) mem = aligned_base;
     }
-    return mem;
+    if (mem != 0) return mem;
+	else return RAM_32BIT_MEMORY_LIMIT;
 }
 
 
