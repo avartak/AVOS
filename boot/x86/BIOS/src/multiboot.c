@@ -277,6 +277,7 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	}
 	
 	// Load the kernel from the kernel file in memory
+	if (RAM_MemoryBlockAboveAddress(kernel_info->start, kernel_info->file_size, 1, mmap, mmap_size) != kernel_info->start) return false;
 	if (load_info) {
 		memmove((uint8_t*)(kernel_info->start), (uint8_t*)load_start, kernel_info->size - kernel_info->bss_size);
 		memset ((uint8_t*)(kernel_info->start + kernel_info->size - kernel_info->bss_size), 0, kernel_info->bss_size);
@@ -313,6 +314,11 @@ bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_i
 	    header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
 	}
 	
+    struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
+    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uintptr_t)mbi_name);
+    size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
+
 	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
 	uintptr_t mod_addr = kernel_info->start + kernel_info->size;
@@ -334,23 +340,24 @@ bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_i
 				
 				struct Boot_BlockList272* blocklist272 = (struct Boot_BlockList272*)blocklist512;
 				size_t mod_size = 0;
-				if (page_align && mod_addr % 0x1000 != 0) mod_addr = 0x1000 * (1 + mod_addr / 0x1000);
+				for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) mod_size += blocklist272->blocks[k].num_sectors*blocklist272->sector_size;
+				if (mod_size == 0) continue;
+				mod_addr = RAM_MemoryBlockAboveAddress(kernel_info->start, kernel_info->file_size, (page_align ? 0x1000 : 1), mmap, mmap_size);
+				if (mod_addr == RAM_32BIT_MEMORY_LIMIT) return false;
 				for (size_t k = 0; k < BOOT_BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) {
 					uint64_t mod_lba = part_start + blocklist272->blocks[k].lba;
 					bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, mod_lba, blocklist272->blocks[k].num_sectors);
 					if (bytes_read != blocklist272->blocks[k].num_sectors*blocklist272->sector_size) return false;
-					mod_size += bytes_read;
 				}
-				if (mod_size > 0) {
-					struct Multiboot_Info_Modules* mbi_mod = (struct Multiboot_Info_Modules*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MODULE);
-					if (mbi_mod == MEMORY_NULL_PTR || mbi_mod->type != 0) return false;
-					mbi_mod->type = MULTIBOOT_TAG_TYPE_MODULE;
-					mbi_mod->size = 256;
-					mbi_mod->mod_start = mod_addr;
-					mbi_mod->mod_end = mod_addr + mod_size - 1;
-					for (size_t k = 0; i < 240; k++) mbi_mod->string[k] = blocklist272->string[k];
-					if (!Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mod)) return false;
-				}
+
+				struct Multiboot_Info_Modules* mbi_mod = (struct Multiboot_Info_Modules*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MODULE);
+				if (mbi_mod == MEMORY_NULL_PTR || mbi_mod->type != 0) return false;
+				mbi_mod->type = MULTIBOOT_TAG_TYPE_MODULE;
+				mbi_mod->size = 256;
+				mbi_mod->mod_start = mod_addr;
+				mbi_mod->mod_end = mod_addr + mod_size - 1;
+				for (size_t k = 0; i < 240; k++) mbi_mod->string[k] = blocklist272->string[k];
+				if (!Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mod)) return false;
 				mod_addr += mod_size;
 			}
 		}
