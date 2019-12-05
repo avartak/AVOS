@@ -123,7 +123,7 @@ uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
 bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	// Set up access to the memory map (so that we can find a good place to load the kernel file)
-    struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
     if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
     struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uintptr_t)mbi_name);
     size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
@@ -196,7 +196,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kerne
 bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
     // Set up access to the memory map
-    struct Multiboot_Info_Memory_E820* mbi_name = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+    struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
     if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
     struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uintptr_t)mbi_name);
     size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
