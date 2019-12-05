@@ -408,18 +408,18 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	
 	if (mbi_mem_e820->size == 16) return false;
 	
-    uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
-    if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
-    struct Multiboot_Info_Memory_E820* mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
-    if (mbi_mem_ram->type != 0) return false;
-   
-    mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, false, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
-    mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
-    mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
-    mbi_mem_ram->entry_version = 0;
-   
-    Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
-
+	uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
+	struct Multiboot_Info_Memory_E820* mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
+	if (mbi_mem_ram->type != 0) return false;
+	
+	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, false, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
+	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
+	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
+	mbi_mem_ram->entry_version = 0;
+	
+	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
+	
 	mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED);
 	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
 	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
