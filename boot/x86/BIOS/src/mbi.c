@@ -1,4 +1,4 @@
-#include <boot/x86/BIOS/include/multiboot.h>
+#include <boot/x86/BIOS/include/mbi.h>
 #include <boot/x86/BIOS/include/diskio.h>
 #include <boot/x86/BIOS/include/RAM.h>
 #include <boot/x86/BIOS/include/VBE.h>

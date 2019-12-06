@@ -23,7 +23,7 @@ $(BOOT_X86)/RAM.c.o  \
 $(BOOT_X86)/VBE.c.o  \
 $(BOOT_X86)/console.c.o  \
 $(BOOT_X86)/discovery.c.o  \
-$(BOOT_X86)/multiboot.c.o 
+$(BOOT_X86)/mbi.c.o 
 
 BOOT_GEN=boot/general/src
 BOOT_GEN_OBJS=\
