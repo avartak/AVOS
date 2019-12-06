@@ -17,6 +17,4 @@ extern bool      Multiboot_SaveACPIInfo          (uintptr_t mbi_addr, bool old);
 extern bool      Multiboot_SaveLoadBaseAddress   (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 extern bool      Multiboot_SaveInfo              (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 
-extern bool      Multiboot_Boot                  (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
-
 #endif

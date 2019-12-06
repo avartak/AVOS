@@ -357,4 +357,9 @@ extern bool      Multiboot_LoadKernelFile        (uintptr_t mbi_addr, struct Boo
 extern bool      Multiboot_LoadKernel            (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 extern bool      Multiboot_LoadModules           (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
 
+extern bool      Multiboot_SaveMemoryMaps        (uintptr_t mbi_addr);
+extern bool      Multiboot_SaveInfo              (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
+
+extern bool      Multiboot_Boot                  (uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info);
+
 #endif

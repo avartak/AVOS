@@ -365,16 +365,3 @@ bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info
 	return true;
 }
 
-bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
-
-	Console_PrintBanner();
-	
-	if (!Multiboot_CreateEmptyMBI(mbi_addr             )) return Console_PrintError("Error creating multiboot information record", false);
-	if (!Multiboot_SaveMemoryMaps(mbi_addr             )) return Console_PrintError("Error saving memory maps",                    false);
-	if (!Multiboot_LoadKernelFile(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel file",               false); 
-	if (!Multiboot_LoadKernel    (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel",                    false); 
-	if (!Multiboot_LoadModules   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel modules",            false); 
-	if (!Multiboot_SaveInfo      (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information",          false);
-	
-	return true;
-}

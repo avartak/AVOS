@@ -2,6 +2,8 @@
 #include <csupport/include/string.h>
 
 extern size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint64_t disk_start_sector, size_t num_sectors);
+extern void   Console_PrintBanner();
+extern bool   Console_PrintError(const char* string, bool retval);
 
 bool Multiboot_CheckForValidMBI(uintptr_t mbi_addr) {
 
@@ -354,5 +356,19 @@ bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_i
 		}
 	}
 	return true;	
+}
+
+bool Multiboot_Boot(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+
+    Console_PrintBanner();
+
+    if (!Multiboot_CreateEmptyMBI(mbi_addr             )) return Console_PrintError("Error creating multiboot information record", false);
+    if (!Multiboot_SaveMemoryMaps(mbi_addr             )) return Console_PrintError("Error saving memory maps",                    false);
+    if (!Multiboot_LoadKernelFile(mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel file",               false);
+    if (!Multiboot_LoadKernel    (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel",                    false);
+    if (!Multiboot_LoadModules   (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS kernel modules",            false);
+    if (!Multiboot_SaveInfo      (mbi_addr, kernel_info)) return Console_PrintError("Unable to load OS boot information",          false);
+
+    return true;
 }
 
