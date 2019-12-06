@@ -101,25 +101,6 @@ uintptr_t Multiboot_GetHeader(uintptr_t start_addr, size_t size) {
 
 }
 
-uintptr_t Multiboot_GetKernelEntry(uintptr_t multiboot_header_ptr) {
-   
-	struct Multiboot_Header_Magic_Fields* header_magic = (struct Multiboot_Header_Magic_Fields*)multiboot_header_ptr;
-	struct Multiboot_Header_Tag* header_tag = (struct Multiboot_Header_Tag*)(header_magic + 1);
-	
-	uintptr_t kernel_entry = (uintptr_t)MEMORY_NULL_PTR;
-	
-	while ((uintptr_t)header_tag < multiboot_header_ptr + header_magic->header_length) {
-		if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS) {
-			struct Multiboot_Header_Tag_Entry_Address* header_tag_entry = (struct Multiboot_Header_Tag_Entry_Address*)header_tag;
-			kernel_entry = header_tag_entry->entry_addr;
-			break;
-		}
-		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
-	}
-	
-	return kernel_entry;
-}
-
 bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
 
 	// Set up access to the memory map (so that we can find a good place to load the kernel file)
@@ -202,21 +183,23 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
     size_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
 
 	// Kernel load parameters
-	uintptr_t file_addr   = kernel_info->file_addr;
-	size_t    file_size   = kernel_info->file_size;
+	uintptr_t file_addr    = kernel_info->file_addr;
+	size_t    file_size    = kernel_info->file_size;
 	
-	bool      reloc       = false;
-	uintptr_t start_min   = kernel_info->start;
-	uintptr_t end_max     = kernel_info->start + file_size;
-	uint32_t  load_pref   = 0;
-	uint32_t  start_align = 0x1000;
+	bool      reloc        = false;
+	uintptr_t start_min    = kernel_info->start;
+	uintptr_t end_max      = kernel_info->start + file_size;
+	uint32_t  load_pref    = 0;
+	uint32_t  start_align  = 0x1000;
 	
-	bool      load_info   = false;
-	uintptr_t load_start  = file_addr;
+	bool      load_info    = false;
+	uintptr_t load_start   = file_addr;
 
-	bool isELF            = Elf32_IsValidiStaticExecutable(file_addr);
-	kernel_info->size     = isELF ? Elf32_StaticExecutableLoadSize(file_addr) : file_size;
-	kernel_info->bss_size = isELF ? Elf32_SizeBSSLikeSections(file_addr) : 0;
+	uintptr_t kernel_entry = (uintptr_t)MEMORY_NULL_PTR;
+
+	bool isELF             = Elf32_IsValidiStaticExecutable(file_addr);
+	kernel_info->size      = isELF ? Elf32_StaticExecutableLoadSize(file_addr) : file_size;
+	kernel_info->bss_size  = isELF ? Elf32_SizeBSSLikeSections(file_addr) : 0;
 	
 	// Set up kernel load parameters from the information in the multiboot header
 	uintptr_t multiboot_header_ptr = Multiboot_GetHeader(file_addr, file_size);
@@ -256,6 +239,11 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 
 			load_info  = true; 
 		}
+		if (header_tag->type == MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS) {
+			struct Multiboot_Header_Tag_Entry_Address* header_tag_entry = (struct Multiboot_Header_Tag_Entry_Address*)header_tag;
+			kernel_entry = header_tag_entry->entry_addr;
+			break;
+		}
 		header_tag = (struct Multiboot_Header_Tag*)((uintptr_t)header_tag + header_tag->size);
 	}
 	
@@ -292,10 +280,9 @@ bool Multiboot_LoadKernel(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_in
 	if (file_addr < kernel_info->start) memset((uint8_t*)file_addr, 0, (kernel_info->start - file_addr) > file_size ? file_size : (kernel_info->start - file_addr));
 	
 	// Update the kernel information structure (will be needed/used by other functions subsequently)
+	kernel_info->entry = (kernel_entry == (uintptr_t)MEMORY_NULL_PTR ? kernel_info->start : kernel_entry);
 	kernel_info->multiboot_header = Multiboot_GetHeader(kernel_info->start, kernel_info->size);
 	if (kernel_info->multiboot_header == 0) return false;
-	uintptr_t entry = Multiboot_GetKernelEntry(kernel_info->multiboot_header);
-	kernel_info->entry = (entry == (uintptr_t)MEMORY_NULL_PTR ? kernel_info->start : entry);
 
 	return true;
 	
@@ -403,41 +390,46 @@ bool Multiboot_SaveBootCommand(uintptr_t mbi_addr) {
 
 bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 
-	struct Multiboot_Info_Memory_E820* mbi_mem_e820 = (struct Multiboot_Info_Memory_E820*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
-	if (mbi_mem_e820 == MEMORY_NULL_PTR || mbi_mem_e820->type != 0) return false;
-	
-	mbi_mem_e820->size = RAM_StoreE820Info(16 + (uintptr_t)mbi_mem_e820) - (uintptr_t)mbi_mem_e820;
-	mbi_mem_e820->type = MULTIBOOT_TAG_TYPE_MMAP;
-	mbi_mem_e820->entry_size = 24;
-	mbi_mem_e820->entry_version = 0;
-	
-	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_e820);
-	
-	if (mbi_mem_e820->size == 16) return false;
-	
-	uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+	uintptr_t mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_MMAP);
 	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
-	struct Multiboot_Info_Memory_E820* mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
+	struct Multiboot_Info_Memory_E820* mbi_mem_ram  = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, false, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
+	mbi_mem_ram->size = RAM_StoreE820Info(16 + mem_ram_tag) - mem_ram_tag;
+	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_MMAP;
+	mbi_mem_ram->entry_size = 24;
+	mbi_mem_ram->entry_version = 0;
+	
+	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
+	
+	struct Multiboot_E820_Entry* mmap = (struct Multiboot_E820_Entry*)(16 + mem_ram_tag);
+	size_t mmap_size = (mbi_mem_ram->size - 16)/(mbi_mem_ram->entry_size);
+	
+	if (mbi_mem_ram->size == 16) return false;
+	
+	mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
+	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
+	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
+	if (mbi_mem_ram->type != 0) return false;
+	
+	mbi_mem_ram->size = RAM_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
 	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
 	mbi_mem_ram->entry_version = 0;
 	
-	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
+	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
 	
 	mem_ram_tag = Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED);
 	if (mem_ram_tag == (uintptr_t)MEMORY_NULL_PTR) return false;
 	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreInfo(16 + (uintptr_t)mbi_mem_ram, true, (struct Multiboot_E820_Entry*)(16 + (uintptr_t)mbi_mem_e820), (mbi_mem_e820->size - 16)/sizeof(struct Multiboot_E820_Entry)) - (uintptr_t)mbi_mem_ram;
+	mbi_mem_ram->size = RAM_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED;
 	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
 	mbi_mem_ram->entry_version = 0;
 	
-	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_ram);
+	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
 	
 	return true;
 }
