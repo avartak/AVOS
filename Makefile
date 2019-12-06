@@ -27,7 +27,9 @@ $(BOOT_X86)/multiboot.c.o
 
 BOOT_GEN=boot/general/src
 BOOT_GEN_OBJS=\
-$(BOOT_GEN)/ELF.c.o
+$(BOOT_GEN)/boot.c.o \
+$(BOOT_GEN)/ELF.c.o \
+$(BOOT_GEN)/multiboot.c.o
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o

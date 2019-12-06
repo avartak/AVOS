@@ -28,7 +28,6 @@ extern uint8_t DiskIO_LowMemoryBuffer[];
 
 extern bool    DiskIO_CheckForBIOSExtensions(uint8_t drive);
 extern bool    DiskIO_GetDiskGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
-extern size_t  DiskIO_ReadFromDisk(uint8_t drive, uintptr_t kernel_start, uint64_t kernel_disk_start, size_t kernel_size);
-
+extern size_t  DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint64_t disk_start_sector, size_t num_sectors);
 
 #endif

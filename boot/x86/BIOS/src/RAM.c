@@ -130,59 +130,6 @@ bool RAM_IsMemoryPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry
 	return false;
 }
 
-uint32_t RAM_MemoryBlockAboveAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size) {
-
-	if (addr == RAM_32BIT_MEMORY_LIMIT || addr + size < addr) return RAM_32BIT_MEMORY_LIMIT;
-	
-	uint32_t addr_limit = RAM_32BIT_MEMORY_LIMIT;
-	uint32_t mem = addr_limit;
-	
-	uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr : align * (1 + addr/align));
-	
-	if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
-	for (size_t i = 0; i < mmap_size; i++) {
-		if (mmap[i].address >= RAM_32BIT_MEMORY_LIMIT) continue;
-		
-		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
-		uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > RAM_32BIT_MEMORY_LIMIT ? (RAM_32BIT_MEMORY_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
-		if (mmap_entry_size < size) continue;
-		
-		uint32_t aligned_base = (mmap_entry_base % align == 0 || align <= 1 ? mmap_entry_base : align * (1 + mmap_entry_base/align));
-		if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
-		uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
-		
-		if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
-		if (aligned_base >= addr && aligned_size >= size && aligned_base < mem) mem = aligned_base;
-	}
-	return mem;
-}
-
-uint32_t RAM_MemoryBlockBelowAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size) {
-
-	uint32_t mem = 0;
-	uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr - size + 1 : align * ((addr - size + 1)/align));
-	
-	if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
-	for (size_t i = 0; i < mmap_size; i++) {
-		if (mmap[i].address >= RAM_32BIT_MEMORY_LIMIT) continue;
-		
-		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
-		uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > RAM_32BIT_MEMORY_LIMIT ? (RAM_32BIT_MEMORY_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
-		if (mmap_entry_size < size) continue;
-		
-		uint32_t shifted_base = mmap_entry_base + mmap_entry_size - size;
-		uint32_t aligned_base = (shifted_base % align == 0 || align <= 1 ? aligned_base : align * (1 + shifted_base/align));
-		if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
-		uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
-		
-		if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
-		if (aligned_base <= addr - size + 1 && aligned_size >= size && aligned_base > mem) mem = aligned_base;
-	}
-	if (mem != 0) return mem;
-	else return RAM_32BIT_MEMORY_LIMIT;
-}
-
-
 uintptr_t RAM_StoreInfo(uintptr_t addr, bool page_align, struct Multiboot_E820_Entry* E820_Table, size_t E820_Table_size) {
 	size_t table_size  = 0;
 	struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);

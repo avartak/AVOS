@@ -7,6 +7,9 @@
 #define BOOT_BLOCKLIST_MAXBLOCKS512 41
 #define BOOT_BLOCKLIST_MAXBLOCKS272 21
 
+#define BOOT_32BIT_MEMORY_LIMIT     0xFFFFFFFF
+#define BOOT_HIGH_MEMORY_START      0x100000
+
 struct Boot_Block32 {
     uintptr_t address;
     size_t    size;
@@ -64,5 +67,8 @@ struct Boot_Kernel_Info {
     uintptr_t file_addr;
     size_t    file_size;
 }__attribute__((packed));
+
+extern uint32_t Boot_MemoryBlockAboveAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size);
+extern uint32_t Boot_MemoryBlockBelowAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size);
 
 #endif

@@ -1,6 +1,7 @@
 #include <boot/x86/BIOS/include/discovery.h>
 #include <boot/x86/BIOS/include/multiboot.h>
 #include <boot/x86/BIOS/include/bios.h>
+#include <csupport/include/string.h>
 
 uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 
