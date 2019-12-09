@@ -23,7 +23,6 @@ $(BOOT)/memory.c.o  \
 $(BOOT)/video.c.o  \
 $(BOOT)/console.c.o  \
 $(BOOT)/system.c.o  \
-$(BOOT)/mbi.c.o \
 $(BOOT)/elf.c.o \
 $(BOOT)/multiboot.c.o
 
