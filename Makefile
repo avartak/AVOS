@@ -74,11 +74,11 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 modulelist.bin: boot/src/modulelist.asm
 	$(AS) -f bin -o modulelist.bin boot/src/modulelist.asm
 
-mbr.bin: boot/src/MBR.asm
-	$(AS) -f bin -o mbr.bin boot/src/MBR.asm
+mbr.bin: boot/src/mbr.asm
+	$(AS) -f bin -o mbr.bin boot/src/mbr.asm
 
-vbr.bin: boot/src/VBR.asm
-	$(AS) -f bin -o vbr.bin boot/src/VBR.asm
+vbr.bin: boot/src/vbr.asm
+	$(AS) -f bin -o vbr.bin boot/src/vbr.asm
 
 bootload16.bin: boot/src/bootload16.asm
 	$(AS) -f bin -o bootload16.bin boot/src/bootload16.asm
