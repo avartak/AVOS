@@ -1,7 +1,7 @@
-#ifndef BOOT_GENERAL_ELF_H
-#define BOOT_GENERAL_ELF_H
+#ifndef BOOT_ELF_H
+#define BOOT_ELF_H
 
-#include <boot/general/include/common.h>
+#include <boot/include/defs.h>
 
 typedef uint16_t Elf32_Half;
 typedef uint32_t Elf32_Off;
@@ -238,6 +238,10 @@ typedef struct {
 #define R_386_NONE    0
 #define R_386_32      1
 #define R_386_PC32    2
+
+/* Relocation error  */
+
+#define ELF_RELOC_ERR 0xFFFFFFFF
 
 /* ELF related functions needed by the bootloader */
 

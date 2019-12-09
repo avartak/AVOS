@@ -1,14 +1,17 @@
-#ifndef BOOT_GENERAL_BOOT_H
-#define BOOT_GENERAL_BOOT_H
+#ifndef BOOT_DEFS_H
+#define BOOT_DEFS_H
 
-#include <boot/general/include/common.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
-#define BOOT_BLOCKLIST_MAXBLOCKS128 9
-#define BOOT_BLOCKLIST_MAXBLOCKS512 41
-#define BOOT_BLOCKLIST_MAXBLOCKS272 21
+#define MEMORY_NULL_PTR           ((void*)0xFFFFFFFF)
+#define MEMORY_32BIT_LIMIT        0xFFFFFFFF
+#define MEMORY_HIGH_START         0x100000
 
-#define BOOT_32BIT_MEMORY_LIMIT     0xFFFFFFFF
-#define BOOT_HIGH_MEMORY_START      0x100000
+#define BLOCKLIST_MAXBLOCKS128    9
+#define BLOCKLIST_MAXBLOCKS512   41
+#define BLOCKLIST_MAXBLOCKS272   21
 
 struct Boot_Block32 {
     uintptr_t address;
@@ -53,7 +56,7 @@ struct Boot_BlockList512 {
 	struct Boot_BlockLBA blocks[41];
 }__attribute__((packed));
 
-struct Boot_Kernel_Info {
+struct Boot_KernelInfo {
     uint32_t  boot_drive_ID;
     uintptr_t pnpbios_check_ptr;
     uintptr_t boot_partition;
@@ -67,8 +70,5 @@ struct Boot_Kernel_Info {
     uintptr_t file_addr;
     size_t    file_size;
 }__attribute__((packed));
-
-extern uint32_t Boot_MemoryBlockAboveAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size);
-extern uint32_t Boot_MemoryBlockBelowAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, size_t mmap_size);
 
 #endif

@@ -1,9 +1,9 @@
-#include <boot/x86/BIOS/include/mbi.h>
-#include <boot/x86/BIOS/include/diskio.h>
-#include <boot/x86/BIOS/include/RAM.h>
-#include <boot/x86/BIOS/include/VBE.h>
-#include <boot/x86/BIOS/include/console.h>
-#include <boot/x86/BIOS/include/discovery.h>
+#include <boot/include/mbi.h>
+#include <boot/include/diskio.h>
+#include <boot/include/memory.h>
+#include <boot/include/video.h>
+#include <boot/include/console.h>
+#include <boot/include/system.h>
 
 bool Multiboot_SaveBootLoaderInfo(uintptr_t mbi_addr) {
 
@@ -48,7 +48,7 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	struct Multiboot_Info_Memory_E820* mbi_mem_ram  = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreE820Info(16 + mem_ram_tag) - mem_ram_tag;
+	mbi_mem_ram->size = Memory_StoreE820Info(16 + mem_ram_tag) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_MMAP;
 	mbi_mem_ram->entry_size = 24;
 	mbi_mem_ram->entry_version = 0;
@@ -65,7 +65,7 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
+	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
 	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
 	mbi_mem_ram->entry_version = 0;
@@ -77,7 +77,7 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = RAM_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
+	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED;
 	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
 	mbi_mem_ram->entry_version = 0;
@@ -96,14 +96,14 @@ bool Multiboot_SaveBasicMemoryInfo(uintptr_t mbi_addr) {
 	mbi_mem_basic->size = 16;
 	mbi_mem_basic->mem_lower = 0;
 	mbi_mem_basic->mem_upper = 0;
-	RAM_StoreBasicInfo(8 + (uintptr_t)mbi_mem_basic);
+	Memory_StoreBasicInfo(8 + (uintptr_t)mbi_mem_basic);
 	
 	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_mem_basic);
 	
 	return true;
 }
 
-bool Multiboot_SaveBootDeviceInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_SaveBootDeviceInfo(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
 
 	struct Multiboot_Info_BootDevice* mbi_bootdev = (struct Multiboot_Info_BootDevice*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_BOOTDEV);
 	if (mbi_bootdev == MEMORY_NULL_PTR || mbi_bootdev->type != 0) return false;
@@ -126,7 +126,7 @@ bool Multiboot_SaveBootDeviceInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* k
 	return true;
 }
 
-bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
 
 	struct Multiboot_Info_LoadBaseAddress* mbi_mem_base = (struct Multiboot_Info_LoadBaseAddress*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
 	if (mbi_mem_base == MEMORY_NULL_PTR || mbi_mem_base->type != 0) return false;
@@ -142,7 +142,7 @@ bool Multiboot_SaveLoadBaseAddress(uintptr_t mbi_addr, struct Boot_Kernel_Info* 
 }
 
 
-bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_SaveGraphicsInfo(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
 
 	uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
 	
@@ -270,7 +270,7 @@ bool Multiboot_SaveAPMInfo(uintptr_t mbi_addr) {
 	mbi_apm->size = sizeof(struct Multiboot_Info_APM);
 	
 	struct Multiboot_APM_Interface* iapm = &(mbi_apm->apm_interface);
-	if (Discovery_StoreAPMInfo((uintptr_t)iapm) == (uintptr_t)iapm) {
+	if (System_StoreAPMInfo((uintptr_t)iapm) == (uintptr_t)iapm) {
 		mbi_apm->size = 0;
 		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_apm);
 		return false;
@@ -290,7 +290,7 @@ bool Multiboot_SaveSMBIOSInfo(uintptr_t mbi_addr) {
 	if (mbi_smbios == MEMORY_NULL_PTR || mbi_smbios->type != 0) return false;
 	
 	mbi_smbios->type = MULTIBOOT_TAG_TYPE_SMBIOS;
-	mbi_smbios->size = Discovery_StoreSMBIOSInfo(8 + (uintptr_t)mbi_smbios) - (uintptr_t)mbi_smbios;
+	mbi_smbios->size = System_StoreSMBIOSInfo(8 + (uintptr_t)mbi_smbios) - (uintptr_t)mbi_smbios;
 	
 	if (mbi_smbios->size <= 8) {
 		mbi_smbios->size = 0;
@@ -311,7 +311,7 @@ bool Multiboot_SaveACPIInfo(uintptr_t mbi_addr, bool old) {
 	mbi_acpiv1->type = (old ? MULTIBOOT_TAG_TYPE_ACPI_OLD : MULTIBOOT_TAG_TYPE_ACPI_NEW);
 	mbi_acpiv1->size = (old ? sizeof(struct Multiboot_Info_ACPIv1) : sizeof(struct Multiboot_Info_ACPIv2));
 	
-	if (Discovery_StoreACPIInfo(8 + (uintptr_t)mbi_acpiv1, old) == 8 + (uintptr_t)mbi_acpiv1) {
+	if (System_StoreACPIInfo(8 + (uintptr_t)mbi_acpiv1, old) == 8 + (uintptr_t)mbi_acpiv1) {
 		mbi_acpiv1->size = 0;
 		Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_acpiv1);
 		return false;
@@ -322,7 +322,7 @@ bool Multiboot_SaveACPIInfo(uintptr_t mbi_addr, bool old) {
 	}
 }
 
-bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_Kernel_Info* kernel_info) {
+bool Multiboot_SaveInfo(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
 
 	uintptr_t multiboot_header_ptr = kernel_info->multiboot_header;
 	

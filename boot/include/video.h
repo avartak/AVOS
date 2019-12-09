@@ -1,7 +1,7 @@
-#ifndef BOOT_X86_BIOS_VBE_H
-#define BOOT_X86_BIOS_VBE_H
+#ifndef BOOT_VIDEO_H
+#define BOOT_VIDEO_H
 
-#include <boot/general/include/common.h>
+#include <boot/include/defs.h>
 
 struct VBE_Info {
     char     signature[4];

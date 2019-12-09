@@ -1,9 +1,9 @@
-#include <boot/x86/BIOS/include/discovery.h>
-#include <boot/x86/BIOS/include/bios.h>
-#include <boot/general/include/multiboot.h>
+#include <boot/include/system.h>
+#include <boot/include/bios.h>
+#include <boot/include/multiboot.h>
 #include <csupport/include/string.h>
 
-uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
+uintptr_t System_StoreAPMInfo(uintptr_t addr) {
 
 	// First check if APM is supported
 	struct BIOS_Registers BIOS_regs;
@@ -57,7 +57,7 @@ uintptr_t Discovery_StoreAPMInfo(uintptr_t addr) {
 }
 
 
-uintptr_t Discovery_StoreSMBIOSInfo(uintptr_t addr) {
+uintptr_t System_StoreSMBIOSInfo(uintptr_t addr) {
 
 	// Find the memory address of the SMBIOS entry point table in low memory --> It starts on a 16-byte aligned boundary in the range 0xF0000 - 0x100000
 	uintptr_t mem = 0xF0000;
@@ -101,7 +101,7 @@ uintptr_t Discovery_StoreSMBIOSInfo(uintptr_t addr) {
 
 }
 
-uintptr_t Discovery_StoreACPIInfo(uintptr_t addr, bool old) {
+uintptr_t System_StoreACPIInfo(uintptr_t addr, bool old) {
 
 	// The Root System Description Pointer (RSDP) can be found either in the first KB of the EBDA (the 16-bit segment pointing to the EBDA is located ar 0x40E)
 	// Or it can be found in the range 0xE0000 - 0x100000

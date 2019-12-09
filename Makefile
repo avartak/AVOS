@@ -14,22 +14,18 @@ CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra 
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
-BOOT_X86=boot/x86/BIOS/src
-BOOT_X86_OBJS=\
-$(BOOT_X86)/bootload32.s.o \
-$(BOOT_X86)/bios.s.o \
-$(BOOT_X86)/diskio.c.o \
-$(BOOT_X86)/RAM.c.o  \
-$(BOOT_X86)/VBE.c.o  \
-$(BOOT_X86)/console.c.o  \
-$(BOOT_X86)/discovery.c.o  \
-$(BOOT_X86)/mbi.c.o 
-
-BOOT_GEN=boot/general/src
-BOOT_GEN_OBJS=\
-$(BOOT_GEN)/boot.c.o \
-$(BOOT_GEN)/ELF.c.o \
-$(BOOT_GEN)/multiboot.c.o
+BOOT=boot/src
+BOOT_OBJS=\
+$(BOOT)/bootload32.s.o \
+$(BOOT)/bios.s.o \
+$(BOOT)/diskio.c.o \
+$(BOOT)/memory.c.o  \
+$(BOOT)/video.c.o  \
+$(BOOT)/console.c.o  \
+$(BOOT)/system.c.o  \
+$(BOOT)/mbi.c.o \
+$(BOOT)/elf.c.o \
+$(BOOT)/multiboot.c.o
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
@@ -76,20 +72,20 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
-modulelist.bin: boot/x86/BIOS/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin boot/x86/BIOS/src/modulelist.asm
+modulelist.bin: boot/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin boot/src/modulelist.asm
 
-mbr.bin: boot/x86/BIOS/src/MBR.asm
-	$(AS) -f bin -o mbr.bin boot/x86/BIOS/src/MBR.asm
+mbr.bin: boot/src/MBR.asm
+	$(AS) -f bin -o mbr.bin boot/src/MBR.asm
 
-vbr.bin: boot/x86/BIOS/src/VBR.asm
-	$(AS) -f bin -o vbr.bin boot/x86/BIOS/src/VBR.asm
+vbr.bin: boot/src/VBR.asm
+	$(AS) -f bin -o vbr.bin boot/src/VBR.asm
 
-bootload16.bin: boot/x86/BIOS/src/bootload16.asm
-	$(AS) -f bin -o bootload16.bin boot/x86/BIOS/src/bootload16.asm
+bootload16.bin: boot/src/bootload16.asm
+	$(AS) -f bin -o bootload16.bin boot/src/bootload16.asm
 
-bootload32.bin: $(BOOT_X86_OBJS) $(BOOT_GEN_OBJS) $(CSUPPORT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_X86_OBJS) $(BOOT_GEN_OBJS) $(CSUPPORT_OBJS)
+bootload32.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_OBJS) $(CSUPPORT_OBJS)
 
 bootloader.bin: bootload16.bin bootload32.bin
 	cat bootload16.bin bootload32.bin > bootloader.bin
@@ -110,7 +106,6 @@ clean:
 	rm x86/kernel/src/*.o
 	rm kernel/src/*.o
 	rm csupport/src/*.o
-	rm boot/x86/BIOS/src/*.o
-	rm boot/general/src/*.o
+	rm boot/src/*.o
 	rm *.bin
 

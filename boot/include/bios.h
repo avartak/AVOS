@@ -1,7 +1,7 @@
-#ifndef BOOT_X86_BIOS_BIOS_H
-#define BOOT_X86_BIOS_BIOS_H
+#ifndef BOOT_BIOS_H
+#define BOOT_BIOS_H
 
-#include <boot/general/include/common.h>
+#include <boot/include/defs.h>
 
 struct BIOS_Registers {
     uint32_t eax;

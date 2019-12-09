@@ -1,5 +1,5 @@
-#include <boot/x86/BIOS/include/VBE.h>
-#include <boot/x86/BIOS/include/bios.h>
+#include <boot/include/video.h>
+#include <boot/include/bios.h>
 
 // Get the VBE information structure
 // This contains a pointer to the list of available video modes

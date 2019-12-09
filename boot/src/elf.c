@@ -1,7 +1,5 @@
-#include <boot/general/include/ELF.h>
+#include <boot/include/elf.h>
 #include <csupport/include/string.h>
-
-#define ELF_RELOC_ERR  0xFFFFFFFF
 
 bool Elf32_IsValidELF(uintptr_t image) {
 

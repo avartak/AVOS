@@ -1,7 +1,7 @@
-#ifndef BOOT_X86_BIOS_CONSOLE_H
-#define BOOT_X86_BIOS_CONSOLE_H
+#ifndef BOOT_CONSOLE_H
+#define BOOT_CONSOLE_H
 
-#include <boot/general/include/common.h>
+#include <boot/include/defs.h>
 
 extern void Console_ClearScreen();
 extern void Console_MakeCursorVisible();
