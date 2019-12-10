@@ -162,16 +162,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel
 				size_t nrequests = (header_requests->size - 8)/sizeof(uint32_t);
 				for (size_t i = 0; i < nrequests; i++) {
 					if (header_requests->requests[i] == MULTIBOOT_TAG_TYPE_ELF_SECTIONS) {
-						struct Multiboot_Info_ELF_Sections* mbi_elf_shdr = (struct Multiboot_Info_ELF_Sections*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_ELF_SECTIONS);
-						if ((mbi_elf_shdr == MEMORY_NULL_PTR || mbi_elf_shdr->type != 0) && (header_tag->flags & 1) == 0) return false;
-						
-						mbi_elf_shdr->type    = MULTIBOOT_TAG_TYPE_ELF_SECTIONS;
-						mbi_elf_shdr->num     = 0;
-						mbi_elf_shdr->entsize = 0;
-						mbi_elf_shdr->shndx   = 0;
-						mbi_elf_shdr->size    = Elf32_LoadSectionHeaderTable(kernel_info->file_addr, 8 + (uintptr_t)mbi_elf_shdr, true) + 8;
-						
-						Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_elf_shdr);
+						if ((header_tag->flags & 1) == 0 && Multiboot_SaveELFSectionHeaders(mbi_addr, kernel_info)) return false;
 					}
 				}
 			}
@@ -438,6 +429,22 @@ bool Multiboot_SaveMemoryMaps(uintptr_t mbi_addr) {
 	
 	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
 	
+	return true;
+}
+
+bool Multiboot_SaveELFSectionHeaders(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+
+	struct Multiboot_Info_ELF_Sections* mbi_elf_shdr = (struct Multiboot_Info_ELF_Sections*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_ELF_SECTIONS);
+	if ((mbi_elf_shdr == MEMORY_NULL_PTR || mbi_elf_shdr->type != 0)) return false;
+	
+	mbi_elf_shdr->type    = MULTIBOOT_TAG_TYPE_ELF_SECTIONS;
+	mbi_elf_shdr->num     = 0;
+	mbi_elf_shdr->entsize = 0;
+	mbi_elf_shdr->shndx   = 0;
+	mbi_elf_shdr->size    = Elf32_LoadSectionHeaderTable(kernel_info->file_addr, 8 + (uintptr_t)mbi_elf_shdr, true) + 8;
+	
+	Multiboot_TerminateTag(mbi_addr, (uintptr_t)mbi_elf_shdr);
+
 	return true;
 }
 
