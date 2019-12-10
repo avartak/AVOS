@@ -150,7 +150,7 @@ AVBL:
 	mov   ebx, AVBL
 	pop   dx
 
-	; Set up the switch to protected mode
+	; Switch to protected mode
 	; First disable interrupts
 
 	cli
