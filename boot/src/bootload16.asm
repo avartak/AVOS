@@ -23,8 +23,8 @@
 
 ; First let us include some definitions of constants
 
-AVBL16_ADDRESS          equ 0x7E00                                      ; Starting location in memory where the real-mode part of AVBL is loaded
-AVBL32_ADDRESS          equ 0x8000                                      ; Starting location in memory where the protected-mode part of AVBL is loaded
+AVBL16_ADDRESS          equ 0x7E00                                      ; Starting location in memory where the 16-bit part of AVBL is loaded
+AVBL32_ADDRESS          equ 0x8000                                      ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
