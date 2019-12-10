@@ -58,7 +58,7 @@ struct Boot_BlockList512 {
 
 struct Boot_KernelInfo {
     uint32_t  boot_drive_ID;
-    uintptr_t pnpbios_check_ptr;
+    uintptr_t pnpbios_ptr;
     uintptr_t boot_partition;
     uintptr_t part_info_ptr;
     uintptr_t blocklist_ptr;
