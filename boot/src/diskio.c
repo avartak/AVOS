@@ -39,7 +39,6 @@ size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint64_t dis
 
 	if (num_sectors == 0) return 0;
 	
-	size_t bytes_read = 0;
 	struct DiskIO_Geometry geom;
 	geom.size = 0x1A;
 	if (!DiskIO_CheckForBIOSExtensions(drive)) return 0;
@@ -59,6 +58,7 @@ size_t DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint64_t dis
 	dap.memory_segment = (uintptr_t)DiskIO_LowMemoryBuffer >> 4;
 	dap.start_sector   = disk_start_sector;
 	
+	size_t bytes_read = 0;
 	uint8_t* dst = (uint8_t*)mem_start_addr;
 	for (size_t i = 0; i < num_sectors; i++) {
 		BIOS_regs.eax = 0x4200;
