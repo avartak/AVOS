@@ -1,17 +1,8 @@
-; This is the code of the 32-bit (REAL mode) part of the bootloader
-; We are now in PROTECTED mode
+; This is the code of the 32-bit (PROTECTED mode) part of the bootloader
 ; This code is loaded at memory location 0x8000 right after the 512 B of VBR (at 0x7C00) followed by 512 B of the real mode part of the bootloader (at 0x7E00)
 ; It prepares the environment for the OS kernel and then loads it from disk into memory location of 1 MB. 
-; The kernel is located on the disk partition at an offset of 1 MB. 
 ; We try to make the bootloader and the OS kernel as Multiboot2 compliant as possible. 
 ; Multiboot2 specs : https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html
-
-; First let us include some definitions of constants
-
-STACK_TOP               equ 0x7C00                                      ; Top of the stack
-KERNEL_START            equ 0x100000                                    ; Kernel binary code is loaded at physical memory location of 1 MB
-SEG32_DATA              equ 0x10                                        ; 32-bit data segment
-SCREEN_TEXT_BUFFER      equ 0xB8000                                     ; Video buffer for the 80x25 VBE text mode
 
 ; These are the externally defined functions and variables we need
 
@@ -31,22 +22,8 @@ BITS 32
 global AVBL
 AVBL:
 
-	; First lets disable all interrupts (the real mode code should have done this already before switching to protected mode, but lets do it anyways)
-	
-	cli
-	
-	; Switch the data segment registers to protected mode data selectors
-	
-	mov   ax, SEG32_DATA
-	mov   ds, ax
-	mov   es, ax
-	mov   fs, ax
-	mov   gs, ax
-	mov   ss, ax
-	
-	mov   esp, STACK_TOP
-	
-	; Store information passed on by the VBR
+	; When we get here, all segment registers (including, code, data, stack) are correctly set up, interrupts are disabled, and the stack points to an appropriate location
+	; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
 	
 	mov   [Kernel_Info.boot_drive_ID],   dl
 	mov   [Kernel_Info.pnpbios_ptr],    edi
@@ -67,7 +44,7 @@ AVBL:
 	
 	mov   ebx, Multiboot_MBI
 	
-	; Store the Multiboot2 boot loader magic value in EAX
+	; Store the Multiboot2 bootloader magic value in EAX
 	
 	mov   eax, 0x36d76289
 	
@@ -94,7 +71,7 @@ Kernel_Info:
 	.boot_partition    dd 0
 	.part_info_ptr     dd 0
 	.blocklist_ptr     dd 0
-	.start             dd KERNEL_START
+	.start             dd 0
 	.size              dd 0
 	.bss_size          dd 0
 	.multiboot_header  dd 0
