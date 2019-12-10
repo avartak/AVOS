@@ -50,7 +50,7 @@ AVBL:
 	
 	; Jump to the kernel
 	
-	jmp   DWORD [Kernel_Info.entry]
+	jmp   [Kernel_Info.entry]
 	
 	HaltSystem:
 	cli
