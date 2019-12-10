@@ -98,6 +98,7 @@ AVBL:
 
 	call  A20_Enable
 	test  al, al
+	mov   si, Messages.A20EnableErr
 	jz    HaltSystem
 
 	; Save the boot drive ID in DL, the location of MBR's active partition in ESI, and information about "$PnP" installation check structure in EDI
@@ -145,23 +146,21 @@ AVBL:
 
 	jmp   SEG32_CODE:ProtectedMode
 	
-	; Halt the system in case of trouble
+	; Halt the system with an error message (when A20 enable fails)
 
 	HaltSystem:
-	mov   si, Messages.A20EnableErr
-	.printchar:
 	lodsb
 	test  al, al
-	jz    .printdone
+	jz    .hltloop
 	mov   ah, 0x0E
 	mov   bx, 0x0007
 	int   0x10
-	jmp   .printchar
+	jmp   HaltSystem
 	
-	.printdone:
+	.hltloop:
 	cli
 	hlt
-	jmp   .printdone
+	jmp   .hltloop
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,7 +172,7 @@ AVBL:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Messages:
-.A20EnableErr db 'A20 line could not be enabled', 0
+	.A20EnableErr   db 'A20 line could not be enabled', 0
 
 ; Global Descriptor Table (GDT) : Tells the CPU about memory segments
 ; It is a table of 8-byte entries, each being a memory segment descriptor. The segment registers themselves point to the descriptors
