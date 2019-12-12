@@ -24,7 +24,7 @@ STACK_TOP              equ GEOM_TABLE_START                ; Top of the stack
 
 BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
 
-%include "boot/include/partition.inc"                      ; Common values for disk/partition related information [could be modified]
+%include "boot/include/blocklist.inc"                      ; Common values for disk/partition related information [could be modified]
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
