@@ -46,8 +46,9 @@ PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the p
 
 PARTITION_ATTRIBUTES    equ 0x80                  ; This defines the partition to be active/bootable [could be modified by the partition manager]
 PARTITION_TYPE          equ 0                     ; Partition identifier [could be modified by the partition manager]
-PARTITION_START_LBA     equ 0x0800                ; LBA of the start sector of the boot partition [could be modified by the partition manager]
 PARTITION_SIZE          equ 0xFFFFFFFF            ; Size on sectors of the boot partition [could be modified by the partition manager]
+
+%include "boot/include/blocklist.inc"             ; Common values for disk/partition related information [could be modified]
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
