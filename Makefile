@@ -31,6 +31,7 @@ CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
 
 X86_KERNEL=x86/kernel/src
 X86_KERNEL_OBJS=\
+$(X86_KERNEL)/multiboot.s.o \
 $(X86_KERNEL)/paging.s.o \
 $(X86_KERNEL)/gdt.s.o \
 $(X86_KERNEL)/idt.s.o \
