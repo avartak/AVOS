@@ -27,7 +27,7 @@ AVBL32_ADDRESS          equ 0x8000                                      ; Starti
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
-PARTITION_START_LBA     equ 0x0800                                      ; LBA of the start sector of the boot partition [could be modified]
+%include "boot/include/partition.inc"                                   ; Common values for disk/partition related information [could be modified]
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
@@ -57,7 +57,7 @@ AVBL:
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 	
 	.Load_Address         dq 0
-	.Sector_Size          dw 0x200
+	.Sector_Size          dw SECTOR_SIZE
 	.Reserved1            dw 0
 	.Reserved2            dd 0
 	
