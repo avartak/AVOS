@@ -1,6 +1,6 @@
 ; This is the code of the 16-bit (REAL mode) part of the bootloader
 ; We are still in REAL mode
-; This code makes the switch to PROTECTED mode and transfers control to the 32-bit boot loader that will then copy the kernel to memory
+; This code makes the switch to PROTECTED mode and transfers control to the 32-bit boot loader (largely written in C) that will then copy the kernel to memory
 ; To enable the protected mode we will :
 ; - Switch on the A20 line 
 ; - Load a valid GDT
@@ -14,9 +14,8 @@
 ; 0x000600 - 0x000800 : Relocated MBR
 ; 0x000800 - 0x007C00 : Free
 ; 0x007C00 - 0x007E00 : VBR
-; 0x007E00 - 0x09FC00 : Free
 ; 0x007E00 - 0x008000 : 16-bit part of the boot loader code
-; 0x008000 - 0x00FFFF : 32-bit part of the boot loader code
+; 0x008000 - 0x09FC00 : 32-bit part of the boot loader code + free space
 ; 0x09FC00 - 0x0A0000 : Extended BIOS data area 
 ; 0x0A0000 - 0x0C0000 : Video memory            
 ; 0x0C0000 - 0x100000 : BIOS            
@@ -27,6 +26,8 @@ AVBL16_ADDRESS          equ 0x7E00                                      ; Starti
 AVBL32_ADDRESS          equ 0x8000                                      ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
+
+PARTITION_START_LBA     equ 0x0800                                      ; LBA of the start sector of the boot partition [could be modified]
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
@@ -51,7 +52,7 @@ AVBL:
 	; The first 8 bytes of the blocklist contain the 64-bit load address that can be ignored in this specific case
 	; Next 8-bytes are reserved
 	; Then come the blocklist entries
-	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' of the blocklists file
+	; First 8 bytes of each entry contain the 64-bit LBA of the start sector of a 'block' of the blocklists file
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 	
@@ -60,7 +61,7 @@ AVBL:
 	.Reserved1            dw 0
 	.Reserved2            dd 0
 	
-	.Block1_LBA           dq 0x1800
+	.Block1_LBA           dq 0x1800+PARTITION_START_LBA
 	.Block1_Num_Sectors   dd 1
 	
 	; Pad the remaining bytes up to AVBL+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
@@ -83,8 +84,6 @@ AVBL:
 	push  di
 	push  ds
 	push  si
-	push  fs
-	push  bp
 
 	; Set all the segment registers to the base address we want (0x0000)
 	
@@ -123,17 +122,11 @@ AVBL:
 	A20EnableErr   db 'A20 line not enabled', 0
 
 	; Save the boot drive ID in DL, the location of MBR's active partition in ESI, and information about "$PnP" installation check structure in EDI
-	; Save the pointer to the 16-bytes containing the 64-bit start and end LBAs of this partition in EBP
 	; Save the pointer to the kernel code blocklist in EBX
 
 	SaveInfo:
 
 	xor   eax, eax
-	xor   ebp, ebp
-	pop   ax
-	pop   bp
-	shl   ebp, 4
-	add   ebp, eax
 
 	xor   esi, esi
 	pop   ax

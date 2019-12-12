@@ -1,18 +1,13 @@
 ; The Volume Boot Record (VBR) is the first sector of the 'active' or bootable partition that contains our OS
 ; The Master Boot Record (MBR) first identifies the active partition, then loads the VBR at memory address 0x7C00, and transfers control to it
-; The VBR is the first OS-specific code
+; The VBR is the first OS-specific code, it loads the bootloader code from disk to memory
 ; Salient features of our VBR :
 ; - Starts with JMP over the first 128 bytes of data to the VBR code
 ; - First 128 bytes : First two bytes for a near JMP + 2 NOPs (the JMP jumps over this block) ; then 124 bytes for OS-specific (or filesystem specific) data/header
 ;   * We use these 124 bytes to store a blocklist of sectors containing the bootload code on disk
-;   * Each blocklist entry contains the offset of the starting sector relative to the start of the partition, and the number of contiguous sectors to be read out
+;   * Each blocklist entry contains the LBA of the start sector of the partition, and the number of contiguous sectors to be read out
 ; - The VBR also has the boot signature word (0xAA55) at its end, just like the MBR
-; - The VBR loads the bootloader code from disk to memory
-; - The VBR saves (in addition to DL, ES:DI and DS:SI values passed down by the MBR) : 
-;   * The memory address of a 16-byte partition entry (8-bytes for starting LBA and 8-bytes for ending LBA) in FS:BP
-; - Note the VBR interface provides 64-bit LBA addresses for the partition boundaries to the bootloader
-; - This VBR only supports 32-bit LBAs (since it reads them from the MBR partition table)
-; - As long as the VBR interface is maintained, some different code could also pass the partition boundaries from the GPT (16-bytes at offset 0x20 in the GPT partition entry)
+; - The VBR preserves the DL, ES:DI and DS:SI values passed down by the MBR
 
 ; First let us include some definitions of constants that the VBR needs
 
@@ -28,6 +23,8 @@ GEOM_TABLE_SECTOR_SIZE equ GEOM_TABLE_START + 0x18         ; Location of the wor
 STACK_TOP              equ GEOM_TABLE_START                ; Top of the stack
 
 BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
+
+PARTITION_START_LBA    equ 0x0800                          ; LBA of the start sector of the boot partition [could be modified]
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -53,7 +50,7 @@ VBR:
 	; The first 8 bytes of the blocklist contain the 64-bit memory address from where to start loading the code in memory
 	; Next 8-bytes are reserved
 	; Then come the blocklist entries
-	; First 8 bytes of each entry contain the 64-bit LBA offset (w.r.t. the partition) of the start sector of a 'block' containing the bootloader code
+	; First 8 bytes of each entry contain the 64-bit LBA of the start sector of a 'block' containing the bootloader code
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 
@@ -65,7 +62,7 @@ VBR:
 	.Reserved1            dw 0
 	.Reserved2            dd 0
 
-	.Block1_LBA           dq 8
+	.Block1_LBA           dq 0x8+PARTITION_START_LBA
 	.Block1_Num_Sectors   dd 0x40
 
 	; Pad the remaining bytes up to VBR+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
@@ -102,21 +99,10 @@ VBR:
 	push  ds
 	push  si
 
-	; Save the 64-bit LBAs of the start and end sectors of this partition 
-	
-	mov   ebp, DWORD [si+0x08]
-	mov   [Partition], ebp
-	mov   [Partition+8], ebp
-
-	mov   ecx, [si+0x0C]
-	add   [Partition+8], ecx
-	adc   DWORD [Partition+0x10], 0
-
 	; Lets initialize the segment registers to the base address values that we want to use (0x0000)
 	
 	mov   ds, ax
 	mov   es, ax
-	mov   fs, ax
 
 	; Check for BIOS extensions to read from disk using the LBA scheme
 
@@ -154,9 +140,6 @@ VBR:
 	je    LaunchBootloader
 
 	DiskRead:
-	mov   ebx, [di]
-	mov   ecx, [di+4]
-
 	xor   eax, eax
 	mov   al, MAX_SECTORS_READ
 	cmp   [di+8], eax
@@ -164,13 +147,14 @@ VBR:
 	mov   eax, [di+8]
 	
 	PrepareRead:                                           ; Save the necessary information needed by (extended) BIOS routines to read from disk --> Fill the DAP
+	mov   ebx, [di]
+	mov   ecx, [di+4]
+
 	sub   [di+8], eax
-	
 	add   [di], eax
 	adc   DWORD [di+4], 0
 
 	mov   [DAP.Sectors_Count], al
-	mov   [DAP.Start_Sector], ebp
 	add   [DAP.Start_Sector], ebx
 	adc   [DAP.Start_Sector+4], ecx
 	
@@ -210,7 +194,6 @@ VBR:
 	pop   di
 	pop   es
 	pop   dx
-	mov   bp, Partition
 
 	push  DWORD [BlockList]
 	retf
@@ -254,12 +237,8 @@ VBR:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Padding of zeroes till offset 0x200-2-0x40 = 446 : location of the VBR partition table (if any)
-; We put a 16-byte entry at this offset in the VBR, corresponding to the 64-bit LBAs of the start and end sectors of the partition
-; The address of this 16-byte entry is passed to the next step of the bootloader in the FS:BP registers
 
 times PART_TABLE-($-$$)   db 0
-
-Partition times 0x10      db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

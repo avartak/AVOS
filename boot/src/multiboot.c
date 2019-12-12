@@ -115,11 +115,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel
 	uint8_t blocklist[0x1000];
 	for (size_t i = 0; i < BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
 		for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
-			uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
-			uint64_t offset = blocklist_mst->blocks[i].lba + j;
-			uint64_t lba = part_start + offset;
-			
-			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
+			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, blocklist_mst->blocks[i].lba + j, 1);
 			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 			
 			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist) - 1;
@@ -138,8 +134,7 @@ bool Multiboot_LoadKernelFile(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel
 					if (kernel_info->file_addr == MEMORY_32BIT_LIMIT) return false;
 
 					for (size_t k = 0; blocklist512->blocks[k].num_sectors > 0; k++) {
-						uint64_t kern_lba = part_start + blocklist512->blocks[k].lba;
-						if (DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, kern_lba, blocklist512->blocks[k].num_sectors) != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
+						if (DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), kernel_info->file_addr, blocklist512->blocks[k].lba, blocklist512->blocks[k].num_sectors) != blocklist512->blocks[k].num_sectors * blocklist512->sector_size) return false;
 					}
 					file_loaded = true;
 				}
@@ -309,11 +304,7 @@ bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_in
 	uintptr_t mod_addr = kernel_info->start + kernel_info->size;
 	for (size_t i = 0; i < BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
 		for (size_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
-			uint64_t part_start = ((uint64_t*)(kernel_info->part_info_ptr))[0];
-			uint64_t offset = blocklist_mst->blocks[i].lba + j;
-			uint64_t lba = part_start + offset;
-			
-			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, lba, 1);
+			size_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uintptr_t)blocklist, blocklist_mst->blocks[i].lba + j, 1);
 			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 			
 			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist - 1;
@@ -330,8 +321,7 @@ bool Multiboot_LoadModules(uintptr_t mbi_addr, struct Boot_KernelInfo* kernel_in
 				mod_addr = Memory_BlockAboveAddress(kernel_info->start, kernel_info->file_size, (page_align ? 0x1000 : 1), mmap, mmap_size);
 				if (mod_addr == MEMORY_32BIT_LIMIT) return false;
 				for (size_t k = 0; k < BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) {
-					uint64_t mod_lba = part_start + blocklist272->blocks[k].lba;
-					bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, mod_lba, blocklist272->blocks[k].num_sectors);
+					bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), mod_addr, blocklist272->blocks[k].lba, blocklist272->blocks[k].num_sectors);
 					if (bytes_read != blocklist272->blocks[k].num_sectors*blocklist272->sector_size) return false;
 				}
 

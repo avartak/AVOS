@@ -15,7 +15,7 @@ MODLIST:
 	.Sector_Size          dw 0x200
 	.Reserved             db 'KERNEL'
 	
-	.Block1_LBA           dq 0x800
+	.Block1_LBA           dq 0x1000
 	.Block1_Num_Sectors   dd 0x800
 	
 	times 0x200-($-$$)    db 0

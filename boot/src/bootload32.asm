@@ -26,9 +26,8 @@ AVBL:
 	; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
 	
 	mov   [Kernel_Info.boot_drive_ID],   dl
-	mov   [Kernel_Info.pnpbios_ptr],    edi
 	mov   [Kernel_Info.boot_partition], esi
-	mov   [Kernel_Info.part_info_ptr],  ebp
+	mov   [Kernel_Info.pnpbios_ptr],    edi
 	mov   [Kernel_Info.blocklist_ptr],  ebx
 	
 	; Boot OS 
@@ -67,9 +66,8 @@ section .data
 global Kernel_Info
 Kernel_Info:
 	.boot_drive_ID     dd 0
-	.pnpbios_ptr       dd 0
 	.boot_partition    dd 0
-	.part_info_ptr     dd 0
+	.pnpbios_ptr       dd 0
 	.blocklist_ptr     dd 0
 	.start             dd 0
 	.size              dd 0

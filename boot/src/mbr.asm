@@ -44,6 +44,11 @@ LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR will l
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR (byte 446 of the MBR)
 
+PARTITION_ATTRIBUTES    equ 0x80                  ; This defines the partition to be active/bootable [could be modified by the partition manager]
+PARTITION_TYPE          equ 0                     ; Partition identifier [could be modified by the partition manager]
+PARTITION_START_LBA     equ 0x0800                ; LBA of the start sector of the boot partition [could be modified by the partition manager]
+PARTITION_SIZE          equ 0xFFFFFFFF            ; Size on sectors of the boot partition [could be modified by the partition manager]
+
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
 ORG MBR_RELOC_ADDRESS
@@ -57,6 +62,7 @@ BITS 16
 ; This is where the bootloader starts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 MBR:
 
 	; We don't want any interrupts right now.
@@ -272,16 +278,16 @@ Disk_Signature:
 Partition_Table:                                  ; [Everything below to be edited by MBR software]
 
 Partition_Table_Entry1:
-.Status              db 0x80                      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
+.Status              db PARTITION_ATTRIBUTES      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
 .Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition
 .Sector_Start        db 0
 .Cylinder_Start      db 0
-.Type                db 0                         ; Partition type - set to 0 in our case
+.Type                db PARTITION_TYPE            ; Partition type - set to 0 in our case
 .Head_End            db 0                         ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
 .Sector_End          db 0
 .Cylinder_End        db 0
-.LBA_Start           dd 0x0800                    ; LBA of the starting sector
-.LBA_Sectors         dd 0xFFFFFFFF                ; Number of sectors in the partition
+.LBA_Start           dd PARTITION_START_LBA       ; LBA of the starting sector
+.LBA_Sectors         dd PARTITION_SIZE            ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0
