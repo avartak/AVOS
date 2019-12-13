@@ -40,15 +40,10 @@
 
 MBR_SIZE                equ 0x0200                ; Size of the MBR
 MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to before loading the VBR 
-LOAD_ADDRESS            equ 0x7C00                ; This is where the MBR will load the VBR in memory
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
 PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR (byte 446 of the MBR)
 
-PARTITION_ATTRIBUTES    equ 0x80                  ; This defines the partition to be active/bootable [could be modified by the partition manager]
-PARTITION_TYPE          equ 0                     ; Partition identifier [could be modified by the partition manager]
-PARTITION_SIZE          equ 0xFFFFFFFF            ; Size on sectors of the boot partition [could be modified by the partition manager]
-
-%include "boot/include/bootdrive.inc"             ; Common values for disk/partition related information [could be modified]
+%include "boot/include/bootinfo.inc"              ; Common boot related information 
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
@@ -91,7 +86,7 @@ MBR:
 	; Then, we relocate the MBR code/data to memory location 0x0000:MBR_RELOC_ADDRESS
 
 	mov   cx, MBR_SIZE
-	mov   si, LOAD_ADDRESS
+	mov   si, VBR_ADDRESS
 	mov   di, MBR_RELOC_ADDRESS
 	cld                                           ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
 	rep   movsb
@@ -181,12 +176,12 @@ MBR:
 	; - AH contains return code of the read routine ; AL contains the actual number of sectors that got read ; Carry flag is clear if the read was successful  
 
 	DiskReadUsingCHS:	
-	mov   bx, LOAD_ADDRESS
 	mov   dl, [STACK_TOP-2]
 	mov   bx, [STACK_TOP-8]
 	mov   dh, [bx+1]
 	mov   cl, [bx+2]
 	mov   ch, [bx+3]
+	mov   bx, VBR_ADDRESS
 	mov   al, 1
 	mov   ah, 0x02
 	int   0x13
@@ -198,7 +193,7 @@ MBR:
 	; Now check if the loaded VBR has the boot signature at the end
 	
 	CheckVBR:
-	mov   ax, [LOAD_ADDRESS+510]
+	mov   ax, [VBR_ADDRESS+510]
 	cmp   ax, 0xAA55
 	je    LaunchVBR
 	mov   si, Messages.InvalidVBR
@@ -212,7 +207,7 @@ MBR:
 	pop   di
 	pop   es
 	pop   dx
-	jmp   LOAD_ADDRESS 
+	jmp   VBR_ADDRESS 
 
 	; If the boot strap failed (no active partition or disk read error) then halt the system
 	; Before halting we print an error message on the screen 
@@ -255,7 +250,7 @@ DAP:
 .Unused1             db 0                         ; Reserved
 .Sectors_Count       db 1                         ; Number of sectors to read (we need to read just the one sector containing the VBR)
 .Unused2             db 0                         ; Reserved
-.Memory_Offset       dw LOAD_ADDRESS              ; Offset of the memory location where the data from disk will be copied to 
+.Memory_Offset       dw VBR_ADDRESS               ; Offset of the memory location where the data from disk will be copied to 
 .Memory_Segment      dw 0                         ; Segment address corresponding to the memory location where the data from disk will be copied to 
 .Start_Sector        dq 0                         ; Starting sector (in LBA) on disk for read
 
@@ -278,7 +273,7 @@ Disk_Signature:
 
 Partition_Table:                                  ; [Everything below to be edited by MBR software]
 
-Partition_Table_Entry1:
+Partition_Table_Entry1:                           ; Constants for this partition table entry are defined in boot/include/bootinfo.inc
 .Status              db PARTITION_ATTRIBUTES      ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
 .Head_Start          db 0                         ; 3 bytes corresponding to the CHS of the starting sector of the partition
 .Sector_Start        db 0

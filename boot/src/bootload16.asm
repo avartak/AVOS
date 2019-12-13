@@ -27,7 +27,7 @@ AVBL32_ADDRESS          equ 0x8000                                      ; Starti
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
-%include "boot/include/bootdrive.inc"                                   ; Common values for disk/partition related information [could be modified]
+%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 

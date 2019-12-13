@@ -1,4 +1,4 @@
-%include "boot/include/bootdrive.inc"                                   ; Common values for disk/partition related information [could be modified]
+%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
 
 ORG 0
 
