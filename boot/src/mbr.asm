@@ -38,12 +38,11 @@
 
 ; First let us include some definitions of constants
 
+%include "boot/include/bootinfo.inc"              ; Common boot related information 
+
 MBR_SIZE                equ 0x0200                ; Size of the MBR
 MBR_RELOC_ADDRESS       equ 0x0600                ; This is where the MBR relocates itself to before loading the VBR 
 STACK_TOP               equ 0x7C00                ; Top of the stack used by the MBR
-PARTITION_TABLE_OFFSET  equ 0x01BE                ; Offset of the start of the partition table in the MBR (byte 446 of the MBR)
-
-%include "boot/include/bootinfo.inc"              ; Common boot related information 
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
@@ -325,7 +324,7 @@ Partition_Table_Entry4:
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 0x200-2-($-$$) db 0 
+times BOOT_SIGNATURE_OFFSET-($-$$) db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 

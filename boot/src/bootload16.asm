@@ -22,16 +22,15 @@
 
 ; First let us include some definitions of constants
 
-AVBL16_ADDRESS          equ 0x7E00                                      ; Starting location in memory where the 16-bit part of AVBL is loaded
+%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
+
 AVBL32_ADDRESS          equ 0x8000                                      ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
-%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
-
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
-ORG AVBL16_ADDRESS
+ORG BOOTLOADER_ADDRESS
 
 ; We are still in 16-bit real mode
 

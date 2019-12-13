@@ -11,9 +11,8 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-VBR_ADDRESS            equ 0x7C00                          ; This is where the VBR is loaded in memory
-BOOTLOADER_ADDRESS     equ 0x7E00                          ; Starting location in memory where the bootloader code gets loaded
-PART_TABLE             equ 0x200-2-0x40                    ; Offset of the VBR partition table (contains one 16-byte entry containing the start and end LBAs of the partition)
+%include "boot/include/bootinfo.inc"                       ; Common boot related information 
+
 MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 
 GEOM_TABLE_SIZE        equ 0x1A                            ; Size of the disk geometry table
@@ -23,8 +22,6 @@ GEOM_TABLE_SECTOR_SIZE equ GEOM_TABLE_START + 0x18         ; Location of the wor
 STACK_TOP              equ GEOM_TABLE_START                ; Top of the stack
 
 BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
-
-%include "boot/include/bootinfo.inc"                       ; Common boot related information 
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
@@ -238,13 +235,13 @@ VBR:
 
 ; Padding of zeroes till offset 0x200-2-0x40 = 446 : location of the VBR partition table (if any)
 
-times PART_TABLE-($-$$)   db 0
+times PARTITION_TABLE_OFFSET-($-$$)   db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times 0x200-2-($-$$)      db 0 
+times BOOT_SIGNATURE_OFFSET-($-$$)    db 0 
 
 ; The last two bytes need to have the following boot signature -- MBR code typically checks for it
 
