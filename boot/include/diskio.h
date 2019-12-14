@@ -3,6 +3,10 @@
 
 #include <boot/include/defs.h>
 
+#define DISKIO_MAX_SECTOR_SIZE             0x1000
+#define DISKIO_DISK_ADDRESS_PACKET_SIZE    0x10
+#define DISKIO_DISK_GEOMETRY_PACKET_SIZE   0x1A
+
 struct DiskIO_Geometry {
 	uint16_t  size;
 	uint16_t  flags;
@@ -24,10 +28,10 @@ struct DiskIO_DAP {
 	uint64_t start_sector;
 }__attribute__((packed));
 
-extern uint8_t DiskIO_LowMemoryBuffer[];
+extern uint8_t  DiskIO_LowMemoryBuffer[];
 
-extern bool    DiskIO_CheckForBIOSExtensions(uint8_t drive);
-extern bool    DiskIO_GetDiskGeometry(uint8_t drive, struct DiskIO_Geometry* geometry);
-extern size_t  DiskIO_ReadFromDisk(uint8_t drive, uintptr_t mem_start_addr, uint64_t disk_start_sector, size_t num_sectors);
+extern bool     DiskIO_CheckForBIOSExtensions(uint8_t drive);
+extern bool     DiskIO_GetDiskGeometry       (uint8_t drive, struct DiskIO_Geometry* geometry);
+extern uint32_t DiskIO_ReadFromDisk          (uint8_t drive, uint32_t mem_start_addr, uint64_t disk_start_sector, uint32_t num_sectors);
 
 #endif

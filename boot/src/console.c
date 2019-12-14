@@ -5,7 +5,7 @@
 void Console_ClearScreen() {
     char* screen = (char*)0xB8000;
 
-    size_t i = 0;
+    uint32_t i = 0;
     while (i < 80*25) {
         screen[2*i]   = ' ';
         screen[2*i+1] = 0x0F;
@@ -76,7 +76,7 @@ void Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8
 
     char* screen = (char*)0xB8000;
 
-	for (size_t i = 0; string[i] != 0; i++)	{
+	for (uint32_t i = 0; string[i] != 0; i++)	{
 		screen[pos+2*i]   = string[i];
 		screen[pos+2*i+1] = color;
 	}
@@ -105,7 +105,7 @@ void Console_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color)
 	uint32_t divisor = 0x10000000;
 	uint32_t digit = 0;
 	
-	for (size_t i = 0; i < 8; i++) {
+	for (uint32_t i = 0; i < 8; i++) {
 	
 		digit = num / divisor;
 		
@@ -146,7 +146,7 @@ void Console_PrintBanner() {
 	
 	Console_ClearScreen();
 	
-	size_t i = 0;
+	uint32_t i = 0;
 	while (i < 80) {
 		screen[2*i  ] = 0x00;
 		screen[2*i+1] = 0x90;
@@ -195,9 +195,9 @@ void Console_ReadCommand(char* buffer) {
 	Console_PrintChar(':', line, column++, color);
 	Console_PrintChar(']', line, column++, color);
 	
-	size_t pos = line*80 + column + 0x3FF;
-	uint8_t end_line   = pos / 80;
-	uint8_t end_column = pos % 80;
+	uint32_t pos = line*80 + column + 0x3FF;
+	uint8_t  end_line   = pos / 80;
+	uint8_t  end_column = pos % 80;
 	
 	pos = 0;
 	
