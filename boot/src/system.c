@@ -3,7 +3,7 @@
 #include <boot/include/multiboot.h>
 #include <csupport/include/string.h>
 
-uintptr_t System_StoreAPMInfo(uintptr_t addr) {
+uint32_t System_StoreAPMInfo(uint32_t addr) {
 
 	// First check if APM is supported
 	struct BIOS_Registers BIOS_regs;
@@ -57,10 +57,10 @@ uintptr_t System_StoreAPMInfo(uintptr_t addr) {
 }
 
 
-uintptr_t System_StoreSMBIOSInfo(uintptr_t addr) {
+uint32_t System_StoreSMBIOSInfo(uint32_t addr) {
 
 	// Find the memory address of the SMBIOS entry point table in low memory --> It starts on a 16-byte aligned boundary in the range 0xF0000 - 0x100000
-	uintptr_t mem = 0xF0000;
+	uint32_t mem = 0xF0000;
 	for (; mem < 0x100000; mem += 0x10) {
 		char* str = (char*)mem;
 		if (str[0] == '_' && str[1] == 'S' && str[2] == 'M' && str[3] == '_') {
@@ -91,7 +91,7 @@ uintptr_t System_StoreSMBIOSInfo(uintptr_t addr) {
 	memmove(dst, src, smbios_ept->table_length);
 	
 	// Add 0-padding to keep the MBI 8-byte aligned
-	uintptr_t retval = (uintptr_t)dst + smbios_ept->table_length;
+	uint32_t retval = (uint32_t)dst + smbios_ept->table_length;
 	if (retval % 8 != 0) {
 		memset((uint8_t*)retval, 0, 8 - (retval % 8));
 		retval += 8 - (retval % 8);
@@ -101,13 +101,13 @@ uintptr_t System_StoreSMBIOSInfo(uintptr_t addr) {
 
 }
 
-uintptr_t System_StoreACPIInfo(uintptr_t addr, bool old) {
+uint32_t System_StoreACPIInfo(uint32_t addr, bool old) {
 
 	// The Root System Description Pointer (RSDP) can be found either in the first KB of the EBDA (the 16-bit segment pointing to the EBDA is located ar 0x40E)
 	// Or it can be found in the range 0xE0000 - 0x100000
 	bool found = false;
-	uintptr_t ptr = (uintptr_t)(((uint16_t*)0x40E)[0]) << 4;
-	uintptr_t ebda_1kb = ptr + 0x400;
+	uint32_t ptr = (uint32_t)(((uint16_t*)0x40E)[0]) << 4;
+	uint32_t ebda_1kb = ptr + 0x400;
 	for (; ptr < 0x100000; ptr = (ptr + 0x10 == ebda_1kb ? 0xE0000 : ptr + 0x10)) {
 		if (((uint8_t*)ptr)[0] != 'R') continue;
 		if (((uint8_t*)ptr)[1] != 'S') continue;

@@ -245,18 +245,18 @@ typedef struct {
 
 /* ELF related functions needed by the bootloader */
 
-extern bool      Elf32_IsValidELF              (uintptr_t image);
-extern bool      Elf32_IsValidExecutable       (uintptr_t image);
-extern bool      Elf32_IsValidRelocatable      (uintptr_t image);
-extern bool      Elf32_IsValidiStaticExecutable(uintptr_t image);
-extern size_t    Elf32_StaticExecutableLoadSize(uintptr_t image);
-extern size_t    Elf32_LoadStaticExecutable    (uintptr_t image, uintptr_t start_addr);
-extern size_t    Elf32_LoadSectionHeaderTable  (uintptr_t image, uintptr_t start_addr, bool load_extra);
-extern size_t    Elf32_LoadBSSLikeSections     (uintptr_t image, uintptr_t start_addr);
-extern size_t    Elf32_SizeBSSLikeSections     (uintptr_t image);
-extern bool      Elf32_Relocate                (uintptr_t image);
-extern bool      Elf32_RelocateSymbol          (uintptr_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table_hdr);
-extern uintptr_t Elf32_GetSymbolValue          (uintptr_t image, uintptr_t table, size_t idx);
+extern bool      Elf32_IsValidELF              (uint32_t image);
+extern bool      Elf32_IsValidExecutable       (uint32_t image);
+extern bool      Elf32_IsValidRelocatable      (uint32_t image);
+extern bool      Elf32_IsValidiStaticExecutable(uint32_t image);
+extern uint32_t  Elf32_StaticExecutableLoadSize(uint32_t image);
+extern uint32_t  Elf32_LoadStaticExecutable    (uint32_t image, uint32_t start_addr);
+extern uint32_t  Elf32_LoadSectionHeaderTable  (uint32_t image, uint32_t start_addr, bool load_extra);
+extern uint32_t  Elf32_LoadBSSLikeSections     (uint32_t image, uint32_t start_addr);
+extern uint32_t  Elf32_SizeBSSLikeSections     (uint32_t image);
+extern bool      Elf32_Relocate                (uint32_t image);
+extern bool      Elf32_RelocateSymbol          (uint32_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table_hdr);
+extern uint32_t  Elf32_GetSymbolValue          (uint32_t image, uint32_t table, uint32_t idx);
 extern void*     Elf32_LookupSymbol(const char* name);
 
 #endif

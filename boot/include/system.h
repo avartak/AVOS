@@ -3,8 +3,8 @@
 
 #include <boot/include/defs.h>
 
-extern uintptr_t System_StoreAPMInfo   (uintptr_t addr);
-extern uintptr_t System_StoreSMBIOSInfo(uintptr_t addr);
-extern uintptr_t System_StoreACPIInfo  (uintptr_t addr, bool old);
+extern uint32_t System_StoreAPMInfo   (uint32_t addr);
+extern uint32_t System_StoreSMBIOSInfo(uint32_t addr);
+extern uint32_t System_StoreACPIInfo  (uint32_t addr, bool old);
 
 #endif

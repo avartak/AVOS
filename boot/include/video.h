@@ -62,12 +62,12 @@ struct VBE_PMode_Info {
     uint16_t length;
 }__attribute__((packed));
 
-extern uintptr_t VBE_StoreInfo     (uintptr_t addr);
-extern uintptr_t VBE_StorePModeInfo(uintptr_t addr);
-extern uint16_t  VBE_GetCurrentMode();
-extern uint16_t  VBE_GetTextMode   (uint16_t* video_modes, uint32_t width, uint32_t height);
-extern uint16_t  VBE_GetMode       (uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth);
-extern bool      VBE_GetModeInfo   (uint16_t mode, uintptr_t addr);
-extern bool      VBE_SetMode       (uint16_t mode);
+extern uint32_t VBE_StoreInfo     (uint32_t addr);
+extern uint32_t VBE_StorePModeInfo(uint32_t addr);
+extern uint16_t VBE_GetCurrentMode();
+extern uint16_t VBE_GetTextMode   (uint16_t* video_modes, uint32_t width, uint32_t height);
+extern uint16_t VBE_GetMode       (uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth);
+extern bool     VBE_GetModeInfo   (uint16_t mode, uint32_t addr);
+extern bool     VBE_SetMode       (uint16_t mode);
 
 #endif

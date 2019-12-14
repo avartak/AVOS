@@ -1,7 +1,7 @@
 #include <boot/include/elf.h>
 #include <csupport/include/string.h>
 
-bool Elf32_IsValidELF(uintptr_t image) {
+bool Elf32_IsValidELF(uint32_t image) {
 
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
 	
@@ -15,7 +15,7 @@ bool Elf32_IsValidELF(uintptr_t image) {
 	return true;
 }
 
-bool Elf32_IsValidExecutable(uintptr_t image) {
+bool Elf32_IsValidExecutable(uint32_t image) {
 
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
 	
@@ -27,7 +27,7 @@ bool Elf32_IsValidExecutable(uintptr_t image) {
 	return true;
 }
 
-bool Elf32_IsValidRelocatable(uintptr_t image) {
+bool Elf32_IsValidRelocatable(uint32_t image) {
     
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
 	
@@ -39,7 +39,7 @@ bool Elf32_IsValidRelocatable(uintptr_t image) {
 	return true;
 }
 
-bool Elf32_IsValidiStaticExecutable(uintptr_t image) {
+bool Elf32_IsValidiStaticExecutable(uint32_t image) {
 
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
 	
@@ -47,23 +47,23 @@ bool Elf32_IsValidiStaticExecutable(uintptr_t image) {
 	
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 	
-	for (size_t i = 0; i < hdr->e_phnum; i++) {
+	for (uint32_t i = 0; i < hdr->e_phnum; i++) {
 		if (phdr[i].p_type == PT_DYNAMIC || phdr[i].p_type == PT_INTERP) return false;
 	}
 	
 	return true;
 }
 
-size_t Elf32_StaticExecutableLoadSize(uintptr_t image) {
+uint32_t Elf32_StaticExecutableLoadSize(uint32_t image) {
 
-	size_t load_size = 0;
+	uint32_t load_size = 0;
 	
 	if (!Elf32_IsValidiStaticExecutable(image)) return load_size;
 	
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 	
-	for (size_t i = 0; i < hdr->e_phnum; i++) {
+	for (uint32_t i = 0; i < hdr->e_phnum; i++) {
 		if (phdr[i].p_type != PT_LOAD) continue;
 		load_size += phdr[i].p_memsz;
 	}
@@ -73,9 +73,9 @@ size_t Elf32_StaticExecutableLoadSize(uintptr_t image) {
 }
 
 
-size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
+uint32_t Elf32_LoadStaticExecutable(uint32_t image, uint32_t start_addr) {
 
-	size_t load_size = 0;
+	uint32_t load_size = 0;
 	
 	if (!Elf32_IsValidiStaticExecutable(image)) return load_size;
 	
@@ -83,12 +83,12 @@ size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 
 	uint8_t* p_mem_addr = (uint8_t*)start_addr;
-	for (size_t i = 0; i < hdr->e_phnum; i++) {
+	for (uint32_t i = 0; i < hdr->e_phnum; i++) {
 		if (phdr[i].p_type != PT_LOAD) continue;
 		
 		uint8_t* p_img_addr = (uint8_t*)(image + phdr[i].p_offset);
-		size_t   p_img_size = phdr[i].p_filesz;
-		size_t   p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
+		uint32_t p_img_size = phdr[i].p_filesz;
+		uint32_t p_pad_size = phdr[i].p_memsz - phdr[i].p_filesz;
 		
 		memmove(p_mem_addr, p_img_addr, p_img_size);
 		p_mem_addr += p_img_size;
@@ -101,12 +101,12 @@ size_t Elf32_LoadStaticExecutable(uintptr_t image, uintptr_t start_addr) {
 
 }
 
-size_t Elf32_LoadSectionHeaderTable(uintptr_t image, uintptr_t start_addr, bool load_extra) {
+uint32_t Elf32_LoadSectionHeaderTable(uint32_t image, uint32_t start_addr, bool load_extra) {
 
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Shdr *shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
 
-	size_t retval = 0;
+	uint32_t retval = 0;
 	if (load_extra) retval = 8;
 	if (Elf32_IsValidELF(image)) {
 		if (load_extra) {
@@ -123,7 +123,7 @@ size_t Elf32_LoadSectionHeaderTable(uintptr_t image, uintptr_t start_addr, bool 
 	return retval;
 }
 
-size_t Elf32_SizeBSSLikeSections(uintptr_t image) {
+uint32_t Elf32_SizeBSSLikeSections(uint32_t image) {
 
 	if (!Elf32_IsValidELF(image)) return 0;
 	
@@ -131,15 +131,15 @@ size_t Elf32_SizeBSSLikeSections(uintptr_t image) {
 	Elf32_Shdr* shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 	
-	size_t bss_size = 0;
+	uint32_t bss_size = 0;
 	
 	if (hdr->e_shnum > 0) {
-		for (size_t i = 0; i < hdr->e_shnum; i++) {
+		for (uint32_t i = 0; i < hdr->e_shnum; i++) {
 			if(shdr[i].sh_type == SHT_NOBITS && (shdr[i].sh_flags & SHF_ALLOC) && shdr[i].sh_size > 0) bss_size += shdr[i].sh_size;
 		}
 	}
 	else {
-		for (size_t i = 0; i < hdr->e_phnum; i++) {
+		for (uint32_t i = 0; i < hdr->e_phnum; i++) {
 			if (phdr[i].p_type != PT_LOAD) continue;
 			if (phdr[i].p_filesz != 0) continue;
 			bss_size += phdr[i].p_memsz;	
@@ -150,16 +150,16 @@ size_t Elf32_SizeBSSLikeSections(uintptr_t image) {
 
 }
 
-size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
+uint32_t Elf32_LoadBSSLikeSections(uint32_t image, uint32_t start_addr) {
 
 	if (!Elf32_IsValidELF(image)) return 0;
 	
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Shdr *shdr = (Elf32_Shdr*)(image + hdr->e_shoff);
 	
-	size_t bss_size = 0;
+	uint32_t bss_size = 0;
 	uint8_t* mem = (uint8_t*)start_addr;
-	for (size_t i = 0; i < hdr->e_shnum; i++) {
+	for (uint32_t i = 0; i < hdr->e_shnum; i++) {
 		if(shdr[i].sh_type == SHT_NOBITS && (shdr[i].sh_flags & SHF_ALLOC) && shdr[i].sh_size > 0) {
 			memset(mem, 0, shdr[i].sh_size);
 			mem      += shdr[i].sh_size;
@@ -172,7 +172,7 @@ size_t Elf32_LoadBSSLikeSections(uintptr_t image, uintptr_t start_addr) {
 }
 
 
-bool Elf32_Relocate(uintptr_t image) {
+bool Elf32_Relocate(uint32_t image) {
 
 	if (!Elf32_IsValidRelocatable(image)) return false;
 	
@@ -180,9 +180,9 @@ bool Elf32_Relocate(uintptr_t image) {
 	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
 	
 	bool retval = true;
-	for (size_t i = 0; i < hdr->e_shnum; i++) {
+	for (uint32_t i = 0; i < hdr->e_shnum; i++) {
 		if (shdr[i].sh_type == SHT_REL && shdr[i].sh_entsize > 0) {
-			for (size_t j = 0; j < shdr[i].sh_size / shdr[i].sh_entsize; j++) {
+			for (uint32_t j = 0; j < shdr[i].sh_size / shdr[i].sh_entsize; j++) {
 				Elf32_Rel* rel_table = &((Elf32_Rel*)(image + shdr[i].sh_offset))[j];
 				retval = retval && Elf32_RelocateSymbol(image, rel_table, &(shdr[i]));
 			}
@@ -192,16 +192,16 @@ bool Elf32_Relocate(uintptr_t image) {
 	return retval;
 }
 
-bool Elf32_RelocateSymbol(uintptr_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table_hdr) {
+bool Elf32_RelocateSymbol(uint32_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table_hdr) {
 
 	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
 	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
 	
 	Elf32_Shdr* target_seg_hdr = shdr + rel_table_hdr->sh_info;	
-	uintptr_t  target_seg_addr = image + target_seg_hdr->sh_offset;
-	uintptr_t* target_ptr = (uintptr_t*)(target_seg_addr + rel->r_offset);
+	uint32_t  target_seg_addr = image + target_seg_hdr->sh_offset;
+	uint32_t* target_ptr = (uint32_t*)(target_seg_addr + rel->r_offset);
 	
-	uintptr_t symval = 0;
+	uint32_t symval = 0;
 	if (ELF32_R_SYM(rel->r_info) != SHN_UNDEF) {
 		symval = Elf32_GetSymbolValue(image, rel_table_hdr->sh_link, ELF32_R_SYM(rel->r_info));
 		if (symval == ELF_RELOC_ERR) return false;
@@ -212,14 +212,14 @@ bool Elf32_RelocateSymbol(uintptr_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table
 		return true;
 	}	
 	else if (ELF32_R_TYPE(rel->r_info) == R_386_PC32) {
-		target_ptr[0] += symval - (uintptr_t)target_ptr;
+		target_ptr[0] += symval - (uint32_t)target_ptr;
 		return true;
 	}
 	else return false;	
 }
 
 
-uintptr_t Elf32_GetSymbolValue(uintptr_t image, uintptr_t table, size_t idx) {
+uint32_t Elf32_GetSymbolValue(uint32_t image, uint32_t table, uint32_t idx) {
 
 	if (table == SHN_UNDEF || idx == STN_UNDEF) return 0;
 	
@@ -230,7 +230,7 @@ uintptr_t Elf32_GetSymbolValue(uintptr_t image, uintptr_t table, size_t idx) {
 	
 	if (idx >= symtab_hdr->sh_size/symtab_hdr->sh_entsize) return ELF_RELOC_ERR;
 	
-	uintptr_t symtab_addr = image + symtab_hdr->sh_offset;
+	uint32_t symtab_addr = image + symtab_hdr->sh_offset;
 	Elf32_Sym* symbol = &((Elf32_Sym*)symtab_addr)[idx];
 	
 	if (symbol->st_shndx == SHN_UNDEF) {
@@ -242,7 +242,7 @@ uintptr_t Elf32_GetSymbolValue(uintptr_t image, uintptr_t table, size_t idx) {
 			if (ELF32_ST_BIND(symbol->st_info) & STB_WEAK) return 0;
 			else return ELF_RELOC_ERR;
 		} 
-		else return (uintptr_t)target;
+		else return (uint32_t)target;
 	} 
 	else if (symbol->st_shndx == SHN_ABS) return symbol->st_value;
 	else {
