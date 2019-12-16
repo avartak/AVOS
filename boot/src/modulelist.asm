@@ -14,7 +14,7 @@ MODLIST:
 	BlockList:
 	
 	.Load_Address         dq 0x100000
-	.Sector_Size          dw 0x200
+	.Sector_Size          dw SECTOR_SIZE
 	.Reserved             db 'KERNEL'
 	
 	.Block1_LBA           dq 0x800+PARTITION_START_LBA
