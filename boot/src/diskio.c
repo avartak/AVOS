@@ -43,13 +43,12 @@ uint32_t DiskIO_ReadFromDisk(uint8_t drive, uint32_t mem_start_addr, uint64_t di
 	geom.size = DISKIO_DISK_GEOMETRY_PACKET_SIZE;
 	if (!DiskIO_CheckForBIOSExtensions(drive)) return 0;
 	if (!DiskIO_GetDiskGeometry(drive, &geom)) return 0;
-	if (geom.size > DISKIO_MAX_SECTOR_SIZE) return 0;
+	if (geom.size > DISKIO_MAX_SECTOR_SIZE)    return 0;
 	
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
 	struct DiskIO_DAP dap;
-	
 	dap.size           = DISKIO_DISK_ADDRESS_PACKET_SIZE;
 	dap.unused1        = 0;
 	dap.sectors        = 1;
