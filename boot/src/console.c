@@ -75,11 +75,11 @@ void Console_PrintNum(uint32_t num, bool hex, uint8_t line, uint8_t column, uint
 		Console_Screen[pos++] = color | 'x';	
 	}	
 
+	char digits[] = "0123456789ABCDEF";
 	bool start_printing = false;
 	for (uint32_t divisor = (hex ? 0x10000000 : 1000000000); divisor > 0; divisor /= (hex ? 0x10 : 10)) {
-		uint32_t digit = num / divisor;
-		if (!start_printing && digit > 0) start_printing = true;
-		if (start_printing) Console_Screen[pos++] = color | (uint8_t)(digit += (digit < 0xA ? 0x30 : 0x41 - 0xA));	
+		if (!start_printing && num/divisor > 0) start_printing = true;
+		if (start_printing) Console_Screen[pos++] = color | digits[num/divisor];	
 		num %= divisor;
 	}
 
