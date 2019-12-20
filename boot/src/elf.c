@@ -64,8 +64,7 @@ uint32_t Elf32_StaticExecutableLoadSize(uint32_t image) {
 	Elf32_Phdr* phdr = (Elf32_Phdr*)(image + hdr->e_phoff);
 	
 	for (uint32_t i = 0; i < hdr->e_phnum; i++) {
-		if (phdr[i].p_type != PT_LOAD) continue;
-		load_size += phdr[i].p_memsz;
+		if (phdr[i].p_type == PT_LOAD) load_size += phdr[i].p_memsz;
 	}
 	
 	return load_size;
