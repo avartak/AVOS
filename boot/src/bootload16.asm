@@ -161,6 +161,7 @@ AVBL:
 
 	; Description of the GDT is given at the end 
 
+	align 8
 	GDT:
     dq 0
     dq 0x00CF9A000000FFFF
