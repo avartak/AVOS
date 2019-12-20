@@ -19,6 +19,10 @@ Several functions that are used to display characters on screen write directly t
 * Console_PrintError          : Prints an error string on line 23 in red color and returns the boolean passed as the second argument (useful when returning a boolean status + message)
 * Console_ReadCommand         : Reads a command string from keyboard (up to 0x400 characters) and displays it at the AVBL command prompt
 
+Note: 
+Code for cursor manipulation based on direct I/O with the VGA controller is taken from:
+https://wiki.osdev.org/Text_Mode_Cursor
+
 */
 
 #ifndef BOOT_CONSOLE_H
@@ -49,14 +53,14 @@ Several functions that are used to display characters on screen write directly t
 #define CONSOLE_COLOR_LIGHT_BROWN  0xE
 #define CONSOLE_COLOR_WHITE        0xF
 
-extern uint8_t  Console_GetAttribute(uint8_t fore, uint8_t back);
+extern uint16_t Console_Attribute(uint8_t fore, uint8_t back);
 extern void     Console_ClearScreen();
 extern void     Console_MakeCursorVisible();
 extern void     Console_MakeCursorInvisible();
 extern void     Console_SetCursorPosition(uint8_t line, uint8_t column);
-extern void     Console_PrintNum(uint32_t num, uint8_t line, uint8_t column, uint8_t color);
-extern void     Console_PrintChar(char c, uint8_t line, uint8_t column, uint8_t color);
-extern void     Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t color);
+extern void     Console_PrintNum(uint32_t num, bool hex, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
+extern void     Console_PrintChar(char c, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
+extern void     Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
 extern char     Console_ReadChar();
 
 extern void     Console_PrintBanner();
