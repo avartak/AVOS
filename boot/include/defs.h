@@ -14,18 +14,18 @@
 #define BLOCKLIST_MAXBLOCKS272   21
 
 struct Boot_Block32 {
-    uintptr_t address;
-    size_t    size;
+    uint32_t  address;
+    uint32_t  size;
 }__attribute__((packed));
 
 struct Boot_Block64 {
-    uint64_t address;
-    uint64_t    size;
+    uint64_t  address;
+    uint64_t  size;
 }__attribute__((packed));
 
 struct Boot_BlockLBA {
 	uint64_t  lba;
-	size_t    num_sectors;
+	uint32_t  num_sectors;
 }__attribute__((packed));
 
 struct Boot_BlockList128 {
@@ -58,16 +58,16 @@ struct Boot_BlockList512 {
 
 struct Boot_KernelInfo {
     uint32_t  boot_drive_ID;
-    uintptr_t boot_partition;
-    uintptr_t pnpbios_ptr;
-    uintptr_t blocklist_ptr;
-    uintptr_t start;
-    size_t    size;
-    size_t    bss_size;
-    uintptr_t multiboot_header;
-    uintptr_t entry;
-    uintptr_t file_addr;
-    size_t    file_size;
+    uint32_t  boot_partition;
+    uint32_t  pnpbios_ptr;
+    uint32_t  blocklist_ptr;
+    uint32_t  start;
+    uint32_t  size;
+    uint32_t  bss_size;
+    uint32_t  multiboot_header;
+    uint32_t  entry;
+    uint32_t  file_addr;
+    uint32_t  file_size;
 }__attribute__((packed));
 
 #endif
