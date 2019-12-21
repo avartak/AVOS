@@ -1,3 +1,15 @@
+/*
+  
+These functions are used for mapping the system RAM
+
+* Memory_StoreBasicInfo      : Stores the size of low memory (correctly) and high memory (possibly underestimated) in KB
+* Memory_StoreE820Info       : Stores the E820 memory map - returned by INT 0x15, AX=0xE820
+* Memory_StoreInfo           : Stores a sanitized version (removing overlaps) of the E820 map. Only available regions are listed. Possible to align the start address on page boundary
+* Memory_FindBlockAddress    : Find memory chunk of a given size above/below an address, possibly aligned to a certain value
+
+*/
+
+
 #ifndef BOOT_MEMORY_H
 #define BOOT_MEMORY_H
 
