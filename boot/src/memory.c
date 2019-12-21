@@ -169,7 +169,7 @@ uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint3
         if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
         uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
 
-        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
+        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size > aligned_addr + size) return aligned_addr;
         if (aligned_base >= addr && aligned_size >= size) {
 			if ( above && aligned_base < mem) mem = aligned_base;
 			if (!above && aligned_base > mem) mem = aligned_base;
