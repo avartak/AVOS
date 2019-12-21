@@ -1,12 +1,14 @@
 #include <boot/include/memory.h>
 #include <boot/include/bios.h>
 #include <boot/include/multiboot.h>
+#include <csupport/include/string.h>
 
 uint32_t Memory_StoreBasicInfo(uint32_t addr) {
 
 	uint32_t* mem = (uint32_t*)(addr);
 	
-	// INT 0x12 is the most reliable way to get the size of low memory; but it does not give a map if usable areas
+	// INT 0x12 is the most reliable way to get the size of low memory; but it does not give a map of usable areas
+	// AX contains the memory size in KB
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
@@ -91,45 +93,6 @@ uint32_t Memory_StoreE820Info(uint32_t addr) {
 
 }
 
-
-uint64_t Memory_MaxPhysicalAddress(struct Multiboot_E820_Entry* E820_Table, uint32_t E820_Table_size) {
-
-	// Find the maximum memory address that exists physically and is available
-	// Iterate over the E820 memory map to get this information
-
-	uint64_t mem_max = 0;
-	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return mem_max;
-	for (uint32_t i = 0; i < E820_Table_size; i++) {
-		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-		if (E820_Table[i].base + E820_Table[i].size > mem_max) mem_max = E820_Table[i].base + E820_Table[i].size;
-	}
-	return mem_max;
-}
-
-bool Memory_IsPresent(uint64_t min, uint64_t max, struct Multiboot_E820_Entry* E820_Table, uint32_t E820_Table_size) {
-
-	if (min >= max) return false;
-	if (E820_Table_size == 0 || E820_Table == MEMORY_NULL_PTR) return false;
-	
-	uint64_t mem_max = Memory_MaxPhysicalAddress(E820_Table, E820_Table_size);
-	if (min >= mem_max || max > mem_max) return false;
-	
-	// First check if the memory range is covered by a single entry 
-	for (uint32_t i = 0; i < E820_Table_size; i++) {
-		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-		if (E820_Table[i].base <= min && E820_Table[i].base + E820_Table[i].size >= max) return true;
-	}
-	
-	// Next check if the memory range is covered by multiple entries
-	for (uint32_t i = 0; i < E820_Table_size; i++) {
-		uint64_t e820_entry_end = E820_Table[i].base + E820_Table[i].size;
-		if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-		if (E820_Table[i].base <= min && e820_entry_end > min) return Memory_IsPresent(e820_entry_end, max, E820_Table, E820_Table_size);
-		if (e820_entry_end >= max && E820_Table[i].base < max) return Memory_IsPresent(min, E820_Table[i].base, E820_Table, E820_Table_size);
-	}
-	return false;
-}
-
 uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_Entry* E820_Table, uint32_t E820_Table_size) {
 	uint32_t table_size  = 0;
 	struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);
@@ -137,12 +100,11 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 	table_ptr->size = 0;
 	
 	// Create a map of free memory from the E820 entries 
-	uint64_t mem_end = Memory_MaxPhysicalAddress(E820_Table, E820_Table_size);
-	while (table_ptr->address < mem_end) {
-		uint64_t addr_limit = ~((uint64_t)0);
+	uint64_t addr_limit = ~((uint64_t)0);
+	while (true) {
 		uint64_t closest_boundary = addr_limit;
 		for (uint32_t i = 0; i < E820_Table_size; i++) {
-			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
+			if (E820_Table[i].acpi3 != MEMORY_E820_ACPI3_FLAG || E820_Table[i].type != MEMORY_E820_AVAILABLE) continue;
 			if (E820_Table[i].base >= table_ptr->address && E820_Table[i].base < closest_boundary) closest_boundary = E820_Table[i].base;
 		}
 		if (closest_boundary == addr_limit) break;
@@ -150,42 +112,33 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 		table_ptr->address = closest_boundary;
 		table_ptr->size = 0;
 		for (uint32_t i = 0; i < E820_Table_size; i++) {
-			if (E820_Table[i].acpi3 != MULTIBOOT_MEMORY_ACPI3_FLAG || E820_Table[i].type != MULTIBOOT_MEMORY_AVAILABLE) continue;
-			uint64_t e820_entry_end = E820_Table[i].base + E820_Table[i].size;
-			if (E820_Table[i].base <= table_ptr->address && e820_entry_end >= table_ptr->address + table_ptr->size) table_ptr->size = e820_entry_end - table_ptr->address;
-			if (E820_Table[i].base >  table_ptr->address && e820_entry_end >= table_ptr->address + table_ptr->size && E820_Table[i].base < table_ptr->address + table_ptr->size) table_ptr->size = e820_entry_end - table_ptr->address;
+			if (E820_Table[i].acpi3 != MEMORY_E820_ACPI3_FLAG || E820_Table[i].type != MEMORY_E820_AVAILABLE) continue;
+			uint64_t e820_entry_end  = E820_Table[i].base + E820_Table[i].size;
+			uint64_t table_entry_end = table_ptr->address + table_ptr->size;
+			if (e820_entry_end >= table_entry_end && E820_Table[i].base <= table_entry_end) table_ptr->size = e820_entry_end - table_ptr->address;
 		}
 		table_ptr++;
 		table_size++;
-		table_ptr->address = (table_ptr-1)->address + (table_ptr-1)->size + 1;
+		table_ptr->address = (table_ptr-1)->address + (table_ptr-1)->size;
 	}
 	table_ptr = (struct Boot_Block64*)(addr);
 	
 	// Adjust the entries on 4KB boundaries
 	if (page_align) {
 		for (uint32_t i = 0; i < table_size; i++) {
-			uint64_t min_addr = table_ptr[i].address;
 			uint64_t mask = ~((uint64_t)(0xFFF));
-			if ((min_addr & mask) < min_addr) min_addr = (min_addr & mask) + 0x1000;
+			uint64_t min_addr = table_ptr[i].address & mask;
 			uint64_t max_addr = (table_ptr[i].address + table_ptr[i].size) & mask;
-			if (max_addr > min_addr) {
-				table_ptr[i].address = min_addr;
-				table_ptr[i].size = max_addr - min_addr;
-			}
-			else {
-				table_ptr[i].address = 0;
-				table_ptr[i].size = 0;
-			}
+			if (min_addr < table_ptr[i].address) min_addr += 0x1000;
+			table_ptr[i].address = max_addr > min_addr ? min_addr : 0;
+			table_ptr[i].size    = max_addr > min_addr ? max_addr - min_addr : 0;
 		}
 	}
 	
-	// Remove entries that are reduced to 0-size after 4KB boundary adjustment
+	// Remove 0-sized entries
 	for (uint32_t i = 0; i < table_size; i++) {
 		if (table_ptr[i].size == 0) {
-			for (uint32_t j = i+i; j < table_size; j++) {
-				table_ptr[j-1].address = table_ptr[j].address;
-				table_ptr[j-1].size = table_ptr[j].size;
-			}
+			memmove(table_ptr+i, table_ptr+i+1, (table_size-i-1)*sizeof(struct Boot_Block64));
 			table_size--;
 		}
 	}
@@ -193,55 +146,37 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 	return addr + table_size * sizeof(struct Boot_Block64);
 }
 
-uint32_t Memory_BlockAboveAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
+uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
 
-    if (addr == MEMORY_32BIT_LIMIT || addr + size < addr) return MEMORY_32BIT_LIMIT;
+	if (size == 0) return MEMORY_32BIT_LIMIT;
+    if ( above && (addr == MEMORY_32BIT_LIMIT || addr + size < addr) ) return MEMORY_32BIT_LIMIT;
+	if (!above && (addr == 0 || addr < size) )return MEMORY_32BIT_LIMIT;
    
-    uint32_t addr_limit = MEMORY_32BIT_LIMIT;
-    uint32_t mem = addr_limit;
-   
-    uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr : align * (1 + addr/align));
-   
-    if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
-    for (uint32_t i = 0; i < mmap_size; i++) {
-        if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
-
-        uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
-        uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? (MEMORY_32BIT_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
-        if (mmap_entry_size < size) continue;
-
-        uint32_t aligned_base = (mmap_entry_base % align == 0 || align <= 1 ? mmap_entry_base : align * (1 + mmap_entry_base/align));
-        if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
-        uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
-
-        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
-        if (aligned_base >= addr && aligned_size >= size && aligned_base < mem) mem = aligned_base;
-    }
-    return mem;
-}
-
-uint32_t Memory_BlockBelowAddress(uint32_t addr, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
-
-    uint32_t mem = 0;
-    uint32_t aligned_addr = (addr % align == 0 || align <= 1 ? addr - size + 1 : align * ((addr - size + 1)/align));
+    uint32_t mem = (above ? MEMORY_32BIT_LIMIT : 0);
+	uint32_t a = (above ? addr : addr - size); 
+    uint32_t aligned_addr = ( (align <= 1 || a % align == 0) ? a : align * ((above ? 1: 0) + a/align) );
 
     if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
     for (uint32_t i = 0; i < mmap_size; i++) {
         if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
 
         uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
-        uint32_t mmap_entry_size = mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? (MEMORY_32BIT_LIMIT - mmap[i].address) + 1 : (uint32_t)mmap[i].size;
+        uint32_t mmap_entry_size = (mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? MEMORY_32BIT_LIMIT - mmap[i].address : (uint32_t)mmap[i].size);
         if (mmap_entry_size < size) continue;
 
-        uint32_t shifted_base = mmap_entry_base + mmap_entry_size - size;
-        uint32_t aligned_base = (shifted_base % align == 0 || align <= 1 ? aligned_base : align * (1 + shifted_base/align));
+        uint32_t shifted_base = mmap_entry_base + (above ? 0 : mmap_entry_size - size);
+        uint32_t aligned_base = ( (align <= 1 || shifted_base % align == 0) ? shifted_base : align * (1 + shifted_base/align) );
         if (aligned_base >= mmap_entry_base + mmap_entry_size) continue;
         uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
 
         if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size >= aligned_addr + size) return aligned_addr;
-        if (aligned_base <= addr - size + 1 && aligned_size >= size && aligned_base > mem) mem = aligned_base;
+        if (aligned_base >= addr && aligned_size >= size) {
+			if ( above && aligned_base < mem) mem = aligned_base;
+			if (!above && aligned_base > mem) mem = aligned_base;
+		}
     }
-    if (mem != 0) return mem;
+
+    if (above || mem != 0) return mem;
     else return MEMORY_32BIT_LIMIT;
 }
 

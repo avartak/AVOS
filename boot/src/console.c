@@ -67,15 +67,16 @@ void Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8
 // Print a 32-bit unsigned integer in hex format at a certain location on screen
 void Console_PrintNum(uint32_t num, bool hex, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color) {
 
-	uint32_t pos = line * CONSOLE_VGA_NUM_COLUMNS + column;
+	uint32_t pos   = line * CONSOLE_VGA_NUM_COLUMNS + column;
 	uint16_t color = Console_Attribute(fore_color, back_color);
+	char digits[]  = "0123456789ABCDEF";
 	
 	if (hex) {
 		Console_Screen[pos++] = color | '0';	
 		Console_Screen[pos++] = color | 'x';	
 	}	
+	if (num == 0) Console_Screen[pos++] = color | '0';
 
-	char digits[] = "0123456789ABCDEF";
 	bool start_printing = false;
 	for (uint32_t divisor = (hex ? 0x10000000 : 1000000000); divisor > 0; divisor /= (hex ? 0x10 : 10)) {
 		if (!start_printing && num/divisor > 0) start_printing = true;

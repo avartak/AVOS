@@ -9,7 +9,7 @@ typedef uint32_t Elf32_Addr;
 typedef uint32_t Elf32_Word;
 typedef int32_t  Elf32_Sword;
 
-/* Size if the ELF32 idenitifer 8-byte array */
+/* Size of the ELF32 idenitifer 8-byte array */
 
 #define ELF_NIDENT      16
 
@@ -174,74 +174,6 @@ typedef struct {
 #define SHF_ALLOC     2
 #define SHF_EXECINSTR 4
 #define SHF_MASKPROC  0xF0000000
-
-/* Symbol table */
-
-typedef struct {
-	Elf32_Word		st_name;
-	Elf32_Addr		st_value;
-	Elf32_Word		st_size;
-	uint8_t			st_info;
-	uint8_t			st_other;
-	Elf32_Half		st_shndx;
-} Elf32_Sym;
-
-/* Undefined symbol table index */
-
-#define STN_UNDEF     0
-
-/* Binding type information <--> st_info field in the symbol table */
-
-#define ELF32_ST_BIND(i) ((i)>>4) 
-#define ELF32_ST_TYPE(i) ((i)&0xf) 
-#define ELF32_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
-
-/* Different types of bindings */
-
-#define STB_LOCAL     0
-#define STB_GLOBAL    1
-#define STB_WEAK      2
-#define STB_LOPROC    13
-#define STB_HIPROC    15
-
-/* Symbol types */
-
-#define STT_NOTYPE    0
-#define STT_OBJECT    1
-#define STT_FUNC      2
-#define STT_SECTION   3
-#define STT_FILE      4
-#define STT_LOPROC    13
-#define STT_HIPROC    15
-
-/* Relocation Entries */
-
-typedef struct {
-	Elf32_Addr    r_offset;
-	Elf32_Word    r_info;
-} Elf32_Rel;
-
-typedef struct {
-	Elf32_Addr    r_offset;
-	Elf32_Word    r_info;
-	Elf32_Sword   r_addend;
-} Elf32_Rela;
-
-/* Symbol table index and relocation type <--> r_info field in the relocation entry  */
-
-#define ELF32_R_SYM(i) ((i)>>8)
-#define ELF32_R_TYPE(i) ((unsigned char)(i))
-#define ELF32_R_INFO(s,t) (((s)<<8)+(unsigned char)(t))
-
-/* Relocation types  */
-
-#define R_386_NONE    0
-#define R_386_32      1
-#define R_386_PC32    2
-
-/* Relocation error  */
-
-#define ELF_RELOC_ERR 0xFFFFFFFF
 
 /* ELF related functions needed by the bootloader */
 
