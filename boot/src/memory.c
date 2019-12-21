@@ -151,15 +151,15 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
 
 	if (size == 0) return MEMORY_32BIT_LIMIT;
-    if ( above && (addr == MEMORY_32BIT_LIMIT || addr + size < addr) ) return MEMORY_32BIT_LIMIT;
+	if ( above && (addr == MEMORY_32BIT_LIMIT || addr + size < addr) ) return MEMORY_32BIT_LIMIT;
 	if (!above && (addr == 0 || addr < size) )return MEMORY_32BIT_LIMIT;
-   
-    uint32_t mem = (above ? MEMORY_32BIT_LIMIT : 0);
+	
+	uint32_t mem = (above ? MEMORY_32BIT_LIMIT : 0);
 	uint32_t a = (above ? addr : addr - size); 
-    uint32_t aligned_addr = ( (align <= 1 || a % align == 0) ? a : align * ((above ? 1: 0) + a/align) );
-
-    if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
-    for (uint32_t i = 0; i < mmap_size; i++) {
+	uint32_t aligned_addr = ( (align <= 1 || a % align == 0) ? a : align * ((above ? 1: 0) + a/align) );
+	
+	if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
+	for (uint32_t i = 0; i < mmap_size; i++) {
 		if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
 		
 		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
@@ -178,9 +178,9 @@ uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint3
 		if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size > aligned_addr + size) return aligned_addr;
 		if ( above && aligned_size >= size && aligned_base >= addr && aligned_base < mem) mem = aligned_base;
 		if (!above && aligned_size >= size && aligned_base <  addr && aligned_base > mem) mem = aligned_base;
-    }
-
-    if (above || mem != 0) return mem;
-    else return MEMORY_32BIT_LIMIT;
+	}
+	
+	if (above || mem != 0) return mem;
+	else return MEMORY_32BIT_LIMIT;
 }
 
