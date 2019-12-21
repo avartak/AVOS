@@ -117,7 +117,7 @@ uint32_t System_StoreACPIInfo(uint32_t addr, bool old) {
 		if (((uint8_t*)ptr)[5] != 'T') continue;
 		if (((uint8_t*)ptr)[6] != 'R') continue;
 		if (((uint8_t*)ptr)[7] != ' ') continue;
-		
+
 		struct Multiboot_RSDPv1* rsdp_v1 = (struct Multiboot_RSDPv1*)ptr;
 		
 		uint32_t sum1 = 0; // Checksum for (old) RSDP v1
@@ -130,11 +130,11 @@ uint32_t System_StoreACPIInfo(uint32_t addr, bool old) {
 			for (size_t i = sizeof(struct Multiboot_RSDPv1); i < sizeof(struct Multiboot_RSDPv2) - sizeof(struct Multiboot_RSDPv1); i++) sum2 += ((uint8_t*)ptr)[i];
 		}
 		if ((sum2 & 0xFF) != 0) continue;
-		
+
 		found = true;
 		break;
 	}
-	
+
 	if (!found) return addr;
 	else {
 		uint8_t* src = (uint8_t*)ptr;
