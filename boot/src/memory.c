@@ -160,22 +160,22 @@ uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint3
 
     if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
     for (uint32_t i = 0; i < mmap_size; i++) {
-        if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
-
-        uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
-        uint32_t mmap_entry_size = (mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? MEMORY_32BIT_LIMIT - mmap[i].address : (uint32_t)mmap[i].size);
-        if (mmap_entry_size < size) continue;
-
-        uint32_t shifted_base = mmap_entry_base;
-        if (!above) {
+		if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
+		
+		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
+		uint32_t mmap_entry_size = (mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? MEMORY_32BIT_LIMIT - mmap[i].address : (uint32_t)mmap[i].size);
+		if (mmap_entry_size < size) continue;
+		
+		uint32_t shifted_base = mmap_entry_base;
+		if (!above) {
 			if (mmap_entry_base + mmap_entry_size - size >= aligned_addr) shifted_base = aligned_addr;
 			else shifted_base = mmap_entry_base + mmap_entry_size - size;  
 		}
-        uint32_t aligned_base = ( (align <= 1 || shifted_base % align == 0) ? shifted_base : align * ((above ? 1: 0) + shifted_base/align) );
-        if (aligned_base < mmap_entry_base || aligned_base >= mmap_entry_base + mmap_entry_size) continue;
-        uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
-
-        if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size > aligned_addr + size) return aligned_addr;
+		uint32_t aligned_base = ( (align <= 1 || shifted_base % align == 0) ? shifted_base : align * ((above ? 1: 0) + shifted_base/align) );
+		if (aligned_base < mmap_entry_base || aligned_base >= mmap_entry_base + mmap_entry_size) continue;
+		uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
+		
+		if (mmap_entry_base <= aligned_addr && mmap_entry_base + mmap_entry_size > aligned_addr + size) return aligned_addr;
 		if ( above && aligned_size >= size && aligned_base >= addr && aligned_base < mem) mem = aligned_base;
 		if (!above && aligned_size >= size && aligned_base <  addr && aligned_base > mem) mem = aligned_base;
     }
