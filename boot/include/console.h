@@ -10,7 +10,7 @@ Several functions that are used to display characters on screen write directly t
 * Console_MakeCursorVisible   : Show the default cursor (underline, blinking)
 * Console_MakeCursorInvisible : Hide the cursor
 * Console_SetCursorPosition   : Set the cursor position to a given line & column
-* Console_PrintNum            : Print 32-bit unsigned integer to a given line & column on screen with given color attribute; number starts with 0x and always shows 8 numerals (0-padded)
+* Console_PrintNum            : Print 32-bit unsigned integer to a given line & column on screen with given color attribute; option to print in hex or decimal
 * Console_PrintChar           : Print a character to a given line & column on screen with given color attribute
 * Console_PrintString         : Print a 0-terminated string to screen starting at a given line & column with given color attribute
 * Console_ReadChar            : Read a character from keyboard using INT 0x16, AH=0x00 ; the read character is stored in AL
