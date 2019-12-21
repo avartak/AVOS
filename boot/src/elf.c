@@ -27,18 +27,6 @@ bool Elf32_IsValidExecutable(uint32_t image) {
 	return true;
 }
 
-bool Elf32_IsValidRelocatable(uint32_t image) {
-    
-	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
-	
-	if (!Elf32_IsValidELF(image)) return false;
-	if (hdr->e_type != ET_REL) return false;
-	if (hdr->e_shentsize != sizeof(Elf32_Shdr)) return false;
-	if (hdr->e_shnum == 0) return false;
-	
-	return true;
-}
-
 bool Elf32_IsValidiStaticExecutable(uint32_t image) {
 
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)image;
@@ -170,88 +158,3 @@ uint32_t Elf32_LoadBSSLikeSections(uint32_t image, uint32_t start_addr) {
 
 }
 
-
-bool Elf32_Relocate(uint32_t image) {
-
-	if (!Elf32_IsValidRelocatable(image)) return false;
-	
-	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
-	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
-	
-	bool retval = true;
-	for (uint32_t i = 0; i < hdr->e_shnum; i++) {
-		if (shdr[i].sh_type == SHT_REL && shdr[i].sh_entsize > 0) {
-			for (uint32_t j = 0; j < shdr[i].sh_size / shdr[i].sh_entsize; j++) {
-				Elf32_Rel* rel_table = &((Elf32_Rel*)(image + shdr[i].sh_offset))[j];
-				retval = retval && Elf32_RelocateSymbol(image, rel_table, &(shdr[i]));
-			}
-		}
-	}
-	
-	return retval;
-}
-
-bool Elf32_RelocateSymbol(uint32_t image, Elf32_Rel* rel, Elf32_Shdr* rel_table_hdr) {
-
-	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
-	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
-	
-	Elf32_Shdr* target_seg_hdr = shdr + rel_table_hdr->sh_info;	
-	uint32_t  target_seg_addr = image + target_seg_hdr->sh_offset;
-	uint32_t* target_ptr = (uint32_t*)(target_seg_addr + rel->r_offset);
-	
-	uint32_t symval = 0;
-	if (ELF32_R_SYM(rel->r_info) != SHN_UNDEF) {
-		symval = Elf32_GetSymbolValue(image, rel_table_hdr->sh_link, ELF32_R_SYM(rel->r_info));
-		if (symval == ELF_RELOC_ERR) return false;
-	}
-	
-	if (ELF32_R_TYPE(rel->r_info) == R_386_32) {
-		target_ptr[0] += symval;
-		return true;
-	}	
-	else if (ELF32_R_TYPE(rel->r_info) == R_386_PC32) {
-		target_ptr[0] += symval - (uint32_t)target_ptr;
-		return true;
-	}
-	else return false;	
-}
-
-
-uint32_t Elf32_GetSymbolValue(uint32_t image, uint32_t table, uint32_t idx) {
-
-	if (table == SHN_UNDEF || idx == STN_UNDEF) return 0;
-	
-	Elf32_Ehdr*  hdr = (Elf32_Ehdr*)image;
-	Elf32_Shdr *shdr = (Elf32_Shdr *)(image + hdr->e_shoff);
-	
-	Elf32_Shdr* symtab_hdr = shdr + table;
-	
-	if (idx >= symtab_hdr->sh_size/symtab_hdr->sh_entsize) return ELF_RELOC_ERR;
-	
-	uint32_t symtab_addr = image + symtab_hdr->sh_offset;
-	Elf32_Sym* symbol = &((Elf32_Sym*)symtab_addr)[idx];
-	
-	if (symbol->st_shndx == SHN_UNDEF) {
-		Elf32_Shdr* strtab = shdr + symtab_hdr->sh_link;
-		const char* name = (const char*)(image + strtab->sh_offset + symbol->st_name);
-		void* target = Elf32_LookupSymbol(name);
-		
-		if (target == MEMORY_NULL_PTR) {
-			if (ELF32_ST_BIND(symbol->st_info) & STB_WEAK) return 0;
-			else return ELF_RELOC_ERR;
-		} 
-		else return (uint32_t)target;
-	} 
-	else if (symbol->st_shndx == SHN_ABS) return symbol->st_value;
-	else {
-		Elf32_Shdr* target = shdr + symbol->st_shndx;
-		return image + target->sh_offset + symbol->st_value;
-	}
-
-}
-
-void* Elf32_LookupSymbol(const char* name) {
-	if (name == MEMORY_NULL_PTR) return MEMORY_NULL_PTR;
-	else return MEMORY_NULL_PTR;
-}
