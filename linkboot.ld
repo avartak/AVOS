@@ -8,7 +8,7 @@ OUTPUT_FORMAT("binary")
 SECTIONS
 {
 	/* Start of the kernel */
-	. = 0x8000;
+	. = 0x9000;
 
 	/* Kernel code */	 
 	.text :

@@ -13,7 +13,7 @@ MODLIST:
 	
 	BlockList:
 	
-	.Load_Address         dq 0x100000
+	.Address              dq 0
 	.Sector_Size          dw SECTOR_SIZE
 	.Reserved             db 'KERNEL'
 	

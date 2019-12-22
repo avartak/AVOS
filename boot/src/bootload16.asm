@@ -24,7 +24,7 @@
 
 %include "boot/include/bootinfo.inc"                                    ; Common boot related information 
 
-AVBL32_ADDRESS          equ 0x8000                                      ; Starting location in memory where the 32-bit part of AVBL is loaded
+AVBL32_ADDRESS          equ BOOTLOADER_ADDRESS+0x200                    ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
@@ -55,7 +55,7 @@ AVBL:
 	; The last 4 bytes of each entry contain the size of the block (number of contiguous sectors to be read out)
 	; An entry with 0 size marks the end of the blocklist, all remaining entries will be ignored
 	
-	.Load_Address         dq 0
+	.Address              dq 0
 	.Sector_Size          dw SECTOR_SIZE
 	.Reserved1            dw 0
 	.Reserved2            dd 0

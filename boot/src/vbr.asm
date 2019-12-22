@@ -54,7 +54,7 @@ VBR:
 	; Note : 
 	; The VBR gets the size of a sector (whether it is 512 bytes, or 4 KB, etc.) from BIOS and compares it with the value stored in the blocklist to make sure they agree
 
-	.Load_Address         dq BOOTLOADER_ADDRESS
+	.Address              dq BOOTLOADER_ADDRESS
 	.Sector_Size          dw SECTOR_SIZE
 	.Reserved1            dw 0
 	.Reserved2            dd 0
@@ -223,7 +223,7 @@ VBR:
 	.Unused1              db 0            
 	.Sectors_Count        db 1            
 	.Unused2              db 0            
-	.Memory_Offset        dw BOOTLOADER_ADDRESS 
+	.Memory_Offset        dw BOOTLOADAP_ADDRESS
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
 
