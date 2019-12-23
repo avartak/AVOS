@@ -16,7 +16,7 @@ Several functions that are used to display characters on screen write directly t
 * Console_ReadChar            : Read a character from keyboard using INT 0x16, AH=0x00 ; the read character is stored in AL
 
 * Console_PrintBanner         : First clears the screen, then prints the AVBL banner on the first line, and makes the cursor invisible
-* Console_PrintError          : Prints an error string on line 23 in red color and returns the boolean passed as the second argument (useful when returning a boolean status + message)
+* Console_PrintAndReturn      : Prints an error string on line 23 in red color and returns the boolean passed as the second argument (useful when returning a boolean status + message)
 * Console_ReadCommand         : Reads a command string from keyboard (up to 0x400 characters) and displays it at the AVBL command prompt
 
 Note: 
@@ -64,7 +64,7 @@ extern void     Console_PrintString(const char* string, uint8_t line, uint8_t co
 extern char     Console_ReadChar();
 
 extern void     Console_PrintBanner();
-extern bool     Console_PrintError(const char* string, bool retval);
+extern bool     Console_PrintAndReturn(const char* string, bool retval);
 extern void     Console_ReadCommand(char* buffer);
 
 #endif

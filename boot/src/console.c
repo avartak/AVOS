@@ -110,7 +110,7 @@ void Console_PrintBanner() {
 }
 
 // Print message passed as an argument, and returns the boolean value also passed as argument
-bool Console_PrintError(const char* string, bool retval) {
+bool Console_PrintAndReturn(const char* string, bool retval) {
 
 	Console_PrintString(string, 23, 0, CONSOLE_COLOR_RED, CONSOLE_COLOR_BLACK);
 	return retval;
