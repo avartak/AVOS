@@ -146,6 +146,13 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 	return addr + table_size * sizeof(struct Boot_Block64);
 }
 
+// Find the memory location either above or below a given address that conforms to a certain alignment
+uint32_t Memory_AlignAddress(uint32_t addr, uint32_t align, bool above) {
+
+	if (align <= 1 || addr % align == 0) return addr;
+	else return align * ((above ? 1: 0) + addr/align);
+}
+
 // Function to find a contiguous chunk of available memory either above or below a given address
 // The starting address of the chunk (which is returned by the function) may need to conform to a certain alignment if the 'align' paremeter is greater than 1
 uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
@@ -155,13 +162,11 @@ uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint3
 	if (!above && (addr == 0 || addr < size) )return MEMORY_32BIT_LIMIT;
 	
 	uint32_t mem = (above ? MEMORY_32BIT_LIMIT : 0);
-	uint32_t a = (above ? addr : addr - size); 
-	uint32_t aligned_addr = ( (align <= 1 || a % align == 0) ? a : align * ((above ? 1: 0) + a/align) );
+	uint32_t aligned_addr = Memory_AlignAddress((above ? addr : addr - size), align, above);
 	
 	if (mmap_size == 0 || mmap == MEMORY_NULL_PTR) return mem;
 	for (uint32_t i = 0; i < mmap_size; i++) {
 		if (mmap[i].address >= MEMORY_32BIT_LIMIT) continue;
-		
 		uint32_t mmap_entry_base = (uint32_t)mmap[i].address;
 		uint32_t mmap_entry_size = (mmap[i].address + mmap[i].size > MEMORY_32BIT_LIMIT ? MEMORY_32BIT_LIMIT - mmap[i].address : (uint32_t)mmap[i].size);
 		if (mmap_entry_size < size) continue;
@@ -171,7 +176,7 @@ uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint3
 			if (mmap_entry_base + mmap_entry_size - size >= aligned_addr) shifted_base = aligned_addr;
 			else shifted_base = mmap_entry_base + mmap_entry_size - size;  
 		}
-		uint32_t aligned_base = ( (align <= 1 || shifted_base % align == 0) ? shifted_base : align * ((above ? 1: 0) + shifted_base/align) );
+		uint32_t aligned_base = Memory_AlignAddress(shifted_base, align, above);
 		if (aligned_base < mmap_entry_base || aligned_base >= mmap_entry_base + mmap_entry_size) continue;
 		uint64_t aligned_size = mmap_entry_base + mmap_entry_size - aligned_base;
 		

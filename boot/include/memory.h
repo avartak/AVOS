@@ -5,6 +5,7 @@ These functions are used for mapping the system RAM
 * Memory_StoreBasicInfo      : Stores the size of low memory (correctly) and high memory (possibly underestimated) in KB
 * Memory_StoreE820Info       : Stores the E820 memory map - returned by INT 0x15, AX=0xE820
 * Memory_StoreInfo           : Stores a sanitized version (removing overlaps) of the E820 map. Only available regions are listed. Possible to align the start address on page boundary
+* Memory_AlignAddress        : Find the nearest memory address either above or below a give location that conforms to the specified alignment
 * Memory_FindBlockAddress    : Find memory chunk of a given size above/below an address, possibly aligned to a certain value
 
 */
@@ -29,6 +30,7 @@ These functions are used for mapping the system RAM
 extern uint32_t Memory_StoreInfo         (uint32_t addr, bool page_align, struct Multiboot_E820_Entry* E820_Table, uint32_t E820_Table_size);
 extern uint32_t Memory_StoreE820Info     (uint32_t addr);
 extern uint32_t Memory_StoreBasicInfo    (uint32_t addr);
+extern uint32_t Memory_AlignAddress      (uint32_t addr, uint32_t align, bool above) ;
 extern uint32_t Memory_FindBlockAddress  (uint32_t addr, bool above, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size);
 
 #endif

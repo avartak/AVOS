@@ -90,8 +90,8 @@ bootload16.bin: boot/src/bootload16.asm
 bootload32.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
 	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_OBJS) $(CSUPPORT_OBJS)
 
-bootloader.bin: bootloadap.bin bootload16.bin bootload32.bin
-	cat bootloadap.bin bootload16.bin bootload32.bin > bootloader.bin
+bootloader.bin: bootload16.bin bootload32.bin
+	cat bootload16.bin bootload32.bin > bootloader.bin
 	
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)

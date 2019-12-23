@@ -223,7 +223,7 @@ VBR:
 	.Unused1              db 0            
 	.Sectors_Count        db 1            
 	.Unused2              db 0            
-	.Memory_Offset        dw BOOTLOADAP_ADDRESS
+	.Memory_Offset        dw BOOTLOADER_ADDRESS
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
 

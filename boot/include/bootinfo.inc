@@ -7,7 +7,6 @@ PARTITION_SIZE         equ 0xFFFFFFFF                      ; Size (number) of se
 SECTOR_SIZE            equ 0x0200                          ; Size of a disk sector
 
 VBR_ADDRESS            equ 0x7C00                          ; This is where the MBR will load the VBR in memory
-BOOTLOADAP_ADDRESS     equ 0x8000                          ; Starting location in memory of the bootloader for the application processors (APs) in an SMP system
 BOOTLOADER_ADDRESS     equ 0x8E00                          ; Starting location in memory where the bootloader code gets loaded
 
 BOOT_SIGNATURE_OFFSET  equ 510                             ; Offset within an MBR or VBR where the boot signature is put
