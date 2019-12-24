@@ -1,7 +1,7 @@
 #ifndef BOOT_SYSTEM_H
 #define BOOT_SYSTEM_H
 
-#include <boot/include/defs.h>
+#include <bootloader/x86/BIOS/include/defs.h>
 
 extern uint32_t System_StoreAPMInfo   (uint32_t addr);
 extern uint32_t System_StoreSMBIOSInfo(uint32_t addr);

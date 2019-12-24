@@ -14,7 +14,7 @@ CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra 
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
-BOOT=boot/src
+BOOT=bootloader/x86/BIOS/src
 BOOT_OBJS=\
 $(BOOT)/bootload32.s.o \
 $(BOOT)/bios.s.o \
@@ -72,20 +72,20 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
-modulelist.bin: boot/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin boot/src/modulelist.asm
+modulelist.bin: bootloader/x86/BIOS/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin bootloader/x86/BIOS/src/modulelist.asm
 
-mbr.bin: boot/src/mbr.asm
-	$(AS) -f bin -o mbr.bin boot/src/mbr.asm
+mbr.bin: bootloader/x86/BIOS/src/mbr.asm
+	$(AS) -f bin -o mbr.bin bootloader/x86/BIOS/src/mbr.asm
 
-vbr.bin: boot/src/vbr.asm
-	$(AS) -f bin -o vbr.bin boot/src/vbr.asm
+vbr.bin: bootloader/x86/BIOS/src/vbr.asm
+	$(AS) -f bin -o vbr.bin bootloader/x86/BIOS/src/vbr.asm
 
-bootloadap.bin: boot/src/bootloadap.asm
-	$(AS) -f bin -o bootloadap.bin boot/src/bootloadap.asm
+bootloadap.bin: bootloader/x86/BIOS/src/bootloadap.asm
+	$(AS) -f bin -o bootloadap.bin bootloader/x86/BIOS/src/bootloadap.asm
 
-bootload16.bin: boot/src/bootload16.asm
-	$(AS) -f bin -o bootload16.bin boot/src/bootload16.asm
+bootload16.bin: bootloader/x86/BIOS/src/bootload16.asm
+	$(AS) -f bin -o bootload16.bin bootloader/x86/BIOS/src/bootload16.asm
 
 bootload32.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
 	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_OBJS) $(CSUPPORT_OBJS)
@@ -109,6 +109,6 @@ clean:
 	rm x86/kernel/src/*.o
 	rm kernel/src/*.o
 	rm csupport/src/*.o
-	rm boot/src/*.o
+	rm bootloader/x86/BIOS/src/*.o
 	rm *.bin
 

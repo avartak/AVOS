@@ -18,7 +18,7 @@ These functions are implemented in assembly code. Take a look at bios.asm to see
 #ifndef BOOT_BIOS_H
 #define BOOT_BIOS_H
 
-#include <boot/include/defs.h>
+#include <bootloader/x86/BIOS/include/defs.h>
 
 struct BIOS_Registers {
     uint32_t eax;

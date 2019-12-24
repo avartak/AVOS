@@ -1,6 +1,6 @@
-#include <boot/include/system.h>
-#include <boot/include/bios.h>
-#include <boot/include/multiboot.h>
+#include <bootloader/x86/BIOS/include/system.h>
+#include <bootloader/x86/BIOS/include/bios.h>
+#include <bootloader/x86/BIOS/include/multiboot.h>
 #include <csupport/include/string.h>
 
 uint32_t System_StoreAPMInfo(uint32_t addr) {

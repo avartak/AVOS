@@ -1,8 +1,8 @@
 #ifndef BOOT_MULTIBOOT_H
 #define BOOT_MULTIBOOT_H
 
-#include <boot/include/defs.h>
-#include <boot/include/elf.h>
+#include <bootloader/x86/BIOS/include/defs.h>
+#include <bootloader/x86/BIOS/include/elf.h>
 
 #define MULTIBOOT_TAG_ALIGN                        8
 #define MULTIBOOT_TAG_TYPE_END                     0

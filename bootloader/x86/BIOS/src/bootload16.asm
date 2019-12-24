@@ -22,7 +22,7 @@
 
 ; First let us include some definitions of constants
 
-%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
+%include "bootloader/x86/BIOS/include/bootinfo.inc"                     ; Common boot related information 
 
 AVBL32_ADDRESS          equ BOOTLOADER_ADDRESS+0x200                    ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
@@ -93,7 +93,7 @@ AVBL:
 
 	; Code to enable the A20 line
 
-	%include "boot/src/a20.asm"
+	%include "bootloader/x86/BIOS/src/a20.asm"
 
 	EnableA20:
 	call  A20_Enable

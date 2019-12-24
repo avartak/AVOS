@@ -1,4 +1,6 @@
-%include "boot/include/bootinfo.inc"                                    ; Common boot related information 
+; Common boot related information 
+
+%include "bootloader/x86/BIOS/include/bootinfo.inc"
 
 ORG 0
 
