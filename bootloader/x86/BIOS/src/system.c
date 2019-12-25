@@ -10,26 +10,26 @@ uint32_t System_StoreAPMInfo(uint32_t addr) {
 	BIOS_ClearRegistry(&BIOS_regs);
 	
 	BIOS_ClearRegistry(&BIOS_regs);
-	BIOS_regs.eax = 0x00005300;
+	BIOS_regs.ax = 0x5300;
 	BIOS_Interrupt(0x15, &BIOS_regs);
 	
 	if ((BIOS_regs.flags & 1) == 1) return addr;
-	if ((char)((BIOS_regs.ebx & 0xFF00) >> 8) != 'P' || (char)(BIOS_regs.ebx & 0xFF) != 'M') return addr;
+	if ((char)(BIOS_regs.bh) != 'P' || (char)(BIOS_regs.bl) != 'M') return addr;
 	
 	// If APM support is detected then save the APM version and flags
-	uint16_t version = BIOS_regs.eax & 0xFFFF;
-	uint16_t flags   = BIOS_regs.ecx & 0xFFFF;
+	uint16_t version = BIOS_regs.ax;
+	uint16_t flags   = BIOS_regs.cx;
 	
 	// First disconnect from an APM interface
-	BIOS_regs.eax = 0x00005304;
+	BIOS_regs.ax = 0x5304;
 	BIOS_Interrupt(0x15, &BIOS_regs);
-	if ((BIOS_regs.flags & 1) == 1 || (BIOS_regs.eax & 0xFF00 >> 8) != 3) return addr;
+	if ((BIOS_regs.flags & 1) == 1 || BIOS_regs.ah != 3) return addr;
 	
 	// Now connect to a 32-bit APM interface
 	BIOS_ClearRegistry(&BIOS_regs);
-	BIOS_regs.eax = 0x00005303;
+	BIOS_regs.ax = 0x5303;
 	BIOS_Interrupt(0x15, &BIOS_regs);
-	if ((BIOS_regs.flags & 1) == 1) return addr;
+	if (BIOS_regs.flags & 1) return addr;
 	
 	/*
 		 AX : Real mode segment denoting the base address for a 32-bit code segment expected by APM (shift left by 4 bits to get the actual base address)
@@ -43,14 +43,14 @@ uint32_t System_StoreAPMInfo(uint32_t addr) {
 	// Save the APM interface information
 	struct Multiboot_APM_Interface* apm_info = (struct Multiboot_APM_Interface*)addr;
 	apm_info->version     =  version;
-	apm_info->cseg        =  BIOS_regs.eax & 0xFFFF;
+	apm_info->cseg        =  BIOS_regs.ax;
 	apm_info->offset      =  BIOS_regs.ebx; 
-	apm_info->cseg_16     =  BIOS_regs.ecx & 0xFFFF;
-	apm_info->dseg        =  BIOS_regs.edx & 0xFFFF;
+	apm_info->cseg_16     =  BIOS_regs.cx;
+	apm_info->dseg        =  BIOS_regs.dx;
 	apm_info->flags       =  flags;
-	apm_info->cseg_len    =  BIOS_regs.esi & 0xFFFF;
+	apm_info->cseg_len    =  BIOS_regs.si;
 	apm_info->cseg_16_len = (BIOS_regs.esi & 0xFFFF0000) >> 0x10;
-	apm_info->dseg_len    =  BIOS_regs.edi & 0xFFFF;
+	apm_info->dseg_len    =  BIOS_regs.di;
 	
 	return addr + 20;
 

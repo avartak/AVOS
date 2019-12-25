@@ -7,14 +7,14 @@ bool DiskIO_CheckForBIOSExtensions(uint8_t drive) {
 
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
-	
-	BIOS_regs.eax   = 0x4100;
-	BIOS_regs.ebx   = 0x55AA;
-	BIOS_regs.edx   = drive;
+
+	BIOS_regs.ax = 0x4100;
+	BIOS_regs.bx = 0x55AA;
+	BIOS_regs.dx = drive;
 	
 	BIOS_Interrupt(0x13, &BIOS_regs);
 	
-	if ((BIOS_regs.flags & 1) == 1 || BIOS_regs.ebx != 0xAA55 || (BIOS_regs.ecx & 1) == 0) return false;
+	if ((BIOS_regs.flags & 1) == 1 || BIOS_regs.bx != 0xAA55 || (BIOS_regs.cx & 1) == 0) return false;
 	return true;
 }
 
@@ -23,10 +23,10 @@ bool DiskIO_GetDiskGeometry(uint8_t drive, struct DiskIO_Geometry* geometry) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x4800;
-	BIOS_regs.edx   = drive;
-	BIOS_regs.esi   = (uint32_t)geometry & 0xF;
-	BIOS_regs.ds    = (uint32_t)geometry >> 4;
+	BIOS_regs.ax = 0x4800;
+	BIOS_regs.dx = drive;
+	BIOS_regs.si = (uint32_t)geometry & 0xF;
+	BIOS_regs.ds = (uint32_t)geometry >> 4;
 	
 	BIOS_Interrupt(0x13, &BIOS_regs);
 	
@@ -60,10 +60,10 @@ uint32_t DiskIO_ReadFromDisk(uint8_t drive, uint32_t mem_start_addr, uint64_t di
 	uint32_t bytes_read = 0;
 	uint8_t* dst = (uint8_t*)mem_start_addr;
 	for (uint32_t i = 0; i < num_sectors; i++) {
-		BIOS_regs.eax = 0x4200;
-		BIOS_regs.edx = drive;
-		BIOS_regs.esi = (uint32_t)(&dap) &  0xF;
-		BIOS_regs.ds  = (uint32_t)(&dap) >> 4;
+		BIOS_regs.ax = 0x4200;
+		BIOS_regs.dx = drive;
+		BIOS_regs.si = (uint32_t)(&dap) &  0xF;
+		BIOS_regs.ds = (uint32_t)(&dap) >> 4;
 		
 		BIOS_Interrupt(0x13, &BIOS_regs);
 		if ((BIOS_regs.flags & 1) == 1) break;

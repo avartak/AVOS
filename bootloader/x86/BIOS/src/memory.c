@@ -14,7 +14,7 @@ uint32_t Memory_StoreBasicInfo(uint32_t addr) {
 	
 	BIOS_Interrupt(0x12, &BIOS_regs);
 	if ((BIOS_regs.flags & 1) == 1) return addr;
-	mem[0] = BIOS_regs.eax & 0xFFFF;
+	mem[0] = BIOS_regs.ax;
 	if (mem[0] == 0) return addr;
 	
 	// To get the size of upper memory (above the 1 MB limit placed by the 20-bit real addressing) we first try INT 0x15, AX=0xE801
@@ -23,15 +23,15 @@ uint32_t Memory_StoreBasicInfo(uint32_t addr) {
 	// If CX contains zero before and after the routine, check AX/BX instead
 	mem[1] = 0;
 	BIOS_ClearRegistry(&BIOS_regs);
-	BIOS_regs.eax = 0xE801;
+	BIOS_regs.ax = 0xE801;
 	BIOS_Interrupt(0x15, &BIOS_regs);
-	if ((BIOS_regs.flags & 1) == 0 && (BIOS_regs.eax & 0xFF00) != 0x8600 && (BIOS_regs.eax & 0xFF00) != 0x8000) {
-		if ((BIOS_regs.ecx & 0xFFFF) != 0) {
-			mem[1] += (BIOS_regs.ecx & 0xFFFF) + (BIOS_regs.edx & 0xFFFF)*0x40;
+	if ((BIOS_regs.flags & 1) == 0 && BIOS_regs.ah != 0x86 && BIOS_regs.ah != 0x80) {
+		if ((BIOS_regs.cx) != 0) {
+			mem[1] += BIOS_regs.cx + BIOS_regs.dx*0x40;
 			return addr + 8;
 		}
-		else if ((BIOS_regs.eax & 0xFFFF) != 0) {
-			mem[1] += (BIOS_regs.eax & 0xFFFF) + (BIOS_regs.ebx & 0xFFFF)*0x40;
+		else if (BIOS_regs.ax != 0) {
+			mem[1] += BIOS_regs.ax + BIOS_regs.bx*0x40;
 			return addr + 8;
 		}
 	}
@@ -39,11 +39,11 @@ uint32_t Memory_StoreBasicInfo(uint32_t addr) {
 	// If INT 0x15, AX=0xE801 didn't work, we try INT 0x15, AX=0x88
 	// This function may stop itself at 15 MB
 	BIOS_ClearRegistry(&BIOS_regs);
-	BIOS_regs.eax = 0x88;
+	BIOS_regs.ax = 0x88;
 	BIOS_Interrupt(0x15, &BIOS_regs);
 	
 	if ((BIOS_regs.flags & 1) == 1) return addr;
-	mem[1] = (BIOS_regs.eax & 0xFFFF);
+	mem[1] = BIOS_regs.ax;
 	return addr + 8;
 }
 
@@ -69,13 +69,13 @@ uint32_t Memory_StoreE820Info(uint32_t addr) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.edi = (addr & 0xF);
-	BIOS_regs.es  = (addr >> 4);
+	BIOS_regs.di = (uint16_t)(addr & 0xF);
+	BIOS_regs.es = (uint16_t)(addr >> 4);
 	
 	while (true) {
-		BIOS_regs.eax = 0x0000E820;
-		BIOS_regs.ecx = 0x00000018;
-		BIOS_regs.edx = 0x534D4150;
+		BIOS_regs.eax  = 0xE820;
+		BIOS_regs.ecx  = 0x0018;
+		BIOS_regs.edx  = 0x534D4150;
 		current_entry->acpi3 = 1;
 		
 		BIOS_Interrupt(0x15, &BIOS_regs);

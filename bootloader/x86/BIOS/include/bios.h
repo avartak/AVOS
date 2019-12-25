@@ -21,18 +21,68 @@ These functions are implemented in assembly code. Take a look at bios.asm to see
 #include <bootloader/x86/BIOS/include/defs.h>
 
 struct BIOS_Registers {
-    uint32_t eax;
-    uint32_t ebx;
-    uint32_t ecx;
-    uint32_t edx;
-    uint32_t esi;
-    uint32_t edi;
-    uint32_t ebp;
-    uint32_t esp;
+	union {
+    	uint32_t eax;
+		uint16_t ax;
+		struct {
+			uint8_t al;
+			uint8_t ah;
+		}__attribute__((packed));
+	};
+
+    union {
+        uint32_t ebx;
+        uint16_t bx;
+        struct {
+            uint8_t bl;
+            uint8_t bh;
+        }__attribute__((packed));
+    };
+
+    union {
+        uint32_t ecx;
+        uint16_t cx;
+        struct {
+            uint8_t cl;
+            uint8_t ch;
+        }__attribute__((packed));
+    };
+
+    union {
+        uint32_t edx;
+        uint16_t dx;
+        struct {
+            uint8_t dl;
+            uint8_t dh;
+        }__attribute__((packed));
+    };
+
+    union {
+        uint32_t esi;
+        uint16_t si;
+    };
+
+    union {
+        uint32_t edi;
+        uint16_t di;
+    };
+
+    union {
+        uint32_t ebp;
+        uint16_t bp;
+    };
+
+    union {
+        uint32_t esp;
+        uint16_t sp;
+    };
+
     uint16_t  ds;
     uint16_t  es;
     uint16_t  ss;
+
     uint16_t flags;
+
 }__attribute__((packed));
 
 extern void BIOS_Interrupt(uint32_t interrupt, struct BIOS_Registers* regs);

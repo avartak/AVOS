@@ -94,7 +94,7 @@ char Console_ReadChar() {
 	
 	BIOS_Interrupt(0x16, &BIOS_regs);
 	if (BIOS_regs.flags & 1) return 0;
-	else return BIOS_regs.eax & 0xFF;
+	else return BIOS_regs.al;
 
 }
 

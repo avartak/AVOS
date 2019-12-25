@@ -14,13 +14,13 @@ uint32_t VBE_StoreInfo(uint32_t addr) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x00004F00;
-	BIOS_regs.edi   = (addr & 0xF);
-	BIOS_regs.es    = (addr >> 4);
+	BIOS_regs.ax = 0x4F00;
+	BIOS_regs.di = (uint16_t)(addr & 0xF);
+	BIOS_regs.es = (uint16_t)(addr >> 4);
 	
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F) return addr;
+	if (BIOS_regs.ax != 0x4F) return addr;
 	if ((vinfo->signature)[0] != 'V' || (vinfo->signature)[1] != 'E' || (vinfo->signature)[2] != 'S' || (vinfo->signature)[3] != 'A') return addr;
 	
 	return addr + sizeof(struct VBE_Info);
@@ -34,14 +34,14 @@ bool VBE_GetModeInfo(uint16_t mode, uint32_t addr) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x00004F01;
-	BIOS_regs.ecx   = mode;
-	BIOS_regs.edi   = (addr & 0xF);
-	BIOS_regs.es    = (addr >> 4);
+	BIOS_regs.ax = 0x4F01;
+	BIOS_regs.cx = mode;
+	BIOS_regs.di = (uint16_t)(addr & 0xF);
+	BIOS_regs.es = (uint16_t)(addr >> 4);
 	
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F) return false;
+	if (BIOS_regs.ax != 0x4F) return false;
 	else return true;
 }
 
@@ -53,12 +53,12 @@ bool VBE_SetMode(uint16_t mode) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x00004F02;
-	BIOS_regs.ebx   = mode;
+	BIOS_regs.ax = 0x4F02;
+	BIOS_regs.bx = mode;
 	
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F) return false;
+	if (BIOS_regs.ax != 0x4F) return false;
 	else return true;
 }
 
@@ -68,10 +68,10 @@ uint16_t VBE_GetCurrentMode() {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x00004F03;
+	BIOS_regs.ax = 0x4F03;
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F) return 0xFFFF;
+	if (BIOS_regs.ax != 0x4F) return 0xFFFF;
 	else return (uint16_t)BIOS_regs.ebx;
 }
 
@@ -83,12 +83,12 @@ uint32_t VBE_StorePModeInfo(uint32_t addr) {
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
 	
-	BIOS_regs.eax   = 0x00004F0A;
-	BIOS_regs.ebx   = 0;
+	BIOS_regs.ax = 0x4F0A;
+	BIOS_regs.bx = 0;
 	
 	BIOS_Interrupt(0x10, &BIOS_regs);
 	
-	if (BIOS_regs.eax != 0x4F || (BIOS_regs.flags & 1) == 1) return addr;
+	if (BIOS_regs.ax != 0x4F || (BIOS_regs.flags & 1) == 1) return addr;
 	pminfo->segment = (uint16_t)BIOS_regs.es;
 	pminfo->offset  = (uint16_t)BIOS_regs.edi;
 	pminfo->length  = (uint16_t)BIOS_regs.ecx;
