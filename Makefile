@@ -10,7 +10,7 @@ NASM_OUTPUT_FORMAT=elf$(ARCH)
 LD_EMULATION=elf_i386
 
 AFLAGS=-f $(NASM_OUTPUT_FORMAT)
-CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra -Werror -std=c99 -I $(INCDIR) -m$(ARCH) -T linkkern.ld -lgcc
+CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra -Werror -std=c11 -I $(INCDIR) -m$(ARCH) -T linkkern.ld -lgcc
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
