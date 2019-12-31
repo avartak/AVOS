@@ -28,7 +28,7 @@ https://wiki.osdev.org/Text_Mode_Cursor
 #ifndef BOOT_CONSOLE_H
 #define BOOT_CONSOLE_H
 
-#include <bootloader/x86/BIOS/include/defs.h>
+#include <bootloader/include/defs.h>
 
 #define CONSOLE_VGA_TEXT_BUFFER    0xB8000
 #define CONSOLE_VGA_NUM_LINES      25

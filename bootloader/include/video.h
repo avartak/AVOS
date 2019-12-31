@@ -1,7 +1,7 @@
 #ifndef BOOT_VIDEO_H
 #define BOOT_VIDEO_H
 
-#include <bootloader/x86/BIOS/include/defs.h>
+#include <bootloader/include/defs.h>
 
 struct VBE_Info {
     char     signature[4];

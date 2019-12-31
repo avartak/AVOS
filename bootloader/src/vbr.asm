@@ -11,7 +11,7 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-%include "bootloader/x86/BIOS/include/bootinfo.inc"        ; Common boot related information 
+%include "bootloader/include/bootinfo.inc"                 ; Common boot related information 
 
 MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 

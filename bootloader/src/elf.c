@@ -1,4 +1,4 @@
-#include <bootloader/x86/BIOS/include/elf.h>
+#include <bootloader/include/elf.h>
 #include <csupport/include/string.h>
 
 bool Elf32_IsValidELF(uint32_t image) {

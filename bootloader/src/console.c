@@ -1,6 +1,6 @@
-#include <bootloader/x86/BIOS/include/console.h>
-#include <bootloader/x86/BIOS/include/bios.h>
-#include <bootloader/x86/BIOS/include/ioports.h>
+#include <bootloader/include/console.h>
+#include <bootloader/include/bios.h>
+#include <bootloader/include/ioports.h>
 
 uint16_t* Console_Screen = (uint16_t*)CONSOLE_VGA_TEXT_BUFFER;
 

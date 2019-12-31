@@ -38,7 +38,7 @@
 
 ; First let us include some definitions of constants
 
-%include "bootloader/x86/BIOS/include/bootinfo.inc" ; Common boot related information 
+%include "bootloader/include/bootinfo.inc"          ; Common boot related information 
 
 MBR_SIZE                equ 0x0200                  ; Size of the MBR
 MBR_RELOC_ADDRESS       equ 0x0600                  ; This is where the MBR relocates itself to before loading the VBR 
@@ -272,7 +272,7 @@ Disk_Signature:
 
 Partition_Table:                                    ; [Everything below to be edited by MBR software]
 
-Partition_Table_Entry1:                             ; Constants for this partition table entry are defined in bootloader/x86/BIOS/include/bootinfo.inc
+Partition_Table_Entry1:                             ; Constants for this partition table entry are defined in bootloader/include/bootinfo.inc
 .Status              db PARTITION_ATTRIBUTES        ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
 .Head_Start          db 0                           ; 3 bytes corresponding to the CHS of the starting sector of the partition
 .Sector_Start        db 0

@@ -1,7 +1,7 @@
 #ifndef BOOT_DISKIO_H
 #define BOOT_DISKIO_H
 
-#include <bootloader/x86/BIOS/include/defs.h>
+#include <bootloader/include/defs.h>
 
 #define DISKIO_MAX_SECTOR_SIZE             0x1000
 #define DISKIO_DISK_ADDRESS_PACKET_SIZE    0x10

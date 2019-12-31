@@ -1,9 +1,9 @@
-#include <bootloader/x86/BIOS/include/multiboot.h>
-#include <bootloader/x86/BIOS/include/diskio.h>
-#include <bootloader/x86/BIOS/include/memory.h>
-#include <bootloader/x86/BIOS/include/video.h>
-#include <bootloader/x86/BIOS/include/console.h>
-#include <bootloader/x86/BIOS/include/system.h>
+#include <bootloader/include/multiboot.h>
+#include <bootloader/include/diskio.h>
+#include <bootloader/include/memory.h>
+#include <bootloader/include/video.h>
+#include <bootloader/include/console.h>
+#include <bootloader/include/system.h>
 #include <csupport/include/string.h>
 
 bool Multiboot_CheckForValidMBI(uint32_t mbi_addr) {
