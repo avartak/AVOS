@@ -25,8 +25,8 @@ https://wiki.osdev.org/Text_Mode_Cursor
 
 */
 
-#ifndef BOOT_CONSOLE_H
-#define BOOT_CONSOLE_H
+#ifndef BOOTLOADER_CONSOLE_H
+#define BOOTLOADER_CONSOLE_H
 
 #include <bootloader/include/defs.h>
 

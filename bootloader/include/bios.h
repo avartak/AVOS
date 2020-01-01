@@ -15,8 +15,8 @@ These functions are implemented in assembly code. Take a look at bios.asm to see
 
 */
 
-#ifndef BOOT_BIOS_H
-#define BOOT_BIOS_H
+#ifndef BOOTLOADER_BIOS_H
+#define BOOTLOADER_BIOS_H
 
 #include <bootloader/include/defs.h>
 

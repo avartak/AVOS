@@ -1,5 +1,5 @@
-#ifndef BOOT_SYSTEM_H
-#define BOOT_SYSTEM_H
+#ifndef BOOTLOADER_SYSTEM_H
+#define BOOTLOADER_SYSTEM_H
 
 #include <bootloader/include/defs.h>
 

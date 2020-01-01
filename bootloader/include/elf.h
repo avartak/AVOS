@@ -1,5 +1,5 @@
-#ifndef BOOT_ELF_H
-#define BOOT_ELF_H
+#ifndef BOOTLOADER_ELF_H
+#define BOOTLOADER_ELF_H
 
 #include <bootloader/include/defs.h>
 

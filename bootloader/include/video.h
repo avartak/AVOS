@@ -1,5 +1,5 @@
-#ifndef BOOT_VIDEO_H
-#define BOOT_VIDEO_H
+#ifndef BOOTLOADER_VIDEO_H
+#define BOOTLOADER_VIDEO_H
 
 #include <bootloader/include/defs.h>
 

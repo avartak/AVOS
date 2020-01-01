@@ -1,5 +1,5 @@
-#ifndef BOOT_DEFS_H
-#define BOOT_DEFS_H
+#ifndef BOOTLOADER_DEFS_H
+#define BOOTLOADER_DEFS_H
 
 #include <stdint.h>
 #include <stddef.h>

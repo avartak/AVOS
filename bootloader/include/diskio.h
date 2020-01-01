@@ -1,5 +1,5 @@
-#ifndef BOOT_DISKIO_H
-#define BOOT_DISKIO_H
+#ifndef BOOTLOADER_DISKIO_H
+#define BOOTLOADER_DISKIO_H
 
 #include <bootloader/include/defs.h>
 

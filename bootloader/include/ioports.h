@@ -1,5 +1,5 @@
-#ifndef BOOT_IOPORTS_H
-#define BOOT_IOPORTS_H
+#ifndef BOOTLOADER_IOPORTS_H
+#define BOOTLOADER_IOPORTS_H
 
 #include <stdint.h>
 

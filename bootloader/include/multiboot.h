@@ -1,5 +1,5 @@
-#ifndef BOOT_MULTIBOOT_H
-#define BOOT_MULTIBOOT_H
+#ifndef BOOTLOADER_MULTIBOOT_H
+#define BOOTLOADER_MULTIBOOT_H
 
 #include <bootloader/include/defs.h>
 #include <bootloader/include/elf.h>

@@ -11,8 +11,8 @@ These functions are used for mapping the system RAM
 */
 
 
-#ifndef BOOT_MEMORY_H
-#define BOOT_MEMORY_H
+#ifndef BOOTLOADER_MEMORY_H
+#define BOOTLOADER_MEMORY_H
 
 #include <bootloader/include/defs.h>
 #include <bootloader/include/multiboot.h>
