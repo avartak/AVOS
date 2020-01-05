@@ -1,5 +1,5 @@
 #include <bootloader/include/elf.h>
-#include <csupport/include/string.h>
+#include <bootloader/include/string.h>
 
 bool Elf32_IsValidELF(uint32_t image) {
 

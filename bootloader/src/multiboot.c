@@ -4,7 +4,7 @@
 #include <bootloader/include/video.h>
 #include <bootloader/include/console.h>
 #include <bootloader/include/system.h>
-#include <csupport/include/string.h>
+#include <bootloader/include/string.h>
 
 bool Multiboot_CheckForValidMBI(uint32_t mbi_addr) {
 

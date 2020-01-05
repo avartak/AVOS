@@ -14,18 +14,19 @@ CFLAGS=-ffreestanding -fno-builtin -fno-stack-protector -nostdlib -Wall -Wextra 
 LDFLAGS_BOOT=-m $(LD_EMULATION) -T linkboot.ld
 LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
-BOOT=bootloader/src
+BOOT=bootloader
 BOOT_OBJS=\
-$(BOOT)/bootloader.s.o \
-$(BOOT)/a20.s.o \
-$(BOOT)/bios.s.o \
-$(BOOT)/diskio.c.o \
-$(BOOT)/memory.c.o  \
-$(BOOT)/video.c.o  \
-$(BOOT)/console.c.o  \
-$(BOOT)/system.c.o  \
-$(BOOT)/elf.c.o \
-$(BOOT)/multiboot.c.o
+$(BOOT)/initial/src/bootloader.s.o \
+$(BOOT)/initial/src/a20.s.o \
+$(BOOT)/src/bios.s.o \
+$(BOOT)/src/diskio.c.o \
+$(BOOT)/src/memory.c.o  \
+$(BOOT)/src/video.c.o  \
+$(BOOT)/src/console.c.o  \
+$(BOOT)/src/system.c.o  \
+$(BOOT)/src/elf.c.o \
+$(BOOT)/src/multiboot.c.o \
+$(BOOT)/src/string.c.o
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
@@ -73,20 +74,20 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
-modulelist.bin: kernel/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin kernel/src/modulelist.asm
+mbr.bin: bootloader/initial/src/mbr.asm
+	$(AS) -f bin -o mbr.bin bootloader/initial/src/mbr.asm
 
-mbr.bin: bootloader/src/mbr.asm
-	$(AS) -f bin -o mbr.bin bootloader/src/mbr.asm
-
-vbr.bin: bootloader/src/vbr.asm
-	$(AS) -f bin -o vbr.bin bootloader/src/vbr.asm
+vbr.bin: bootloader/initial/src/vbr.asm
+	$(AS) -f bin -o vbr.bin bootloader/initial/src/vbr.asm
 
 bootloader.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin $(BOOT_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin $(BOOT_OBJS)
 
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)
+
+modulelist.bin: kernel/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin kernel/src/modulelist.asm
 
 %.s.o: %.asm
 	$(AS) $(AFLAGS) -o $@ $<
@@ -101,6 +102,7 @@ clean:
 	rm x86/kernel/src/*.o
 	rm kernel/src/*.o
 	rm csupport/src/*.o
+	rm bootloader/initial/src/*.o
 	rm bootloader/src/*.o
 	rm *.bin
 
