@@ -156,7 +156,7 @@ section .text
 BITS 32
 
 	; Switch all registers to protected mode
-
+	
 	ProtectedMode:
 	mov   ax, GDT.Data32
 	mov   ds, ax
@@ -165,41 +165,41 @@ BITS 32
 	mov   gs, ax
 	mov   ss, ax
 	mov   esp, STACK_TOP
-
-    ; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
-   
-    mov   [Kernel_Info.boot_drive_ID],   dl
-    mov   [Kernel_Info.boot_partition], esi
-    mov   [Kernel_Info.pnpbios_ptr],    edi
-    mov   [Kernel_Info.blocklist_ptr],  ebx
-   
-    ; Boot OS 
-   
+	
+	; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
+	
+	mov   [Kernel_Info.boot_drive_ID],   dl
+	mov   [Kernel_Info.boot_partition], esi
+	mov   [Kernel_Info.pnpbios_ptr],    edi
+	mov   [Kernel_Info.blocklist_ptr],  ebx
+	
+	; Boot OS 
+	
 	extern Multiboot_Boot
-
-    push  Kernel_Info
-    push  Multiboot_MBI
-    call  Multiboot_Boot
-    add   esp, 0x8
-    test  al, al
-    jz    ProtectedMode.hltloop
-   
-    ; Store the pointer to the boot information table in EBX
-   
-    mov   ebx, Multiboot_MBI
-   
-    ; Store the Multiboot2 bootloader magic value in EAX
-   
-    mov   eax, 0x36d76289
-   
-    ; Jump to the kernel
-
-    jmp   [Kernel_Info.entry]
-
-    .hltloop:
-    cli
-    hlt
-    jmp   .hltloop
+	
+	push  Kernel_Info
+	push  Multiboot_MBI
+	call  Multiboot_Boot
+	add   esp, 0x8
+	test  al, al
+	jz    ProtectedMode.hltloop
+	
+	; Store the pointer to the boot information table in EBX
+	
+	mov   ebx, Multiboot_MBI
+	
+	; Store the Multiboot2 bootloader magic value in EAX
+	
+	mov   eax, 0x36d76289
+	
+	; Jump to the kernel
+	
+	jmp   [Kernel_Info.entry]
+	
+	.hltloop:
+	cli
+	hlt
+	jmp   .hltloop
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,17 +232,17 @@ GDT:
 
 global Kernel_Info
 Kernel_Info:
-    .boot_drive_ID     dd 0
-    .boot_partition    dd 0
-    .pnpbios_ptr       dd 0
-    .blocklist_ptr     dd 0
-    .start             dd 0
-    .size              dd 0
-    .bss_size          dd 0
-    .multiboot_header  dd 0
-    .entry             dd 0
-    .file_addr         dd 0
-    .file_size         dd 0
+	.boot_drive_ID     dd 0
+	.boot_partition    dd 0
+	.pnpbios_ptr       dd 0
+	.blocklist_ptr     dd 0
+	.start             dd 0
+	.size              dd 0
+	.bss_size          dd 0
+	.multiboot_header  dd 0
+	.entry             dd 0
+	.file_addr         dd 0
+	.file_size         dd 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
