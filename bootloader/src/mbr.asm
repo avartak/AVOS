@@ -43,6 +43,7 @@
 MBR_SIZE                equ 0x0200                  ; Size of the MBR
 MBR_RELOC_ADDRESS       equ 0x0600                  ; This is where the MBR relocates itself to before loading the VBR 
 STACK_TOP               equ 0x7C00                  ; Top of the stack used by the MBR
+PARTITION_TABLE_OFFSET  equ 0x01BE                  ; Offset of the start of the partition table in the MBR (or some VBRs) : byte 446
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
@@ -272,17 +273,17 @@ Disk_Signature:
 
 Partition_Table:                                    ; [Everything below to be edited by MBR software]
 
-Partition_Table_Entry1:                             ; Constants for this partition table entry are defined in bootloader/include/bootinfo.inc
-.Status              db PARTITION_ATTRIBUTES        ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
+Partition_Table_Entry1:                             ; [All entries to be edited by MBR software]
+.Status              db 0x80                        ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
 .Head_Start          db 0                           ; 3 bytes corresponding to the CHS of the starting sector of the partition
 .Sector_Start        db 0
 .Cylinder_Start      db 0
-.Type                db PARTITION_TYPE              ; Partition type - set to 0 in our case
+.Type                db 0                           ; Partition type - set to 0 in our case
 .Head_End            db 0                           ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
 .Sector_End          db 0
 .Cylinder_End        db 0
 .LBA_Start           dd PARTITION_START_LBA         ; LBA of the starting sector
-.LBA_Sectors         dd PARTITION_SIZE              ; Number of sectors in the partition
+.LBA_Sectors         dd 0xFFFFFFFF                  ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0
@@ -324,7 +325,7 @@ Partition_Table_Entry4:
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times BOOT_SIGNATURE_OFFSET-($-$$) db 0 
+times MBR_SIZE-2-($-$$)   db 0 
 
 ; The last two bytes of the boot sector need to have the following boot signature for BIOS to consider it to be valid
 

@@ -60,7 +60,7 @@ AVBL:
 	.Reserved1            dw 0
 	.Reserved2            dd 0
 	
-	.Block1_LBA           dq 0x1800+PARTITION_START_LBA
+	.Block1_LBA           dq 0x1800+PARTITION_START_LBA 
 	.Block1_Num_Sectors   dd 1
 	
 	; Pad the remaining bytes up to AVBL+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)

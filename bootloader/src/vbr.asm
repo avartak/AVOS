@@ -13,6 +13,8 @@
 
 %include "bootloader/include/bootinfo.inc"                 ; Common boot related information 
 
+VBR_SIZE               equ 0x200                           ; Size of the VBR
+
 MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 
 GEOM_TABLE_SIZE        equ 0x1A                            ; Size of the disk geometry table
@@ -233,15 +235,9 @@ VBR:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Padding of zeroes till offset 0x200-2-0x40 = 446 : location of the VBR partition table (if any)
-
-times PARTITION_TABLE_OFFSET-($-$$)   db 0
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times BOOT_SIGNATURE_OFFSET-($-$$)    db 0 
+times VBR_SIZE-($-$$)     db 0 
 
 ; The last two bytes need to have the following boot signature -- MBR code typically checks for it
 
