@@ -22,10 +22,7 @@
 
 ; First let us include some definitions of constants
 
-%include "bootloader/include/bootinfo.inc"                              ; Common boot related information 
-
-SEG32_CODE              equ 0x08                                        ; 32-bit code segment
-SEG32_DATA              equ 0x10                                        ; 32-bit data segment
+%include "bootloader/include/bootinfo.inc"
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
@@ -73,35 +70,32 @@ AVBL:
 
 	Code:
 
-	; Expect the stack to be appropriately set up when control is handed over here
 	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
 	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
-	; Save DS:SI in ESI, ES:DI in EDI, blocklist pointer to the kernel and kernel modules in EBX
+	; To pass on to the protected mode, save DS:SI in ESI, ES:DI in EDI, blocklist pointer to the kernel and kernel modules in EBX
 
-    xor   eax, eax
+	movzx esi, si
+	xor   eax, eax
+	mov   ax, ds
+	shl   eax, 4
+	add   esi, eax
 
-	push  si
-    xor   esi, esi
-    pop   ax
-    mov   si, ds
-    shl   esi, 4
-    add   esi, eax
-
-	push  di
-    xor   edi, edi
-    pop   ax
-    mov   di, es
-    shl   edi, 4
-    add   edi, eax
+	movzx edi, di
+	xor   eax, eax
+	mov   ax, es
+	shl   eax, 4
+	add   esi, eax
 
 	xor   ebx, ebx
     mov   ebx, AVBL
 
-	; Set all the segment registers to the base address we want (0x0000)
+	; Set all the segment registers to the base address we want (0x0000), and set up the stack pointer
 	
 	xor   ax, ax
 	mov   ds, ax	
 	mov   es, ax	
+	mov   ss, ax
+	mov   sp, STACK_TOP
 	jmp   0x0000:EnableA20
 
 	; Code to enable the A20 line
@@ -143,7 +137,7 @@ AVBL:
 
 	; Load a valid GDT (See the GDT description at the end)
 
-	lgdt  [GDT_Desc]
+	lgdt  [GDT.Pointer]
 	
 	; Enter protected mode by setting bit 0 of the CR0 register, and making a long-jump using a 32-bit code segment (which switches CS to protected mode)
 
@@ -151,7 +145,7 @@ AVBL:
 	or    al , 1
 	mov   cr0, eax
 
-	jmp   SEG32_CODE:ProtectedMode
+	jmp   GDT.Code32:ProtectedMode
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,12 +158,13 @@ BITS 32
 	; Switch all registers to protected mode
 
 	ProtectedMode:
-	mov   ax, SEG32_DATA
+	mov   ax, GDT.Data32
 	mov   ds, ax
 	mov   es, ax
 	mov   fs, ax
 	mov   gs, ax
 	mov   ss, ax
+	mov   esp, STACK_TOP
 
     ; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
    
@@ -219,14 +214,18 @@ A20EnableErr   db 'A20 line not enabled', 0
 align 8
 
 GDT:
-    dq 0
-    dq 0x00CF9A000000FFFF
-    dq 0x00CF92000000FFFF
-    dq 0x000F9A000000FFFF
-    dq 0x000F92000000FFFF
-
-GDT_Desc:
-    dw GDT_Desc - GDT - 1
+	.Null   : equ $-GDT 
+	dq 0
+    .Code32 : equ $-GDT 
+	dq 0x00CF9A000000FFFF
+    .Data32 : equ $-GDT 
+	dq 0x00CF92000000FFFF
+    .Code16 : equ $-GDT 
+	dq 0x000F9A000000FFFF
+    .Data16 : equ $-GDT 
+	dq 0x000F92000000FFFF
+	.Pointer:
+	dw $-GDT-1
     dd GDT
 
 ; Kernel loading information

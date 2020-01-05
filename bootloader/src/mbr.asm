@@ -40,11 +40,6 @@
 
 %include "bootloader/include/bootinfo.inc"          ; Common boot related information 
 
-MBR_SIZE                equ 0x0200                  ; Size of the MBR
-MBR_RELOC_ADDRESS       equ 0x0600                  ; This is where the MBR relocates itself to before loading the VBR 
-STACK_TOP               equ 0x7C00                  ; Top of the stack used by the MBR
-PARTITION_TABLE_OFFSET  equ 0x01BE                  ; Offset of the start of the partition table in the MBR (or some VBRs) : byte 446
-
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
 ORG MBR_RELOC_ADDRESS
@@ -101,7 +96,8 @@ MBR:
 	; Identify the active partition
 
 	mov   cx, 4
-	mov   bx, MBR+PARTITION_TABLE_OFFSET
+	;mov   bx, MBR+MBR_PART_TABLE_OFFSET
+	mov   bx, Partition_Table
 	GetActivePartition:
 	mov   al, [bx]
 	cmp   al, 0x80
@@ -263,7 +259,7 @@ Messages:
 
 ; Padding of zeroes till we reach (near) the start of the partition tables [there are 6 bytes before the partition table containing some ID information]
 
-times PARTITION_TABLE_OFFSET-6-($-$$)     db 0
+times MBR_PART_TABLE_OFFSET-6-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

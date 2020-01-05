@@ -13,18 +13,6 @@
 
 %include "bootloader/include/bootinfo.inc"                 ; Common boot related information 
 
-VBR_SIZE               equ 0x200                           ; Size of the VBR
-
-MAX_SECTORS_READ       equ 0x7F                            ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
-
-GEOM_TABLE_SIZE        equ 0x1A                            ; Size of the disk geometry table
-GEOM_TABLE_START       equ VBR_ADDRESS-GEOM_TABLE_SIZE     ; Start location of the disk geometry table (just behind the VBR)
-GEOM_TABLE_SECTOR_SIZE equ GEOM_TABLE_START + 0x18         ; Location of the word containing the sector size in bytes
-
-STACK_TOP              equ GEOM_TABLE_START                ; Top of the stack
-
-BLOCK_SIZE             equ 0xC                             ; Size of an entry in the blocklist
-
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 
 ORG VBR_ADDRESS
@@ -63,6 +51,7 @@ VBR:
 
 	.Block1_LBA           dq 0x8+PARTITION_START_LBA
 	.Block1_Num_Sectors   dd 0x40
+	.Block_Size:          equ $-BlockList.Block1_LBA
 
 	; Pad the remaining bytes up to VBR+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
 
@@ -116,13 +105,11 @@ VBR:
 
 	; Save the disk geometry, and check that the sector size is the same as that specified in the blocklist
 
-	mov   ax, GEOM_TABLE_SIZE
-	mov   [GEOM_TABLE_START], ax
-	mov   si, GEOM_TABLE_START
+	mov   si, DGP
 	mov   ah, 0x48
 	int   0x13
 	jc    HaltSystem
-	mov   ax, [GEOM_TABLE_SECTOR_SIZE]	
+	mov   ax, [DGP.Bytes_Per_Sector]
 	cmp   ax, [BlockList.Sector_Size]
 	jne   HaltSystem
 
@@ -140,7 +127,7 @@ VBR:
 
 	DiskRead:
 	xor   eax, eax
-	mov   al, MAX_SECTORS_READ
+	mov   al, 0x7F                                         ; Maximum number of sectors that some BIOSes (e.g. Phoenix BIOS) will read with INT 0x13, AH=0x42
 	cmp   [di+8], eax
 	jg    PrepareRead
 	mov   eax, [di+8]
@@ -181,7 +168,7 @@ VBR:
 	mov   [DAP.Memory_Segment], ax
 	cmp   DWORD [di+8], 0
 	jne   DiskRead
-	add   di, BLOCK_SIZE
+	add   di, BlockList.Block_Size
 	jmp   ReadLoop
 	
 	; We reach here if the disk read was successful 
@@ -221,7 +208,7 @@ VBR:
 ; Inputs/variables needed by the VBR code
 
 	DAP:
-	.Size                 db 0x10         
+	.Size                 db DGP-DAP
 	.Unused1              db 0            
 	.Sectors_Count        db 1            
 	.Unused2              db 0            
@@ -229,6 +216,15 @@ VBR:
 	.Memory_Segment       dw 0
 	.Start_Sector         dq 0
 
+	DGP:
+	.Size                 dw DGP.DPTE_Ptr-DGP
+	.Flags                dw 0
+	.Cylinders            dd 0
+	.Heads                dd 0
+	.Sectors_Per_Track    dd 0
+	.Sectors              dq 0
+	.Bytes_Per_Sector     dw 0
+	.DPTE_Ptr             dd 0
 
 	Messages:
 	.DiskIOErr            db 'Boot error', 0
