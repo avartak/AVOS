@@ -1,10 +1,10 @@
-#include <bootloader/include/multiboot.h>
-#include <bootloader/include/diskio.h>
-#include <bootloader/include/memory.h>
-#include <bootloader/include/video.h>
-#include <bootloader/include/console.h>
-#include <bootloader/include/system.h>
-#include <bootloader/include/string.h>
+#include <bootloader/multiboot/include/multiboot.h>
+#include <bootloader/multiboot/include/diskio.h>
+#include <bootloader/multiboot/include/memory.h>
+#include <bootloader/multiboot/include/video.h>
+#include <bootloader/multiboot/include/console.h>
+#include <bootloader/multiboot/include/system.h>
+#include <bootloader/multiboot/include/string.h>
 
 bool Multiboot_CheckForValidMBI(uint32_t mbi_addr) {
 

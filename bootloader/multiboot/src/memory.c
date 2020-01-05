@@ -1,7 +1,7 @@
-#include <bootloader/include/memory.h>
-#include <bootloader/include/bios.h>
-#include <bootloader/include/multiboot.h>
-#include <bootloader/include/string.h>
+#include <bootloader/multiboot/include/memory.h>
+#include <bootloader/multiboot/include/bios.h>
+#include <bootloader/multiboot/include/multiboot.h>
+#include <bootloader/multiboot/include/string.h>
 
 uint32_t Memory_StoreBasicInfo(uint32_t addr) {
 

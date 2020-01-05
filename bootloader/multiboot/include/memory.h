@@ -14,8 +14,8 @@ These functions are used for mapping the system RAM
 #ifndef BOOTLOADER_MEMORY_H
 #define BOOTLOADER_MEMORY_H
 
-#include <bootloader/include/defs.h>
-#include <bootloader/include/multiboot.h>
+#include <bootloader/multiboot/include/defs.h>
+#include <bootloader/multiboot/include/multiboot.h>
 
 #define MEMORY_E820_ACPI3_FLAG           1
 #define MEMORY_E820_AVAILABLE            1

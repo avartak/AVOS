@@ -18,15 +18,15 @@ BOOT=bootloader
 BOOT_OBJS=\
 $(BOOT)/initial/src/bootloader.s.o \
 $(BOOT)/initial/src/a20.s.o \
-$(BOOT)/src/bios.s.o \
-$(BOOT)/src/diskio.c.o \
-$(BOOT)/src/memory.c.o  \
-$(BOOT)/src/video.c.o  \
-$(BOOT)/src/console.c.o  \
-$(BOOT)/src/system.c.o  \
-$(BOOT)/src/elf.c.o \
-$(BOOT)/src/multiboot.c.o \
-$(BOOT)/src/string.c.o
+$(BOOT)/multiboot/src/bios.s.o \
+$(BOOT)/multiboot/src/diskio.c.o \
+$(BOOT)/multiboot/src/memory.c.o  \
+$(BOOT)/multiboot/src/video.c.o  \
+$(BOOT)/multiboot/src/console.c.o  \
+$(BOOT)/multiboot/src/system.c.o  \
+$(BOOT)/multiboot/src/elf.c.o \
+$(BOOT)/multiboot/src/multiboot.c.o \
+$(BOOT)/multiboot/src/string.c.o
 
 CSUPPORT=csupport/src
 CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
@@ -103,6 +103,6 @@ clean:
 	rm kernel/src/*.o
 	rm csupport/src/*.o
 	rm bootloader/initial/src/*.o
-	rm bootloader/src/*.o
+	rm bootloader/multiboot/src/*.o
 	rm *.bin
 

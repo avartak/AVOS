@@ -1,7 +1,7 @@
 #ifndef BOOTLOADER_ELF_H
 #define BOOTLOADER_ELF_H
 
-#include <bootloader/include/defs.h>
+#include <bootloader/multiboot/include/defs.h>
 
 typedef uint16_t Elf32_Half;
 typedef uint32_t Elf32_Off;

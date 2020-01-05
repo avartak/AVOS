@@ -1,5 +1,5 @@
-#include <bootloader/include/diskio.h>
-#include <bootloader/include/bios.h>
+#include <bootloader/multiboot/include/diskio.h>
+#include <bootloader/multiboot/include/bios.h>
 
 uint8_t DiskIO_LowMemoryBuffer[DISKIO_MAX_SECTOR_SIZE];
 

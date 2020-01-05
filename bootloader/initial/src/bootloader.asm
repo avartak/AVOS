@@ -22,7 +22,7 @@
 
 ; First let us include some definitions of constants
 
-%include "bootloader/include/bootinfo.inc"
+%include "bootloader/initial/include/bootinfo.inc"
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 

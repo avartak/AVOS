@@ -11,7 +11,7 @@
 
 ; First let us include some definitions of constants that the VBR needs
 
-%include "bootloader/include/bootinfo.inc"                 ; Common boot related information 
+%include "bootloader/initial/include/bootinfo.inc"         ; Common boot related information 
 
 ; We need to tell the assembler that all labels need to be resolved relative to the memory address 0x7C00 in the binary code
 

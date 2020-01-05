@@ -38,7 +38,7 @@
 
 ; First let us include some definitions of constants
 
-%include "bootloader/include/bootinfo.inc"          ; Common boot related information 
+%include "bootloader/initial/include/bootinfo.inc"   ; Common boot related information 
 
 ; We need to tell the assembler that all labels need to be resolved relative to MBR_RELOC_ADDRESS in the binary code
 
@@ -68,8 +68,8 @@ MBR:
 
 	; BIOS stores system information in certain registers when control is transferred to the boot loader. Save these registers on the stack ; we will need to pass them on
 	
-	push  dx                                        ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
-	push  es                                        ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
+	push  dx                                         ; DL contains the boot drive ID and DH may contain the INT 0x13 support flag (bit 5)
+	push  es                                         ; ES:DI points to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support 
 	push  di
 
 	; We should initialize the segment registers to the base address values that we want to use (we use 0x0000)
@@ -83,7 +83,7 @@ MBR:
 	mov   cx, MBR_SIZE
 	mov   si, VBR_ADDRESS
 	mov   di, MBR_RELOC_ADDRESS
-	cld                                             ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
+	cld                                              ; Clear the direction flag so that MOVSB proceeds from low to high memory addresses
 	rep   movsb
 	jmp   0x0000:Start
 
@@ -113,7 +113,7 @@ MBR:
 	jmp   HaltSystem
 
 	LoadVBR:
-	push  bx                                        ; Save the start address of the active partition in the relocated MBR. This will eventually be passed on through DS:SI
+	push  bx                                         ; Save the start address of the active partition in the relocated MBR. This will eventually be passed on through DS:SI
 
 	; We don't have enough space to write a disk driver to load the VBR, so we will simply use routines provided by the BIOS
 	; We will first try the 'extended' INT 0x13 BIOS routines to read from disk using the LBA scheme
@@ -135,9 +135,9 @@ MBR:
 	; If BIOS extensions are supported we will use the INT 0x13, AH=0x42 BIOS routine to read sectors from disk using the LBA scheme 
 	; If BIOS extensions are not usable we fall back to the 'old' BIOS routine INT 0x13 AH=0x02 that reads from disk using the CHS scheme	
 
-	mov   ax, [bx+0x08]                             ; Save the LBA address of the start sector of the active partition in the Disk Address Packet used by extended INT 0x13 
+	mov   ax, [bx+0x08]                              ; Save the LBA address of the start sector of the active partition in the Disk Address Packet used by extended INT 0x13 
 	mov   [DAP.Start_Sector], ax
-	mov   ax, [bx+0x0A]                             ; We could have just copied the 4 bytes of LBA into EAX and moved them to the DAP
+	mov   ax, [bx+0x0A]                              ; We could have just copied the 4 bytes of LBA into EAX and moved them to the DAP
 	mov   [DAP.Start_Sector+0x02], ax
 
 	mov   bx, 0x55AA
@@ -234,21 +234,21 @@ times 218-($-$$)     db 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-times 2              db 0                           ; Saving 0x0000 word (seems to be suggested for a standard MBR)
-Original_Drive_ID    db 0x80                        ; Save the ID of the original drive on which the MBR is written [To be edited by MBR software]
-Disk_Time_Stamp:                                    ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours) [To be edited by MBR software]
+times 2              db 0                            ; Saving 0x0000 word (seems to be suggested for a standard MBR)
+Original_Drive_ID    db 0x80                         ; Save the ID of the original drive on which the MBR is written [To be edited by MBR software]
+Disk_Time_Stamp:                                     ; 3-bytes for the disk timestamp (1st byte seconds ; 2nd byte minutes ; 3rd byte hours) [To be edited by MBR software]
 times 3              db 0                         
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DAP:
-.Size                db 0x10                        ; Size of the DAP - this should always be 0x10
-.Unused1             db 0                           ; Reserved
-.Sectors_Count       db 1                           ; Number of sectors to read (we need to read just the one sector containing the VBR)
-.Unused2             db 0                           ; Reserved
-.Memory_Offset       dw VBR_ADDRESS                 ; Offset of the memory location where the data from disk will be copied to 
-.Memory_Segment      dw 0                           ; Segment address corresponding to the memory location where the data from disk will be copied to 
-.Start_Sector        dq 0                           ; Starting sector (in LBA) on disk for read
+.Size                db 0x10                         ; Size of the DAP - this should always be 0x10
+.Unused1             db 0                            ; Reserved
+.Sectors_Count       db 1                            ; Number of sectors to read (we need to read just the one sector containing the VBR)
+.Unused2             db 0                            ; Reserved
+.Memory_Offset       dw VBR_ADDRESS                  ; Offset of the memory location where the data from disk will be copied to 
+.Memory_Segment      dw 0                            ; Segment address corresponding to the memory location where the data from disk will be copied to 
+.Start_Sector        dq 0                            ; Starting sector (in LBA) on disk for read
 
 Messages:
 .NoActivePart        db 'No bootable partition found', 0
@@ -264,22 +264,22 @@ times MBR_PART_TABLE_OFFSET-6-($-$$)     db 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Disk_Signature:
-.UID                 dd 0                           ; unique disk ID [To be edited by MBR software]
-.Protection          dw 0                           ; 0x5A5A if copy protected, else 0x0000 [To be edited by MBR software]
+.UID                 dd 0                            ; unique disk ID [To be edited by MBR software]
+.Protection          dw 0                            ; 0x5A5A if copy protected, else 0x0000 [To be edited by MBR software]
 
-Partition_Table:                                    ; [Everything below to be edited by MBR software]
+Partition_Table:                                     ; [Everything below to be edited by MBR software]
 
-Partition_Table_Entry1:                             ; [All entries to be edited by MBR software]
-.Status              db 0x80                        ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
-.Head_Start          db 0                           ; 3 bytes corresponding to the CHS of the starting sector of the partition
+Partition_Table_Entry1:                              ; [All entries to be edited by MBR software]
+.Status              db 0x80                         ; Active partition has this byte set to 0x80, other partitions have this byte set to 0
+.Head_Start          db 0                            ; 3 bytes corresponding to the CHS of the starting sector of the partition
 .Sector_Start        db 0
 .Cylinder_Start      db 0
-.Type                db 0                           ; Partition type - set to 0 in our case
-.Head_End            db 0                           ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
+.Type                db 0                            ; Partition type - set to 0 in our case
+.Head_End            db 0                            ; 3 bytes corresponding to the CHS of the last sector of the partition (not used by us)
 .Sector_End          db 0
 .Cylinder_End        db 0
-.LBA_Start           dd PARTITION_START_LBA         ; LBA of the starting sector
-.LBA_Sectors         dd 0xFFFFFFFF                  ; Number of sectors in the partition
+.LBA_Start           dd PARTITION_START_LBA          ; LBA of the starting sector
+.LBA_Sectors         dd 0xFFFFFFFF                   ; Number of sectors in the partition
 
 Partition_Table_Entry2:
 .Status              db 0

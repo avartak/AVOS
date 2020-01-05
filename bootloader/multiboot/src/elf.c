@@ -1,5 +1,5 @@
-#include <bootloader/include/elf.h>
-#include <bootloader/include/string.h>
+#include <bootloader/multiboot/include/elf.h>
+#include <bootloader/multiboot/include/string.h>
 
 bool Elf32_IsValidELF(uint32_t image) {
 
