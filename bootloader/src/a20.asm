@@ -1,3 +1,5 @@
+section .text
+
 BITS 16
 
 ; Physical address given by reg:add combination is : [reg] x 0x10 + add
@@ -21,6 +23,7 @@ BITS 16
 ; If the line is enabled it returns
 ; Otherwise, it halts the computer
 
+global A20_Enable
 A20_Enable:
 
 	call A20_IsEnabled                                ; Check if A20 line is enabled

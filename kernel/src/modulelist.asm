@@ -1,7 +1,5 @@
 ; Common boot related information 
 
-%include "bootloader/include/bootinfo.inc"
-
 ORG 0
 
 BITS 16
@@ -16,10 +14,10 @@ MODLIST:
 	BlockList:
 	
 	.Address              dq 0
-	.Sector_Size          dw SECTOR_SIZE
+	.Sector_Size          dw 0x200
 	.Reserved             db 'KERNEL'
 	
-	.Block1_LBA           dq 0x800+PARTITION_START_LBA
+	.Block1_LBA           dq 0x800+0x800
 	.Block1_Num_Sectors   dd 0x800
 	
 	times 0x200-($-$$)    db 0

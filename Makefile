@@ -17,6 +17,7 @@ LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 BOOT=bootloader/src
 BOOT_OBJS=\
 $(BOOT)/bootloader.s.o \
+$(BOOT)/a20.s.o \
 $(BOOT)/bios.s.o \
 $(BOOT)/diskio.c.o \
 $(BOOT)/memory.c.o  \
@@ -72,8 +73,8 @@ avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=vbr.bin of=avos.iso seek=2048
 	dd conv=notrunc if=mbr.bin of=avos.iso
 
-modulelist.bin: bootloader/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin bootloader/src/modulelist.asm
+modulelist.bin: kernel/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin kernel/src/modulelist.asm
 
 mbr.bin: bootloader/src/mbr.asm
 	$(AS) -f bin -o mbr.bin bootloader/src/mbr.asm

@@ -76,13 +76,26 @@ AVBL:
 	; Expect the stack to be appropriately set up when control is handed over here
 	; Expect the boot drive ID in DL and the active partition table entry in the relocated MBR in DS:SI when control is transferred to the boot loader. 
 	; ES:DI may point to "$PnP" installation check structure for systems with Plug-and-Play BIOS or BBS support
-	; Save these registers on the stack
+	; Save DS:SI in ESI, ES:DI in EDI, blocklist pointer to the kernel and kernel modules in EBX
 
-	push  dx
-	push  es
-	push  di
-	push  ds
+    xor   eax, eax
+
 	push  si
+    xor   esi, esi
+    pop   ax
+    mov   si, ds
+    shl   esi, 4
+    add   esi, eax
+
+	push  di
+    xor   edi, edi
+    pop   ax
+    mov   di, es
+    shl   edi, 4
+    add   edi, eax
+
+	xor   ebx, ebx
+    mov   ebx, AVBL
 
 	; Set all the segment registers to the base address we want (0x0000)
 	
@@ -93,12 +106,12 @@ AVBL:
 
 	; Code to enable the A20 line
 
-	%include "bootloader/src/a20.asm"
+	extern A20_Enable
 
 	EnableA20:
 	call  A20_Enable
 	test  al, al
-	jnz   SaveInfo
+	jnz   EnablePMode
 
 	; Halt the system with an error message if A20 enable fails
 
@@ -118,29 +131,12 @@ AVBL:
 	hlt
 	jmp   .hltloop
 
-	; Save the boot drive ID in DL, the location of MBR's active partition in ESI, and information about "$PnP" installation check structure in EDI
-	; Save the pointer to the kernel code blocklist in EBX
 
-	SaveInfo:
-
-	xor   eax, eax
-
-	xor   esi, esi
-	pop   ax
-	pop   si
-	shl   esi, 4
-	add   esi, eax
-
-	xor   edi, edi
-	pop   ax
-	pop   di
-	shl   edi, 4
-	add   edi, eax
-
-	mov   ebx, AVBL
-	pop   dx
 
 	; Switch to protected mode
+
+	EnablePMode:
+
 	; First disable interrupts
 
 	cli
