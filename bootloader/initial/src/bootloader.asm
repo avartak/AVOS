@@ -216,17 +216,17 @@ align 8
 GDT:
 	.Null   : equ $-GDT 
 	dq 0
-    .Code32 : equ $-GDT 
+	.Code32 : equ $-GDT 
 	dq 0x00CF9A000000FFFF
-    .Data32 : equ $-GDT 
+	.Data32 : equ $-GDT 
 	dq 0x00CF92000000FFFF
-    .Code16 : equ $-GDT 
+	.Code16 : equ $-GDT 
 	dq 0x000F9A000000FFFF
-    .Data16 : equ $-GDT 
+	.Data16 : equ $-GDT 
 	dq 0x000F92000000FFFF
 	.Pointer:
 	dw $-GDT-1
-    dd GDT
+	dd GDT
 
 ; Kernel loading information
 
