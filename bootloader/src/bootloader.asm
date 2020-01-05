@@ -24,13 +24,12 @@
 
 %include "bootloader/include/bootinfo.inc"                              ; Common boot related information 
 
-AVBL32_ADDRESS          equ BOOTLOADER_ADDRESS+0x200                    ; Starting location in memory where the 32-bit part of AVBL is loaded
 SEG32_CODE              equ 0x08                                        ; 32-bit code segment
 SEG32_DATA              equ 0x10                                        ; 32-bit data segment
 
 ; Starting point of the bootloader in memory --> follows immediately after the 512 bytes of the VBR
 
-ORG BOOTLOADER_ADDRESS
+section .text
 
 ; We are still in 16-bit real mode
 
@@ -38,6 +37,7 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+global AVBL
 AVBL:
 
 	jmp   Code
@@ -104,21 +104,19 @@ AVBL:
 
 	mov   si, A20EnableErr
 
-	HaltSystem:
+	.printerr:
 	lodsb
 	test  al, al
 	jz    .hltloop
 	mov   ah, 0x0E
 	mov   bx, 0x0007
 	int   0x10
-	jmp   HaltSystem
+	jmp   .printerr
 	
 	.hltloop:
 	cli
 	hlt
 	jmp   .hltloop
-
-	A20EnableErr   db 'A20 line not enabled', 0
 
 	; Save the boot drive ID in DL, the location of MBR's active partition in ESI, and information about "$PnP" installation check structure in EDI
 	; Save the pointer to the kernel code blocklist in EBX
@@ -159,23 +157,11 @@ AVBL:
 
 	jmp   SEG32_CODE:ProtectedMode
 
-	; Description of the GDT is given at the end 
-
-	align 8
-	GDT:
-    dq 0
-    dq 0x00CF9A000000FFFF
-    dq 0x00CF92000000FFFF
-    dq 0x000F9A000000FFFF
-    dq 0x000F92000000FFFF
-
-	GDT_Desc:
-    dw GDT_Desc - GDT - 1
-    dd GDT
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; We are now in 32-bit protected mode
+
+section .text
 
 BITS 32
 
@@ -189,9 +175,92 @@ BITS 32
 	mov   gs, ax
 	mov   ss, ax
 
-	jmp   AVBL32_ADDRESS
+    ; We need to store the information passed on by the VBR into a kernel information structure to be used by the bootloader code (written in C)
+   
+    mov   [Kernel_Info.boot_drive_ID],   dl
+    mov   [Kernel_Info.boot_partition], esi
+    mov   [Kernel_Info.pnpbios_ptr],    edi
+    mov   [Kernel_Info.blocklist_ptr],  ebx
+   
+    ; Boot OS 
+   
+	extern Multiboot_Boot
 
-	times 0x200-($-$$) db 0
+    push  Kernel_Info
+    push  Multiboot_MBI
+    call  Multiboot_Boot
+    add   esp, 0x8
+    test  al, al
+    jz    ProtectedMode.hltloop
+   
+    ; Store the pointer to the boot information table in EBX
+   
+    mov   ebx, Multiboot_MBI
+   
+    ; Store the Multiboot2 bootloader magic value in EAX
+   
+    mov   eax, 0x36d76289
+   
+    ; Jump to the kernel
+
+    jmp   [Kernel_Info.entry]
+
+    .hltloop:
+    cli
+    hlt
+    jmp   .hltloop
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+section .data
+
+; Error messages 
+
+A20EnableErr   db 'A20 line not enabled', 0
+
+; Description of the GDT is given at the end 
+
+align 8
+
+GDT:
+    dq 0
+    dq 0x00CF9A000000FFFF
+    dq 0x00CF92000000FFFF
+    dq 0x000F9A000000FFFF
+    dq 0x000F92000000FFFF
+
+GDT_Desc:
+    dw GDT_Desc - GDT - 1
+    dd GDT
+
+; Kernel loading information
+
+global Kernel_Info
+Kernel_Info:
+    .boot_drive_ID     dd 0
+    .boot_partition    dd 0
+    .pnpbios_ptr       dd 0
+    .blocklist_ptr     dd 0
+    .start             dd 0
+    .size              dd 0
+    .bss_size          dd 0
+    .multiboot_header  dd 0
+    .entry             dd 0
+    .file_addr         dd 0
+    .file_size         dd 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+section .bss
+
+align 8
+
+; Multiboot information (MBI) table
+
+global Multiboot_MBI
+Multiboot_MBI:
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

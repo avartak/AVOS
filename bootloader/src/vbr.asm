@@ -237,7 +237,7 @@ VBR:
 
 ; Padding of zeroes till the end of the boot sector (barring the last two bytes that are reserved for the boot signature)
 
-times VBR_SIZE-($-$$)     db 0 
+times VBR_SIZE-2-($-$$)   db 0 
 
 ; The last two bytes need to have the following boot signature -- MBR code typically checks for it
 

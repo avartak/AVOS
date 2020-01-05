@@ -6,7 +6,7 @@ LD=$(shell which $(TARGET)-ld)
 AS=$(shell which nasm)
 
 ARCH=32
-NASM_OUTPUT_FORMAT=elf$(ARCH)
+NASM_OUTPUT_FORMAT=elf
 LD_EMULATION=elf_i386
 
 AFLAGS=-f $(NASM_OUTPUT_FORMAT)
@@ -16,7 +16,7 @@ LDFLAGS_KERN=-m $(LD_EMULATION) -T linkkern.ld
 
 BOOT=bootloader/src
 BOOT_OBJS=\
-$(BOOT)/bootload32.s.o \
+$(BOOT)/bootloader.s.o \
 $(BOOT)/bios.s.o \
 $(BOOT)/diskio.c.o \
 $(BOOT)/memory.c.o  \
@@ -81,18 +81,9 @@ mbr.bin: bootloader/src/mbr.asm
 vbr.bin: bootloader/src/vbr.asm
 	$(AS) -f bin -o vbr.bin bootloader/src/vbr.asm
 
-bootloadap.bin: bootloader/src/bootloadap.asm
-	$(AS) -f bin -o bootloadap.bin bootloader/src/bootloadap.asm
+bootloader.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
+	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin $(BOOT_OBJS) $(CSUPPORT_OBJS)
 
-bootload16.bin: bootloader/src/bootload16.asm
-	$(AS) -f bin -o bootload16.bin bootloader/src/bootload16.asm
-
-bootload32.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
-	$(LD) $(LDFLAGS_BOOT) -o bootload32.bin  $(BOOT_OBJS) $(CSUPPORT_OBJS)
-
-bootloader.bin: bootload16.bin bootload32.bin
-	cat bootload16.bin bootload32.bin > bootloader.bin
-	
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)
 
