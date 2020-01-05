@@ -87,7 +87,7 @@ BOOT:
 	add   esi, eax
 
 	xor   ebx, ebx
-    mov   ebx, BOOT
+	mov   ebx, BOOT
 
 	; Set all the segment registers to the base address we want (0x0000), and set up the stack pointer
 	
