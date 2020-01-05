@@ -18,7 +18,7 @@ These functions are implemented in assembly code. Take a look at bios.asm to see
 #ifndef BOOTLOADER_BIOS_H
 #define BOOTLOADER_BIOS_H
 
-#include <bootloader/multiboot/include/defs.h>
+#include <stdint.h>
 
 struct BIOS_Registers {
 	union {

@@ -1,7 +1,9 @@
 #ifndef BOOTLOADER_MULTIBOOT_H
 #define BOOTLOADER_MULTIBOOT_H
 
-#include <bootloader/multiboot/include/defs.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <bootloader/initial/include/bootdefs.h>
 #include <bootloader/multiboot/include/elf.h>
 
 #define MULTIBOOT_TAG_ALIGN                        8
@@ -345,9 +347,9 @@ extern bool     Multiboot_CreateEmptyMBI       (uint32_t mbi_addr);
 extern bool     Multiboot_TerminateTag         (uint32_t mbi_addr,   uint32_t tag_addr);
 extern uint32_t Multiboot_GetHeader            (uint32_t start_addr, uint32_t size);
 
-extern bool     Multiboot_LoadKernelFile       (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_LoadKernel           (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_LoadModules          (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
+extern bool     Multiboot_LoadKernelFile       (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_LoadKernel           (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_LoadModules          (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
 
 extern bool     Multiboot_SaveBootLoaderInfo   (uint32_t mbi_addr);
 extern bool     Multiboot_SaveBootCommand      (uint32_t mbi_addr);
@@ -356,12 +358,12 @@ extern bool     Multiboot_SaveBasicMemoryInfo  (uint32_t mbi_addr);
 extern bool     Multiboot_SaveAPMInfo          (uint32_t mbi_addr);
 extern bool     Multiboot_SaveSMBIOSInfo       (uint32_t mbi_addr);
 extern bool     Multiboot_SaveACPIInfo         (uint32_t mbi_addr, bool old);
-extern bool     Multiboot_SaveELFSectionHeaders(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_SaveBootDeviceInfo   (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_SaveGraphicsInfo     (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_SaveLoadBaseAddress  (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
-extern bool     Multiboot_SaveInfo             (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
+extern bool     Multiboot_SaveELFSectionHeaders(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_SaveBootDeviceInfo   (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_SaveGraphicsInfo     (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_SaveLoadBaseAddress  (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
+extern bool     Multiboot_SaveInfo             (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
 
-extern bool     Multiboot_Boot                 (uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info);
+extern bool     Multiboot_Boot                 (uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info);
 
 #endif

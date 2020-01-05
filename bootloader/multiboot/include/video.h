@@ -1,7 +1,8 @@
 #ifndef BOOTLOADER_VIDEO_H
 #define BOOTLOADER_VIDEO_H
 
-#include <bootloader/multiboot/include/defs.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 struct VBE_Info {
     char     signature[4];

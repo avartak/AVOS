@@ -1,7 +1,8 @@
 #ifndef BOOTLOADER_DISKIO_H
 #define BOOTLOADER_DISKIO_H
 
-#include <bootloader/multiboot/include/defs.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define DISKIO_MAX_SECTOR_SIZE             0x1000
 #define DISKIO_DISK_ADDRESS_PACKET_SIZE    0x10

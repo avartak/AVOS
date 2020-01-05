@@ -1,6 +1,5 @@
 #include <bootloader/multiboot/include/memory.h>
 #include <bootloader/multiboot/include/bios.h>
-#include <bootloader/multiboot/include/multiboot.h>
 #include <bootloader/multiboot/include/string.h>
 
 uint32_t Memory_StoreBasicInfo(uint32_t addr) {
@@ -95,7 +94,7 @@ uint32_t Memory_StoreE820Info(uint32_t addr) {
 
 uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_Entry* E820_Table, uint32_t E820_Table_size) {
 	uint32_t table_size  = 0;
-	struct Boot_Block64* table_ptr = (struct Boot_Block64*)(addr);
+	struct BootInfo_BlockRAM* table_ptr = (struct BootInfo_BlockRAM*)(addr);
 	table_ptr->address = 0;
 	table_ptr->size = 0;
 	
@@ -121,7 +120,7 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 		table_size++;
 		table_ptr->address = (table_ptr-1)->address + (table_ptr-1)->size;
 	}
-	table_ptr = (struct Boot_Block64*)(addr);
+	table_ptr = (struct BootInfo_BlockRAM*)(addr);
 	
 	// Adjust the entries on 4KB boundaries
 	if (page_align) {
@@ -138,12 +137,12 @@ uint32_t Memory_StoreInfo(uint32_t addr, bool page_align, struct Multiboot_E820_
 	// Remove 0-sized entries
 	for (uint32_t i = 0; i < table_size; i++) {
 		if (table_ptr[i].size == 0) {
-			memmove(table_ptr+i, table_ptr+i+1, (table_size-i-1)*sizeof(struct Boot_Block64));
+			memmove(table_ptr+i, table_ptr+i+1, (table_size-i-1)*sizeof(struct BootInfo_BlockRAM));
 			table_size--;
 		}
 	}
 	
-	return addr + table_size * sizeof(struct Boot_Block64);
+	return addr + table_size * sizeof(struct BootInfo_BlockRAM);
 }
 
 // Find the memory location either above or below a given address that conforms to a certain alignment
@@ -155,7 +154,7 @@ uint32_t Memory_AlignAddress(uint32_t addr, uint32_t align, bool above) {
 
 // Function to find a contiguous chunk of available memory either above or below a given address
 // The starting address of the chunk (which is returned by the function) may need to conform to a certain alignment if the 'align' paremeter is greater than 1
-uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint32_t align, struct Boot_Block64* mmap, uint32_t mmap_size) {
+uint32_t Memory_FindBlockAddress(uint32_t addr, bool above, uint32_t size, uint32_t align, struct BootInfo_BlockRAM* mmap, uint32_t mmap_size) {
 
 	if (size == 0) return MEMORY_32BIT_LIMIT;
 	if ( above && (addr == MEMORY_32BIT_LIMIT || addr + size < addr) ) return MEMORY_32BIT_LIMIT;

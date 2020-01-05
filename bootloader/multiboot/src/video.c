@@ -29,7 +29,7 @@ uint32_t VBE_StoreInfo(uint32_t addr) {
 // Get information about a certain video mode
 bool VBE_GetModeInfo(uint16_t mode, uint32_t addr) {
 
-	if (mode == 0xFFFF || addr == (uint32_t)MEMORY_NULL_PTR) return false;
+	if (mode == 0xFFFF) return false;
 	
 	struct BIOS_Registers BIOS_regs;
 	BIOS_ClearRegistry(&BIOS_regs);
@@ -107,8 +107,6 @@ uint32_t VBE_StorePModeInfo(uint32_t addr) {
 // Note : A video mode is a text mode if the 5th least significant bit of the attributes word is clear (graphics mode if it is set) 
 uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height) {
 
-	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
-	
 	struct VBE_Mode_Info VBE_ModeBuffer;
 	if (width == 0 && height == 0) {
 		for (uint32_t i = 0; video_modes[i] != 0xFFFF; i++) {
@@ -150,8 +148,6 @@ uint16_t VBE_GetTextMode(uint16_t* video_modes, uint32_t width, uint32_t height)
 // * We try to find any mode consistent with the width, height and depth attributes (0 means any)
 uint16_t VBE_GetMode(uint16_t* video_modes, uint32_t width, uint32_t height, uint32_t depth) {
 
-	if (video_modes == MEMORY_NULL_PTR) return 0xFFFF;
-	
 	struct VBE_Mode_Info VBE_ModeBuffer;
 	if (width == 0 && height == 0 && depth == 0) {
 		for (uint32_t i = 0; video_modes[i] != 0xFFFF; i++) {

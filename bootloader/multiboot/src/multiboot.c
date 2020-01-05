@@ -100,25 +100,25 @@ uint32_t Multiboot_GetHeader(uint32_t start_addr, uint32_t size) {
 
 }
 
-bool Multiboot_LoadKernelFile(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_LoadKernelFile(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	// Set up access to the memory map (so that we can find a good place to load the kernel file)
     struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
     if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
-    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uint32_t)mbi_name);
-    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
+    struct BootInfo_BlockRAM* mmap = (struct BootInfo_BlockRAM*)(0x10 + (uint32_t)mbi_name);
+    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct BootInfo_BlockRAM);
 
 	bool file_loaded = false;
 
 	// Load the kernel file in memory
-	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
+	struct BootInfo_BlockList128* blocklist_mst = (struct BootInfo_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
 	for (uint32_t i = 0; i < BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
 		for (uint32_t j = 0; j < blocklist_mst->blocks[i].num_sectors; j++) {
 			uint32_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uint32_t)blocklist, blocklist_mst->blocks[i].lba + j, 1);
 			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 			
-			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)(blocklist) - 1;
+			struct BootInfo_BlockList512* blocklist512 = (struct BootInfo_BlockList512*)(blocklist) - 1;
 			for (uint32_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
 				blocklist512++;
 				if (blocklist512->jump != 0x9001FDE9) continue;
@@ -170,13 +170,13 @@ bool Multiboot_LoadKernelFile(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_
 }
 
 	
-bool Multiboot_LoadKernel(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_LoadKernel(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
     // Set up access to the memory map
     struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
     if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
-    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uint32_t)mbi_name);
-    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
+    struct BootInfo_BlockRAM* mmap = (struct BootInfo_BlockRAM*)(0x10 + (uint32_t)mbi_name);
+    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct BootInfo_BlockRAM);
 
 	// Kernel load parameters
 	uint32_t file_addr    = kernel_info->file_addr;
@@ -281,7 +281,7 @@ bool Multiboot_LoadKernel(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info
 	
 }
 
-bool Multiboot_LoadModules(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_LoadModules(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	bool page_align = false;
 	
@@ -296,10 +296,10 @@ bool Multiboot_LoadModules(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_inf
 	
     struct Multiboot_Info_Tag* mbi_name = (struct Multiboot_Info_Tag*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_RAM_INFO);
     if (mbi_name == MEMORY_NULL_PTR || mbi_name->type == 0) return false;
-    struct Boot_Block64* mmap = (struct Boot_Block64*)(0x10 + (uint32_t)mbi_name);
-    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct Boot_Block64);
+    struct BootInfo_BlockRAM* mmap = (struct BootInfo_BlockRAM*)(0x10 + (uint32_t)mbi_name);
+    uint32_t mmap_size = (mbi_name->size - 0x10)/sizeof(struct BootInfo_BlockRAM);
 
-	struct Boot_BlockList128* blocklist_mst = (struct Boot_BlockList128*)kernel_info->blocklist_ptr;
+	struct BootInfo_BlockList128* blocklist_mst = (struct BootInfo_BlockList128*)kernel_info->blocklist_ptr;
 	uint8_t blocklist[0x1000];
 	uint32_t mod_addr = kernel_info->start + kernel_info->size;
 	for (uint32_t i = 0; i < BLOCKLIST_MAXBLOCKS128 && blocklist_mst->blocks[i].num_sectors > 0; i++) {
@@ -307,14 +307,14 @@ bool Multiboot_LoadModules(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_inf
 			uint32_t bytes_read = DiskIO_ReadFromDisk((uint8_t)(kernel_info->boot_drive_ID), (uint32_t)blocklist, blocklist_mst->blocks[i].lba + j, 1);
 			if (bytes_read == 0 || bytes_read != blocklist_mst->sector_size || bytes_read > 0x1000) return false;
 			
-			struct Boot_BlockList512* blocklist512 = (struct Boot_BlockList512*)blocklist - 1;
+			struct BootInfo_BlockList512* blocklist512 = (struct BootInfo_BlockList512*)blocklist - 1;
 			for (uint32_t s = 0; s < blocklist_mst->sector_size/0x200; s++) {
 				blocklist512++;
 				if (blocklist512->jump != 0x9001FDE9) continue;
 				char* marker = blocklist512->reserved;
 				if (marker[0] == 'K' && marker[1] == 'E' && marker[2] == 'R' && marker[3] == 'N' && marker[4] == 'E' && marker[5] == 'L') continue;
 				
-				struct Boot_BlockList272* blocklist272 = (struct Boot_BlockList272*)blocklist512;
+				struct BootInfo_BlockList272* blocklist272 = (struct BootInfo_BlockList272*)blocklist512;
 				uint32_t mod_size = 0;
 				for (uint32_t k = 0; k < BLOCKLIST_MAXBLOCKS272 && blocklist272->blocks[k].num_sectors > 0; k++) mod_size += blocklist272->blocks[k].num_sectors*blocklist272->sector_size;
 				if (mod_size == 0) continue;
@@ -402,7 +402,7 @@ bool Multiboot_SaveMemoryMaps(uint32_t mbi_addr) {
 	
 	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO;
-	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
+	mbi_mem_ram->entry_size = sizeof(struct BootInfo_BlockRAM);
 	mbi_mem_ram->entry_version = 0;
 	
 	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
@@ -414,7 +414,7 @@ bool Multiboot_SaveMemoryMaps(uint32_t mbi_addr) {
 	
 	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED;
-	mbi_mem_ram->entry_size = sizeof(struct Boot_Block64);
+	mbi_mem_ram->entry_size = sizeof(struct BootInfo_BlockRAM);
 	mbi_mem_ram->entry_version = 0;
 	
 	Multiboot_TerminateTag(mbi_addr, mem_ram_tag);
@@ -422,7 +422,7 @@ bool Multiboot_SaveMemoryMaps(uint32_t mbi_addr) {
 	return true;
 }
 
-bool Multiboot_SaveELFSectionHeaders(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_SaveELFSectionHeaders(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	struct Multiboot_Info_ELF_Sections* mbi_elf_shdr = (struct Multiboot_Info_ELF_Sections*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_ELF_SECTIONS);
 	if ((mbi_elf_shdr == MEMORY_NULL_PTR || mbi_elf_shdr->type != 0)) return false;
@@ -454,7 +454,7 @@ bool Multiboot_SaveBasicMemoryInfo(uint32_t mbi_addr) {
 	return true;
 }
 
-bool Multiboot_SaveBootDeviceInfo(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_SaveBootDeviceInfo(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	struct Multiboot_Info_BootDevice* mbi_bootdev = (struct Multiboot_Info_BootDevice*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_BOOTDEV);
 	if (mbi_bootdev == MEMORY_NULL_PTR || mbi_bootdev->type != 0) return false;
@@ -477,7 +477,7 @@ bool Multiboot_SaveBootDeviceInfo(uint32_t mbi_addr, struct Boot_KernelInfo* ker
 	return true;
 }
 
-bool Multiboot_SaveLoadBaseAddress(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_SaveLoadBaseAddress(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	struct Multiboot_Info_LoadBaseAddress* mbi_mem_base = (struct Multiboot_Info_LoadBaseAddress*)Multiboot_FindMBITagAddress(mbi_addr, MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR);
 	if (mbi_mem_base == MEMORY_NULL_PTR || mbi_mem_base->type != 0) return false;
@@ -493,7 +493,7 @@ bool Multiboot_SaveLoadBaseAddress(uint32_t mbi_addr, struct Boot_KernelInfo* ke
 }
 
 
-bool Multiboot_SaveGraphicsInfo(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_SaveGraphicsInfo(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	uint32_t multiboot_header_ptr = kernel_info->multiboot_header;
 	
@@ -673,7 +673,7 @@ bool Multiboot_SaveACPIInfo(uint32_t mbi_addr, bool old) {
 	}
 }
 
-bool Multiboot_SaveInfo(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_SaveInfo(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	uint32_t multiboot_header_ptr = kernel_info->multiboot_header;
 	
@@ -716,7 +716,7 @@ bool Multiboot_SaveInfo(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) 
 	return true;
 }
 
-bool Multiboot_Boot(uint32_t mbi_addr, struct Boot_KernelInfo* kernel_info) {
+bool Multiboot_Boot(uint32_t mbi_addr, struct BootInfo_KernelInfo* kernel_info) {
 
 	Console_PrintBanner();
 	
