@@ -34,8 +34,8 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-global AVBL
-AVBL:
+global BOOT
+BOOT:
 
 	jmp   Code
 	nop
@@ -60,7 +60,7 @@ AVBL:
 	.Block1_LBA           dq 0x1800+PARTITION_START_LBA 
 	.Block1_Num_Sectors   dd 1
 	
-	; Pad the remaining bytes up to AVBL+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
+	; Pad the remaining bytes up to BOOT+128 with zero -- 128 = 124 (blocklist) + 4 (JMP 2 bytes + 2 NOPs)
 	
 	times 128-($-$$)      db 0
 
@@ -87,7 +87,7 @@ AVBL:
 	add   esi, eax
 
 	xor   ebx, ebx
-    mov   ebx, AVBL
+    mov   ebx, BOOT
 
 	; Set all the segment registers to the base address we want (0x0000), and set up the stack pointer
 	

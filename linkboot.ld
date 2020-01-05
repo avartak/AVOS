@@ -1,5 +1,5 @@
 /* The designated entry point. */
-ENTRY(AVBL)
+ENTRY(BOOT)
 
 /* Output format */
 OUTPUT_FORMAT("binary")

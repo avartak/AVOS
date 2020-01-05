@@ -125,7 +125,7 @@ void Console_ReadCommand(char* buffer) {
 	uint8_t column = 0;
 	
 	Console_MakeCursorVisible();
-	Console_PrintString("[AVBL:]", line, column, CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK);	
+	Console_PrintString("[BOOT:]", line, column, CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK);	
 
 	uint8_t  start_line   = line;
 	uint8_t  start_column = (column += 7);
