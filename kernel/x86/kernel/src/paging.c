@@ -1,4 +1,4 @@
-#include <x86/kernel/include/paging.h>
+#include <kernel/x86/kernel/include/paging.h>
 
 uint32_t Paging_directory[0x400]__attribute__((aligned(0x1000)));
 uint32_t Paging_kerntable[0x400]__attribute__((aligned(0x1000)));

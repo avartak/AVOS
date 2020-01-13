@@ -1,7 +1,7 @@
 #include <kernel/include/timer.h>
 #include <kernel/include/memory.h>
 #include <kernel/include/interrupts.h>
-#include <x86/kernel/include/welcome.h>
+#include <kernel/x86/kernel/include/welcome.h>
 
 clock_t timerticks = 0;
 

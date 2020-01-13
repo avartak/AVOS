@@ -1,6 +1,6 @@
-#include <x86/drivers/include/keyboard.h>
-#include <x86/drivers/include/io.h>
-#include <x86/drivers/include/pic.h>
+#include <kernel/x86/drivers/include/keyboard.h>
+#include <kernel/x86/drivers/include/io.h>
+#include <kernel/x86/drivers/include/pic.h>
 #include <kernel/include/interrupts.h>
 #include <kernel/include/memory.h>
 

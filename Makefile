@@ -30,7 +30,7 @@ $(BOOT)/multiboot/src/string.c.o
 CLIB=kernel/clib/src
 CLIB_OBJS=$(CLIB)/string.c.o
 
-X86_KERNEL=x86/kernel/src
+X86_KERNEL=kernel/x86/kernel/src
 X86_KERNEL_OBJS=\
 $(X86_KERNEL)/multiboot.s.o \
 $(X86_KERNEL)/paging.s.o \
@@ -42,7 +42,7 @@ $(X86_KERNEL)/idt.c.o \
 $(X86_KERNEL)/gdt.c.o \
 $(X86_KERNEL)/paging.c.o
 
-X86_DRIVERS=x86/drivers/src
+X86_DRIVERS=kernel/x86/drivers/src
 X86_DRIVERS_OBJS=\
 $(X86_DRIVERS)/keyboard.c.o \
 $(X86_DRIVERS)/pit.c.o \
@@ -97,8 +97,8 @@ modulelist.bin: kernel/src/modulelist.asm
 .PHONY: clean
 
 clean:
-	rm x86/drivers/src/*.o
-	rm x86/kernel/src/*.o
+	rm kernel/x86/drivers/src/*.o
+	rm kernel/x86/kernel/src/*.o
 	rm kernel/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o

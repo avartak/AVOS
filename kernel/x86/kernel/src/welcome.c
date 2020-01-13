@@ -1,4 +1,4 @@
-#include <x86/kernel/include/welcome.h>
+#include <kernel/x86/kernel/include/welcome.h>
 
 uint32_t screen_line = 1;
 

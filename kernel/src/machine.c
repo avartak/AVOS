@@ -1,6 +1,6 @@
 #include <kernel/include/machine.h>
 #include <kernel/include/interrupts.h>
-#include <x86/drivers/include/pic.h>
+#include <kernel/x86/drivers/include/pic.h>
 
 void Interrupt_End(uint8_t interrupt) {
 

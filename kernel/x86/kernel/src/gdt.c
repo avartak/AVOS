@@ -1,4 +1,4 @@
-#include <x86/kernel/include/gdt.h>
+#include <kernel/x86/kernel/include/gdt.h>
 
 struct GDT_Entry      GDT_entries[6];
 struct GDT_Descriptor GDT_desc;
