@@ -1,5 +1,5 @@
-#ifndef CSUPPORT_STRING_H
-#define CSUPPORT_STRING_H
+#ifndef CLIB_STRING_H
+#define CLIB_STRING_H
 
 #include <stddef.h>
 

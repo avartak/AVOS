@@ -27,8 +27,8 @@ $(BOOT)/multiboot/src/elf.c.o \
 $(BOOT)/multiboot/src/multiboot.c.o \
 $(BOOT)/multiboot/src/string.c.o
 
-CSUPPORT=csupport/src
-CSUPPORT_OBJS=$(CSUPPORT)/string.c.o
+CLIB=kernel/clib/src
+CLIB_OBJS=$(CLIB)/string.c.o
 
 X86_KERNEL=x86/kernel/src
 X86_KERNEL_OBJS=\
@@ -79,11 +79,11 @@ mbr.bin: bootloader/initial/src/mbr.asm
 vbr.bin: bootloader/initial/src/vbr.asm
 	$(AS) -f bin -o vbr.bin bootloader/initial/src/vbr.asm
 
-bootloader.bin: $(BOOT_OBJS) $(CSUPPORT_OBJS)
+bootloader.bin: $(BOOT_OBJS) $(CLIB_OBJS)
 	$(LD) $(LDFLAGS_BOOT) -o bootloader.bin $(BOOT_OBJS)
 
-kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
-	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CSUPPORT_OBJS) $(CRTE) $(CRTN)
+kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CLIB_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
+	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CLIB_OBJS) $(CRTE) $(CRTN)
 
 modulelist.bin: kernel/src/modulelist.asm
 	$(AS) -f bin -o modulelist.bin kernel/src/modulelist.asm
@@ -100,7 +100,7 @@ clean:
 	rm x86/drivers/src/*.o
 	rm x86/kernel/src/*.o
 	rm kernel/src/*.o
-	rm csupport/src/*.o
+	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o
 	rm *.bin
