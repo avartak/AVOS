@@ -1,7 +1,7 @@
-#ifndef X86_KERNEL_GDT_H
-#define X86_KERNEL_GDT_H
+#ifndef KERNEL_INITIAL_GDT_H
+#define KERNEL_INITIAL_GDT_H
 
-#include <kernel/include/common.h>
+#include <kernel/common/include/defs.h>
 
 #define GDT_KERN_CODE_SEG_ACCESS  0x9A
 #define GDT_KERN_DATA_SEG_ACCESS  0x92

@@ -7,7 +7,6 @@ extern CRT_Initialize
 extern GDT_Initialize
 extern IDT_Initialize
 extern Welcome
-extern AVOS
 
 section .text
 
@@ -34,8 +33,6 @@ Start:
 	call  GDT_Initialize
 	call  IDT_Initialize
 	call  Welcome
-
-	jmp   AVOS
 
 	HaltSystem:
     cli
