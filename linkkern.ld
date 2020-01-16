@@ -6,7 +6,7 @@ SECTIONS
 {
 	/* Start of the kernel */
 	__kernel_load_addr   = 1M;
-	__higher_half_offset = 0xC0000000;
+	__higher_half_offset = 0x80000000;
 	. = __higher_half_offset + __kernel_load_addr;
 
 	/* Kernel code */	 
