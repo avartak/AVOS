@@ -2,13 +2,13 @@ BITS 32
 
 section .init
 
-global CRT_Initialize
-CRT_Initialize:
+global Initialize_CRT
+Initialize_CRT:
 	push ebp
 	mov  ebp, esp
 
 section .fini
-global CRT_Finish
-CRT_Finish:
+global Finish_CRT
+Finish_CRT:
 	push ebp
 	mov  ebp, esp

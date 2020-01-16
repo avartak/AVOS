@@ -33,14 +33,17 @@ CLIB_OBJS=$(CLIB)/src/string.c.o
 KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/initial/src/multiboot.s.o \
-$(KERNEL)/initial/src/paging.s.o \
-$(KERNEL)/initial/src/gdt.s.o \
-$(KERNEL)/initial/src/idt.s.o \
-$(KERNEL)/initial/src/interrupts.s.o \
+$(KERNEL)/initial/src/initialize.s.o \
+$(KERNEL)/initial/src/initialize.c.o \
 $(KERNEL)/initial/src/welcome.c.o \
-$(KERNEL)/initial/src/idt.c.o \
-$(KERNEL)/initial/src/gdt.c.o \
-$(KERNEL)/initial/src/paging.c.o
+$(KERNEL)/arch/src/functions.s.o \
+$(KERNEL)/arch/src/controlregs.s.o \
+$(KERNEL)/arch/src/gdt.s.o \
+$(KERNEL)/arch/src/gdt.c.o \
+$(KERNEL)/arch/src/interrupts.s.o \
+$(KERNEL)/arch/src/interrupts.c.o \
+$(KERNEL)/arch/src/flags.s.o \
+$(KERNEL)/arch/src/ioports.s.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
@@ -80,6 +83,7 @@ modulelist.bin: kernel/initial/src/modulelist.asm
 
 clean:
 	rm kernel/initial/src/*.o
+	rm kernel/arch/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

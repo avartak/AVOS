@@ -1,9 +1,14 @@
 #include <stddef.h>
+#include <kernel/arch/include/ioports.h>
 
 void Welcome() {
 
     // Video buffer
     char* screen = (char*)0xC00B8000;
+
+	// Make the cursoor invisible
+	X86_Outb(0x3D4, 0x0A);
+	X86_Outb(0x3D5, 0x20);
 
     // Clear screen
     size_t i = 0;
