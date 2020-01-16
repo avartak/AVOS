@@ -1,7 +1,10 @@
 #ifndef KERNEL_INITIALIZE_H
 #define KERNEL_INITIALIZE_H
 
-#include <kernel/common/include/defs.h>
+#include <stdint.h>
+#include <stddef.h>
+
+#include <kernel/initial/include/setup.h>
 #include <kernel/arch/include/paging.h>
 #include <kernel/arch/include/gdt.h>
 #include <kernel/arch/include/interrupts.h>

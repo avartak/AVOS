@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define X86_PAGING_PAGESIZE         0x1000
+#define X86_PAGING_EXTPAGESIZE      0x400000
 #define X86_PAGING_PGDIR_NENTRIES   0x400
 #define X86_PAGING_PGTAB_NENTRIES   0x400
 

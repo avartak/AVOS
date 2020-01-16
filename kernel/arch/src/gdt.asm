@@ -1,5 +1,4 @@
-GDT_KERN_CODE_SEG  equ 0x08
-GDT_KERN_DATA_SEG  equ 0x10
+%include "kernel/arch/include/gdt.inc"
 
 section .text
 
@@ -19,9 +18,9 @@ X86_GDT_LoadTaskRegister:
 
 global X86_GDT_LoadKernelSegments
 X86_GDT_LoadKernelSegments:
-    jmp  GDT_KERN_CODE_SEG:X86_GDT_LoadKernelSegments.reloadCS
+    jmp  X86_GDT_SEG_KERN_CODE:X86_GDT_LoadKernelSegments.reloadCS
     .reloadCS:
-    mov  dx, GDT_KERN_DATA_SEG
+    mov  dx, X86_GDT_SEG_KERN_DATA
     mov  ds, dx
     mov  es, dx
     mov  fs, dx

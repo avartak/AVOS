@@ -1,5 +1,4 @@
-KERNEL_STACK_PTR_OFFSET   equ 0x6000
-KERNEL_HIGHER_HALF_OFFSET equ 0xC0000000
+%include "kernel/initial/include/setup.inc"
 
 extern Initialize_Paging
 extern Initialize_SwitchToHigherHalf
