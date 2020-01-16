@@ -8,9 +8,6 @@
 #define X86_PAGING_PGDIR_NENTRIES   0x400
 #define X86_PAGING_PGTAB_NENTRIES   0x400
 
-#define X86_PAGING_PGDIR_IDX(x)     (x >> 22)
-#define X86_PAGING_PGTAB_IDX(x)     (x >> 12)
-
 #define X86_PAGING_PDE_PRESENT      1
 #define X86_PAGING_PDE_READWRITE    2
 #define X86_PAGING_PDE_USER         4
@@ -27,5 +24,11 @@
 #define X86_PAGING_PTE_ACCESSED     0x20
 #define X86_PAGING_PTE_DIRTY        0x40
 #define X86_PAGING_PTE_GLOBAL       0x100
+
+#define X86_PAGING_PGDIR_IDX(x)     ((uint32_t)(x) >> 22) & 0x3FF
+#define X86_PAGING_PGTAB_IDX(x)     ((uint32_t)(x) >> 12) & 0x3FF
+
+#define X86_PAGING_ROUNDUPPAGE(x)   (((uint32_t)(x)+X86_PAGING_PAGESIZE−1) & ~(X86_PAGING_PAGESIZE−1))
+#define X86_PAGING_ROUNDDOWNPAGE(x) ( (uint32_t)(x)                        & ~(X86_PAGING_PAGESIZE−1))
 
 #endif
