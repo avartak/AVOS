@@ -1,7 +1,7 @@
 %include "kernel/initial/include/setup.inc"
 
 extern Initialize_Paging
-extern Initialize_SwitchToHigherHalf
+extern Initialize_HigherHalfSwitch
 extern Initialize_CRT
 extern Initialize_GDT
 extern Initialize_IDT
@@ -26,7 +26,7 @@ Start:
 	mov   [BootInfo_Ptr-KERNEL_HIGHER_HALF_OFFSET], ebx
 
 	call  Initialize_Paging
-	call  Initialize_SwitchToHigherHalf
+	call  Initialize_HigherHalfSwitch
 	call  Initialize_GDT
 	call  Initialize_IDT
 	call  Initialize_CRT

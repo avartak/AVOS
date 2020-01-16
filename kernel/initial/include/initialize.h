@@ -15,7 +15,7 @@ extern struct X86_GDT_Descriptor Kernel_GDT_desc;
 extern struct X86_TSS            Kernel_TSS;
 
 extern void Initialize_Paging();
-extern void Initialize_SwitchToHigherHalf();
+extern void Initialize_HigherHalfSwitch();
 extern void Initialize_GDT();
 extern void Initialize_IDT();
 
