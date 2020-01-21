@@ -1,5 +1,5 @@
-#include <kernel/initial/include/initialize.h>
-#include <kernel/arch/include/controlregs.h>
+#include <kernel/initial/include/preinit.h>
+#include <kernel/arch/i386/include/controlregs.h>
 
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE)));
 
@@ -19,7 +19,7 @@ void Initialize_Paging() {
 	for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
 		pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
-	for (size_t i = KERNEL_MMAP_VIRTUAL_END; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
+	for (size_t i = KERNEL_MMAP_HIMEMIO_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
 		pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
 	

@@ -61,6 +61,7 @@ extern void     Console_MakeCursorInvisible();
 extern void     Console_SetCursorPosition(uint8_t line, uint8_t column);
 extern void     Console_PrintNum(uint32_t num, bool hex, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
 extern void     Console_PrintChar(char c, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
+extern void     Console_PrintChars(const char* string, uint32_t num, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
 extern void     Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color);
 extern char     Console_ReadChar();
 

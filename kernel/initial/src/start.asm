@@ -6,6 +6,7 @@ extern Initialize_CRT
 extern Initialize_GDT
 extern Initialize_IDT
 extern Welcome
+extern APIC_SaveInfo
 
 section .text
 
@@ -31,6 +32,7 @@ Start:
 	call  Initialize_IDT
 	call  Initialize_CRT
 	call  Welcome
+	call  APIC_SaveInfo
 
 	HaltSystem:
     cli

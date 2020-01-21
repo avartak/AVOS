@@ -1,6 +1,8 @@
+#include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <kernel/initial/include/setup.h>
-#include <kernel/arch/include/ioports.h>
+#include <kernel/arch/i386/include/ioports.h>
 
 void Welcome() {
 
@@ -41,4 +43,57 @@ void Welcome() {
     return;
 
 }
+
+void PrintNum(uint32_t num, uint8_t line, uint8_t column) {
+
+    uint32_t pos   = line * 80 + column;
+    uint16_t color = 0x0F00;
+    char digits[]  = "0123456789ABCDEF";
+
+    uint16_t* screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
+
+    if (num < 10) {
+		screen[pos] = color | digits[num];
+		return;
+	}
+
+    screen[pos++] = color | '0';
+    screen[pos++] = color | 'x';
+
+    bool start_printing = false;
+    for (uint32_t divisor = 0x10000000; divisor > 0; divisor /= 0x10) {
+        if (!start_printing && num/divisor > 0) start_printing = true;
+        if (start_printing) screen[pos++] = color | digits[num/divisor];
+        num %= divisor;
+    }
+
+}
+
+void PrintChar(char c, uint8_t line, uint8_t column) {
+
+    uint16_t* screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
+    uint32_t pos = line * 80 + column;
+
+    screen[pos] = 0x0F00 | c;
+
+}
+
+void PrintChars(const char* string, uint32_t num, uint8_t line, uint8_t column) {
+
+    uint16_t* screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
+    uint32_t pos = line * 80 + column;
+
+    for (uint32_t i = 0; i < num; i++) screen[pos+i] = 0x0F00 | string[i];
+
+}
+
+void PrintString(const char* string, uint8_t line, uint8_t column) {
+
+    uint16_t* screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
+    uint32_t pos = line * 80 + column;
+
+    for (uint32_t i = 0; string[i] != 0; i++) screen[pos+i] = 0x0F00 | string[i];
+
+}
+
 

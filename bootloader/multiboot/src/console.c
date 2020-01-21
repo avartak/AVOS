@@ -56,7 +56,15 @@ void Console_PrintChar(char c, uint8_t line, uint8_t column, uint8_t fore_color,
 
 }
 
-// Print a character starting at a certain location on screen
+// Print a string of characters of a certain length at a certain location on screen
+void Console_PrintChars(const char* string, uint32_t num, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color) {
+
+	uint32_t pos = line * CONSOLE_VGA_NUM_COLUMNS + column;
+	for (uint32_t i = 0; i < num; i++) Console_Screen[pos+i] = Console_Attribute(fore_color, back_color) | string[i]; 
+
+}
+
+// Print a null-terminated at a certain location on screen
 void Console_PrintString(const char* string, uint8_t line, uint8_t column, uint8_t fore_color, uint8_t back_color) {
 
 	uint32_t pos = line * CONSOLE_VGA_NUM_COLUMNS + column;

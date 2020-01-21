@@ -33,17 +33,19 @@ CLIB_OBJS=$(CLIB)/src/string.c.o
 KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/initial/src/multiboot.s.o \
-$(KERNEL)/initial/src/initialize.s.o \
-$(KERNEL)/initial/src/initialize.c.o \
+$(KERNEL)/initial/src/preinit.s.o \
+$(KERNEL)/initial/src/preinit.c.o \
 $(KERNEL)/initial/src/welcome.c.o \
-$(KERNEL)/arch/src/functions.s.o \
-$(KERNEL)/arch/src/controlregs.s.o \
-$(KERNEL)/arch/src/gdt.s.o \
-$(KERNEL)/arch/src/gdt.c.o \
-$(KERNEL)/arch/src/interrupts.s.o \
-$(KERNEL)/arch/src/interrupts.c.o \
-$(KERNEL)/arch/src/flags.s.o \
-$(KERNEL)/arch/src/ioports.s.o
+$(KERNEL)/arch/i386/src/functions.s.o \
+$(KERNEL)/arch/i386/src/controlregs.s.o \
+$(KERNEL)/arch/i386/src/gdt.s.o \
+$(KERNEL)/arch/i386/src/gdt.c.o \
+$(KERNEL)/arch/i386/src/interrupts.s.o \
+$(KERNEL)/arch/i386/src/interrupts.c.o \
+$(KERNEL)/arch/i386/src/flags.s.o \
+$(KERNEL)/arch/i386/src/ioports.s.o \
+$(KERNEL)/arch/apic/src/pic.c.o \
+$(KERNEL)/arch/apic/src/apic.c.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
@@ -83,7 +85,8 @@ modulelist.bin: kernel/initial/src/modulelist.asm
 
 clean:
 	rm kernel/initial/src/*.o
-	rm kernel/arch/src/*.o
+	rm kernel/arch/i386/src/*.o
+	rm kernel/arch/apic/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

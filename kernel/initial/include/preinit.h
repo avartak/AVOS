@@ -1,13 +1,13 @@
-#ifndef KERNEL_INITIALIZE_H
-#define KERNEL_INITIALIZE_H
+#ifndef KERNEL_PREINIT_H
+#define KERNEL_PREINIT_H
 
 #include <stdint.h>
 #include <stddef.h>
 
 #include <kernel/initial/include/setup.h>
-#include <kernel/arch/include/paging.h>
-#include <kernel/arch/include/gdt.h>
-#include <kernel/arch/include/interrupts.h>
+#include <kernel/arch/i386/include/paging.h>
+#include <kernel/arch/i386/include/gdt.h>
+#include <kernel/arch/i386/include/interrupts.h>
 
 extern uint32_t                  Kernel_pagedirectory[]__attribute__((aligned(X86_PAGING_PAGESIZE)));
 extern struct X86_GDT_Entry      Kernel_GDT[];

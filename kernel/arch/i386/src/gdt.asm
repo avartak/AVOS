@@ -1,4 +1,4 @@
-%include "kernel/arch/include/gdt.inc"
+%include "kernel/arch/i386/include/gdt.inc"
 
 section .text
 

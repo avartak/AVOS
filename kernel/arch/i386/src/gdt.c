@@ -1,4 +1,4 @@
-#include <kernel/arch/include/gdt.h>
+#include <kernel/arch/i386/include/gdt.h>
 
 void X86_GDT_SetupEntry(struct X86_GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
 
