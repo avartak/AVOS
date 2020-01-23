@@ -32,10 +32,9 @@ CLIB_OBJS=$(CLIB)/src/string.c.o
 
 KERNEL=kernel
 KERNEL_OBJS=\
-$(KERNEL)/initial/src/multiboot.s.o \
-$(KERNEL)/initial/src/preinit.s.o \
-$(KERNEL)/initial/src/preinit.c.o \
-$(KERNEL)/initial/src/welcome.c.o \
+$(KERNEL)/arch/initial/src/preinit.s.o \
+$(KERNEL)/arch/initial/src/preinit.c.o \
+$(KERNEL)/arch/initial/src/welcome.c.o \
 $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \
 $(KERNEL)/arch/i386/src/gdt.s.o \
@@ -44,14 +43,21 @@ $(KERNEL)/arch/i386/src/interrupts.s.o \
 $(KERNEL)/arch/i386/src/interrupts.c.o \
 $(KERNEL)/arch/i386/src/flags.s.o \
 $(KERNEL)/arch/i386/src/ioports.s.o \
+$(KERNEL)/arch/i386/src/trap.s.o \
+$(KERNEL)/arch/i386/src/trap.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
-$(KERNEL)/arch/apic/src/apic.c.o
+$(KERNEL)/arch/apic/src/apic.c.o \
+$(KERNEL)/arch/smp/src/smp.c.o \
+$(KERNEL)/arch/timer/src/pit.c.o \
+$(KERNEL)/arch/keyboard/src/keyboard.c.o \
+$(KERNEL)/arch/console/src/console.c.o \
+$(KERNEL)/core/multiboot/src/multiboot.s.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
-CRTI=$(KERNEL)/initial/src/crti.s.o
-CRTN=$(KERNEL)/initial/src/crtn.s.o
-CRT0=$(KERNEL)/initial/src/start.s.o
+CRTI=$(KERNEL)/core/abi/src/crti.s.o
+CRTN=$(KERNEL)/core/abi/src/crtn.s.o
+CRT0=$(KERNEL)/arch/initial/src/start.s.o
 
 avos.iso: modulelist.bin kernel.bin bootloader.bin vbr.bin mbr.bin
 	dd conv=notrunc if=modulelist.bin of=avos.iso seek=8192
@@ -72,8 +78,8 @@ bootloader.bin: $(BOOT_OBJS) $(CLIB_OBJS)
 kernel.bin: $(X86_KERNEL_OBJS) $(X86_DRIVERS_OBJS) $(KERNEL_OBJS) $(CLIB_OBJS) $(CRT0) $(CRTI) $(CRTB) $(CRTE) $(CRTN)
 	$(CC) $(CFLAGS) -o kernel.bin $(CRT0) $(CRTI) $(CRTB) $(KERNEL_OBJS) $(CLIB_OBJS) $(CRTE) $(CRTN)
 
-modulelist.bin: kernel/initial/src/modulelist.asm
-	$(AS) -f bin -o modulelist.bin kernel/initial/src/modulelist.asm
+modulelist.bin: kernel/arch/initial/src/modulelist.asm
+	$(AS) -f bin -o modulelist.bin kernel/arch/initial/src/modulelist.asm
 
 %.s.o: %.asm
 	$(AS) $(AFLAGS) -o $@ $<
@@ -84,9 +90,14 @@ modulelist.bin: kernel/initial/src/modulelist.asm
 .PHONY: clean
 
 clean:
-	rm kernel/initial/src/*.o
+	rm kernel/arch/initial/src/*.o
 	rm kernel/arch/i386/src/*.o
 	rm kernel/arch/apic/src/*.o
+	rm kernel/arch/smp/src/*.o
+	rm kernel/arch/timer/src/*.o
+	rm kernel/arch/keyboard/src/*.o
+	rm kernel/arch/console/src/*.o
+	rm kernel/core/abi/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

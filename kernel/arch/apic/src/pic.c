@@ -21,7 +21,7 @@ void PIC_Initialize() {
 	X86_Outb(PIC_IOPORT_DATA2, PIC_ICW4_8086);
 	
 	PIC_DisableAllInterrupts();
-
+	
 }
 
 void PIC_SendEOI(uint8_t irqline) {

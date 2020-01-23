@@ -1,18 +1,26 @@
 %macro Interrupt_HandlerForNoErrorCode 1
-    global Interrupt_%1 
-    Interrupt_%1:
-        push dword 0
-		Interrupt_DoCommonHandling %1
+	global Interrupt_%1 
+	Interrupt_%1:
+	push dword 0
+	Interrupt_DoCommonHandling %1
 %endmacro
 
 %macro Interrupt_HandlerWithErrorCode 1
 	global Interrupt_%1
     Interrupt_%1:
-		Interrupt_DoCommonHandling %1
+	Interrupt_DoCommonHandling %1
 %endmacro
 
 %macro Interrupt_DoCommonHandling 1
-
+	extern Interrupt_Handler
+	extern APIC_Local_EOI
+	pushad
+	push %1
+	call Interrupt_Handler
+	add  esp, 4
+	call APIC_Local_EOI
+	popad
+	add  esp, 4
 	iret
 
 %endmacro
@@ -70,17 +78,4 @@ Interrupt_HandlerForNoErrorCode 0x2E
 Interrupt_HandlerForNoErrorCode 0x2F
 
 Interrupt_HandlerForNoErrorCode 0x80
-
-
-global Interrupt_IsFlagSet
-Interrupt_IsFlagSet:
-	pushfd
-	pop  eax
-	test eax, 0x200
-	jz   .ret0
-	mov  eax, 1
-	ret
-	.ret0:
-	mov  eax, 0
-	ret
 
