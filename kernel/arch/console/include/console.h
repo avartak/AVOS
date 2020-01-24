@@ -8,8 +8,10 @@
 #define CONSOLE_VGA_TEXT_BUFFER    0xB8000
 #define CONSOLE_VGA_NUM_LINES      25
 #define CONSOLE_VGA_NUM_COLUMNS    80
-#define CONSOLE_KEY_ENTER          0x0D
-#define CONSOLE_KEY_SPACE          0x20
+
+#define CONSOLE_POS_START_WELCOME  32
+#define CONSOLE_POS_START          80
+#define CONSOLE_POS_END            80*25
 
 #define CONSOLE_COLOR_BLACK        0
 #define CONSOLE_COLOR_BLUE         1

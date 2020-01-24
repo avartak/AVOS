@@ -3,7 +3,7 @@
 #include <kernel/core/setup/include/setup.h>
 
 uint16_t* Console_Screen = (uint16_t*)(CONSOLE_VGA_TEXT_BUFFER+KERNEL_HIGHER_HALF_OFFSET);
-uint16_t  Console_pos = CONSOLE_VGA_NUM_COLUMNS;
+uint16_t  Console_pos = CONSOLE_POS_START;
 
 void Console_MakeCursorInvisible() {
 
@@ -43,10 +43,10 @@ void Console_PrintWelcome() {
 
 	Console_ClearScreen();
 
-    for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_Screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
+    for (size_t i = 0; i < CONSOLE_POS_START; i++) Console_Screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
 
     char* str = "Welcome to AVOS!";
-    for (size_t i = 0; str[i] != 0; i++) Console_Screen[32+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
+    for (size_t i = 0; str[i] != 0; i++) Console_Screen[CONSOLE_POS_START_WELCOME+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
 
 	Console_SetCursorPosition(Console_pos);
 	Console_MakeCursorVisible();
@@ -65,7 +65,7 @@ void Console_PrintChar(char c) {
 		Console_pos += 3;
 	}
     else if (c == '\b') {
-		if (Console_pos == CONSOLE_VGA_NUM_COLUMNS) return;
+		if (Console_pos == CONSOLE_POS_START) return;
         Console_pos--;
         Console_Screen[Console_pos] = color | 0;
     }
