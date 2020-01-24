@@ -2,75 +2,77 @@
 #include <kernel/arch/i386/include/ioports.h>
 #include <kernel/core/setup/include/setup.h>
 
-uint16_t* Console_Screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
-uint16_t  Console_pos = 80;
+uint16_t* Console_Screen = (uint16_t*)(CONSOLE_VGA_TEXT_BUFFER+KERNEL_HIGHER_HALF_OFFSET);
+uint16_t  Console_pos = CONSOLE_VGA_NUM_COLUMNS;
 
-void Console_PrintWelcome() {
+void Console_MakeCursorInvisible() {
 
-    // Make the cursoor invisible
     X86_Outb(0x3D4, 0x0A);
     X86_Outb(0x3D5, 0x20);
 
-    // Clear screen
-    size_t i = 0;
-    while (i < 80*25) Console_Screen[i++] = 0;
-
-    // Green stripe
-    i = 0;
-    while (i < 80) Console_Screen[i++] = 0x2000;
-
-    // Welcome string
-    char* str = "Welcome to AVOS!";
-
-
-    // Print message to screen -- the magic number 64 causes the message to start on line 0 and 32 character offset
-    i = 0;
-    while (str[i] != 0) {
-		Console_Screen[32+i]   = 0x2400 | str[i];
-		i++;
-	}
 }
 
+void Console_MakeCursorVisible() {
 
-void Console_PrintNum(uint32_t num, bool hex) {
+    X86_Outb(0x3D4, 0x0A);
+    X86_Outb(0x3D5, (X86_Inb(0x3D5) & 0xC0) | 0xE);
+   
+    X86_Outb(0x3D4, 0x0B);
+    X86_Outb(0x3D5, (X86_Inb(0x3D5) & 0xE0) | 0xF);
 
-	uint16_t color = 0x0F00;
-	char digits[]  = "0123456789ABCDEF";
-	
-	if (num < 10) {
-		Console_Screen[Console_pos++] = color | digits[num];
-		return;
-	}
+}
 
-	if (hex) {
-		Console_Screen[Console_pos++] = color | '0';
-		Console_Screen[Console_pos++] = color | 'x';
-	}
-	
-	bool start_printing = false;
-	for (uint32_t divisor = (hex ? 0x10000000 : 1000000000); divisor > 0; divisor /= (hex ? 0x10 : 10)) {
-		if (!start_printing && num/divisor > 0) start_printing = true;
-		if (start_printing) Console_Screen[Console_pos++] = color | digits[num/divisor];
-		num %= divisor;
-	}
+void Console_SetCursorPosition(uint16_t pos) {
 
+    X86_Outb(0x3D4, 0x0F);
+    X86_Outb(0x3D5, (uint8_t)(pos & 0xFF));
+    X86_Outb(0x3D4, 0x0E);
+    X86_Outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+
+}
+
+uint16_t Console_Attribute(uint8_t fore, uint8_t back) {
+	return ( (fore & 0x0F) + ((back & 0x0F) << 4) ) << 8;
+}
+
+void Console_ClearScreen() {
+	for (uint32_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS * CONSOLE_VGA_NUM_LINES; i++) Console_Screen[i] = Console_Attribute(CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK) | 0;
+}
+
+void Console_PrintWelcome() {
+
+	Console_ClearScreen();
+
+    for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_Screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
+
+    char* str = "Welcome to AVOS!";
+    for (size_t i = 0; str[i] != 0; i++) Console_Screen[32+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
+
+	Console_SetCursorPosition(Console_pos);
+	Console_MakeCursorVisible();
 }
 
 void Console_PrintChar(char c) {
 
+	uint16_t color = Console_Attribute(CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK);
+
     if (c == 0) {
     }
     else if (c == '\n') {
-        Console_pos = (Console_pos/80 + 1)*80;
+        Console_pos = (Console_pos/CONSOLE_VGA_NUM_COLUMNS + 1)*CONSOLE_VGA_NUM_COLUMNS;
     }
-    else if (c == 8) {
+    else if (c == '\t') {
+		Console_pos += 3;
+	}
+    else if (c == '\b') {
+		if (Console_pos == CONSOLE_VGA_NUM_COLUMNS) return;
         Console_pos--;
-        Console_Screen[Console_pos] = 0x0F00;
+        Console_Screen[Console_pos] = color | 0;
     }
     else {
-        Console_Screen[Console_pos++] = 0x0F00 | c;
+        Console_Screen[Console_pos++] = color | c;
     }
-
+	Console_SetCursorPosition(Console_pos);
 }
 
 void Console_PrintChars(const char* string, uint32_t num) {
@@ -85,4 +87,26 @@ void Console_PrintString(const char* string) {
 
 }
 
+void Console_PrintNum(uint32_t num, bool hex) {
+
+    char digits[]  = "0123456789ABCDEF";
+
+    if (num < 10) {
+        Console_PrintChar(digits[num]);
+        return;
+    }
+
+    if (hex) {
+        Console_PrintChar('0');
+        Console_PrintChar('x');
+    }
+
+    bool start_printing = false;
+    for (uint32_t divisor = (hex ? 0x10000000 : 1000000000); divisor > 0; divisor /= (hex ? 0x10 : 10)) {
+        if (!start_printing && num/divisor > 0) start_printing = true;
+        if (start_printing) Console_PrintChar(digits[num/divisor]);
+        num %= divisor;
+    }
+
+}
 
