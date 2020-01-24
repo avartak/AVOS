@@ -34,6 +34,7 @@ uint16_t* Console_Screen;
 uint16_t  Console_pos;
 
 extern uint16_t Console_Attribute(uint8_t fore, uint8_t back);
+extern void     Console_ClearLine(uint8_t line);
 extern void     Console_ClearScreen();
 extern void     Console_MakeCursorVisible();
 extern void     Console_MakeCursorInvisible();
