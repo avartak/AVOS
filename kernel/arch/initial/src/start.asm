@@ -7,7 +7,7 @@ extern Initialize_GDT
 extern Initialize_IDT
 extern Initialize_APICs
 extern Initialize_PreInitDevices
-extern Welcome
+extern Console_PrintWelcome
 
 section .text
 
@@ -36,7 +36,7 @@ Start:
 	call  Initialize_APICs
 	call  Initialize_PreInitDevices
 
-	call  Welcome
+	call  Console_PrintWelcome
 
 	HaltSystem:
     hlt

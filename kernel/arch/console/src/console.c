@@ -1,8 +1,36 @@
 #include <kernel/arch/console/include/console.h>
+#include <kernel/arch/i386/include/ioports.h>
 #include <kernel/core/setup/include/setup.h>
 
 uint16_t* Console_Screen = (uint16_t*)(0xB8000+KERNEL_HIGHER_HALF_OFFSET);
 uint16_t  Console_pos = 80;
+
+void Console_PrintWelcome() {
+
+    // Make the cursoor invisible
+    X86_Outb(0x3D4, 0x0A);
+    X86_Outb(0x3D5, 0x20);
+
+    // Clear screen
+    size_t i = 0;
+    while (i < 80*25) Console_Screen[i++] = 0;
+
+    // Green stripe
+    i = 0;
+    while (i < 80) Console_Screen[i++] = 0x2000;
+
+    // Welcome string
+    char* str = "Welcome to AVOS!";
+
+
+    // Print message to screen -- the magic number 64 causes the message to start on line 0 and 32 character offset
+    i = 0;
+    while (str[i] != 0) {
+		Console_Screen[32+i]   = 0x2400 | str[i];
+		i++;
+	}
+}
+
 
 void Console_PrintNum(uint32_t num, bool hex) {
 

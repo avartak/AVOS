@@ -7,19 +7,18 @@
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/multiboot/include/multiboot.h>
 
-extern void PrintNum(uint32_t num, uint8_t line, uint8_t column);
-
 extern struct Multiboot_Info_Start* BootInfo_Ptr;
 
 struct ACPI_MADT* APIC_MADT_Ptr;
-uintptr_t         APIC_Local_InfoPtrs[MACHINE_MAX_CPUS];
-uintptr_t         APIC_IO_InfoPtrs[MACHINE_MAX_IOAPICS];
 
-uintptr_t         APIC_Local_address = 0;
-bool              APIC_LegacyPIC_exists;
+bool      APIC_LegacyPIC_exists;
 
-size_t            APIC_Local_Num = 0;
-size_t            APIC_IO_Num = 0;
+uintptr_t APIC_Local_address = 0;
+size_t    APIC_Local_Num = 0;
+uintptr_t APIC_Local_InfoPtrs[MACHINE_MAX_CPUS];
+
+uintptr_t APIC_IO_InfoPtrs[MACHINE_MAX_IOAPICS];
+size_t    APIC_IO_Num = 0;
 
 bool APIC_SaveInfo() {
 

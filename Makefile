@@ -34,7 +34,6 @@ KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/arch/initial/src/preinit.s.o \
 $(KERNEL)/arch/initial/src/preinit.c.o \
-$(KERNEL)/arch/initial/src/welcome.c.o \
 $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \
 $(KERNEL)/arch/i386/src/gdt.s.o \
