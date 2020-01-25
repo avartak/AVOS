@@ -19,7 +19,7 @@ Start:
 	cli
 	cld 
 
-	mov   esp, Start+KERNEL_STACK_PTR_OFFSET-KERNEL_HIGHER_HALF_OFFSET
+	mov   esp, Start+KERNEL_STACK_SIZE-KERNEL_HIGHER_HALF_OFFSET
 
 	cmp   eax, 0x36d76289
 	jne   HaltSystem
@@ -42,7 +42,7 @@ Start:
     hlt
     jmp  HaltSystem
 
-	times KERNEL_STACK_PTR_OFFSET-($-$$) db 0
+	times KERNEL_STACK_SIZE-($-$$) db 0
 
 section .data
 

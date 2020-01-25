@@ -34,6 +34,7 @@ KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/arch/initial/src/preinit.s.o \
 $(KERNEL)/arch/initial/src/preinit.c.o \
+$(KERNEL)/arch/initial/src/kthread.s.o \
 $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \
 $(KERNEL)/arch/i386/src/gdt.s.o \
@@ -50,7 +51,10 @@ $(KERNEL)/arch/smp/src/smp.c.o \
 $(KERNEL)/arch/timer/src/pit.c.o \
 $(KERNEL)/arch/keyboard/src/keyboard.c.o \
 $(KERNEL)/arch/console/src/console.c.o \
-$(KERNEL)/core/multiboot/src/multiboot.s.o
+$(KERNEL)/core/multiboot/src/multiboot.s.o \
+$(KERNEL)/core/process/src/state.c.o \
+$(KERNEL)/core/synch/src/spinlock.c.o \
+$(KERNEL)/core/synch/src/irqlock.c.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
@@ -97,6 +101,8 @@ clean:
 	rm kernel/arch/keyboard/src/*.o
 	rm kernel/arch/console/src/*.o
 	rm kernel/core/abi/src/*.o
+	rm kernel/core/process/src/*.o
+	rm kernel/core/synch/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

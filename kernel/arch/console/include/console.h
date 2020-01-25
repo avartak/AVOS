@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdarg.h>
+
 
 #define CONSOLE_VGA_TEXT_BUFFER    0xB8000
 #define CONSOLE_VGA_NUM_LINES      25
@@ -30,20 +32,24 @@
 #define CONSOLE_COLOR_LIGHT_BROWN  0xE
 #define CONSOLE_COLOR_WHITE        0xF
 
-uint16_t* Console_Screen;
-uint16_t  Console_pos;
+extern uint16_t* Console_screen;
+extern uint16_t  Console_pos;
+extern bool      Console_inpanic;
 
-extern uint16_t Console_Attribute(uint8_t fore, uint8_t back);
-extern void     Console_ClearLine(uint8_t line);
-extern void     Console_ClearScreen();
-extern void     Console_MakeCursorVisible();
-extern void     Console_MakeCursorInvisible();
-extern void     Console_SetCursorPosition(uint16_t pos);
+extern uint16_t  Console_Attribute(uint8_t fore, uint8_t back);
+extern void      Console_ClearLine(uint8_t line);
+extern void      Console_ClearScreen();
+extern void      Console_MakeCursorVisible();
+extern void      Console_MakeCursorInvisible();
+extern void      Console_SetCursorPosition(uint16_t pos);
 
-extern void     Console_PrintWelcome();
-extern void     Console_PrintNum(uint32_t num, bool hex);
-extern void     Console_PrintChar(char c);
-extern void     Console_PrintChars(const char* string, uint32_t num);
-extern void     Console_PrintString(const char* string);
+extern void      Console_PrintWelcome();
+extern void      Console_PrintNum(uint32_t num, bool hex, bool withsign);
+extern void      Console_PrintChar(char c);
+extern void      Console_PrintChars(const char* string, uint32_t num);
+extern void      Console_PrintString(const char* string);
+extern void      Console_VPrint(const char* format, va_list args);
+extern void      Console_Print(const char* format, ...);
+extern void      Console_Panic(const char* format, ...);
 
 #endif
