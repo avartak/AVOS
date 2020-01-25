@@ -87,7 +87,7 @@ static uint8_t Keyboard_ctlmap[256] =
 
 
 void Keyboard_Initialize() {
-    APIC_IO_EnableInterrupt(1, 0x21, APIC_Local_ID());
+    IOAPIC_EnableInterrupt(1, 0x21, LocalAPIC_ID());
 }
 
 uint8_t Keyboard_GetChar() {

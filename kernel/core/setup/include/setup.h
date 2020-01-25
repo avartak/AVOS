@@ -10,7 +10,7 @@
 #define KERNEL_MMAP_START_ADDR    0x80100000
 #define KERNEL_STACK_SIZE         0x2000
 
-#define MACHINE_MAX_CPUS          0x100
-#define MACHINE_MAX_IOAPICS       0x100
+#define MACHINE_MAX_CPUS          0xFF
+#define MACHINE_MAX_IOAPICS       0xFF
 
 #endif

@@ -5,15 +5,13 @@
 #include <stddef.h>
 #include <stdatomic.h>
 
-#include <kernel/arch/initial/include/kthread.h>
 #include <kernel/arch/console/include/console.h>
 
 struct State {
-
-	size_t preemption_vetos;
+	size_t  preemption_vetos;
 	uint8_t interrupt_priority;
-
-};
+	bool    interrupt_disabled;
+}__attribute__((packed));
 
 extern struct State* State_GetCurrent();
 

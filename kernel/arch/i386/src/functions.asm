@@ -1,3 +1,5 @@
+%include "kernel/core/setup/include/setup.inc"
+
 section .text
 
 global X86_Halt
@@ -30,3 +32,10 @@ X86_RestoreInterrupts:
     sti
 	.end
     ret
+
+global X86_GetStackBase
+X86_GetStackBase:
+    mov  eax, esp
+    and  eax, KERNEL_STACK_SIZE
+	add  eax, KERNEL_STACK_SIZE
+

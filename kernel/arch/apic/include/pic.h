@@ -2,6 +2,7 @@
 #define KERNEL_PIC_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /*
 
@@ -47,8 +48,9 @@ OCW --> Operation      command word
 #define PIC_REMAP1_START       0+PIC_IRQ_OFFSET    /* Start interrupt vector for the remapped IRQs of the master PIC */
 #define PIC_REMAP2_START       8+PIC_IRQ_OFFSET    /* Start interrupt vector for the remapped IRQs of the  slave PIC */
 
-uint8_t          PIC_InitialMask1;
-uint8_t          PIC_InitialMask2;
+extern bool      PIC_exists;
+extern uint8_t   PIC_InitialMask1;
+extern uint8_t   PIC_InitialMask2;
 
 extern void      PIC_Initialize();
 

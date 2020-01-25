@@ -13,12 +13,12 @@
 
 %macro Interrupt_DoCommonHandling 1
 	extern Interrupt_Handler
-	extern APIC_Local_EOI
+	extern LocalAPIC_EOI
 	pushad
 	push %1
 	call Interrupt_Handler
 	add  esp, 4
-	call APIC_Local_EOI
+	call LocalAPIC_EOI
 	popad
 	add  esp, 4
 	iret

@@ -18,7 +18,7 @@ void PIT_Initialize() {
     X86_Outb(PIT_IOPORT_CHAN0, (uint8_t) (pit_counter & 0x00FF));
     X86_Outb(PIT_IOPORT_CHAN0, (uint8_t)((pit_counter & 0xFF00) >> 8));
 
-    APIC_IO_EnableInterrupt(0, 0x20, APIC_Local_ID());
+    IOAPIC_EnableInterrupt(0, 0x20, LocalAPIC_ID());
 }
 
 void PIT_Reset() {

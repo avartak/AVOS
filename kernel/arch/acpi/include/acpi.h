@@ -1,9 +1,9 @@
-#ifndef KERNEL_ACPI_ACPI_H
-#define KERNEL_ACPI_ACPI_H
+#ifndef KERNEL_ACPI_H
+#define KERNEL_ACPI_H
 
 #include <stdint.h>
 
-struct ACPI_RSDPv1 {
+struct RSDPv1 {
 	char     signature[8];
 	uint8_t  checksum;
 	char     oem_id[6];
@@ -11,7 +11,7 @@ struct ACPI_RSDPv1 {
 	uint32_t rsdt_address;
 }__attribute__((packed));
 
-struct ACPI_RSDPv2 {
+struct RSDPv2 {
     char     signature[8];
     uint8_t  checksum;
     char     oem_id[6];
@@ -23,7 +23,7 @@ struct ACPI_RSDPv2 {
 	uint8_t  reserved[3];
 }__attribute__((packed));
 
-struct ACPI_SDTHeader {
+struct SDTHeader {
 	char     signature[4];
 	uint32_t length;
 	uint8_t  revision;
@@ -35,13 +35,13 @@ struct ACPI_SDTHeader {
 	uint32_t creator_revision;	
 }__attribute__((packed));
 
-struct ACPI_RSDT {
-	struct ACPI_SDTHeader header;
+struct RSDT {
+	struct SDTHeader header;
 	uint32_t entry[];
 }__attribute__((packed));
 
-struct ACPI_XSDT {
-	struct ACPI_SDTHeader header;
+struct XSDT {
+	struct SDTHeader header;
 	uint64_t entry[];
 }__attribute__((packed));
 

@@ -3,6 +3,7 @@
 #include <kernel/arch/apic/include/apic.h>
 #include <kernel/arch/timer/include/pit.h>
 #include <kernel/arch/keyboard/include/keyboard.h>
+#include <kernel/arch/console/include/console.h>
 
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE)));
 
@@ -80,18 +81,21 @@ void Initialize_IDT() {
 
 }
 
-void Initialize_APICs() {
+void Initialize_System() {
+
+	Initialize_GDT();
+	Initialize_IDT();
+
+	Console_Initialize();
 
 	APIC_SaveInfo();
-	APIC_Local_Initialize();
-	APIC_IO_Initializes();
-}
-
-void Initialize_PreInitDevices() {
+	LocalAPIC_Initialize();
+	IOAPIC_Initialize();
 
 	KERNEL_IDT_ADDENTRY(0x20);
 	PIT_Initialize();
 
 	KERNEL_IDT_ADDENTRY(0x21);
 	Keyboard_Initialize();
+
 }

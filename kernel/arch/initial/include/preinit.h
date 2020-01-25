@@ -10,8 +10,10 @@
 #include <kernel/arch/i386/include/interrupts.h>
 
 #define KERNEL_IDT_ADDENTRY(num) \
-	extern void Interrupt_##num(); \
-	X86_IDT_SetupEntry(&(Kernel_IDT[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	do { \
+		extern void Interrupt_##num(); \
+		X86_IDT_SetupEntry(&(Kernel_IDT[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32); \
+	} while (0) \
 
 extern uint32_t                  Kernel_pagedirectory[]__attribute__((aligned(X86_PAGING_PAGESIZE)));
 extern struct X86_GDT_Entry      Kernel_GDT[];

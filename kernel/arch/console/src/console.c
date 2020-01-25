@@ -44,19 +44,20 @@ void Console_ClearLine(uint8_t line) {
 }
 
 void Console_ClearScreen() {
-	for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS * CONSOLE_VGA_NUM_LINES; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK) | 0;
+	for (size_t i = CONSOLE_VGA_NUM_COLUMNS; i < CONSOLE_VGA_NUM_COLUMNS * CONSOLE_VGA_NUM_LINES; i++) {
+		Console_screen[i] = Console_Attribute(CONSOLE_COLOR_WHITE, CONSOLE_COLOR_BLACK) | 0;
+	}
 	Console_ClearLine(CONSOLE_VGA_NUM_LINES);
 }
 
-void Console_PrintWelcome() {
-
-	Console_ClearScreen();
+void Console_Initialize() {
 
     for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
 
     char* str = "Welcome to AVOS!";
     for (size_t i = 0; str[i] != 0; i++) Console_screen[CONSOLE_POS_START_WELCOME+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
 
+	Console_ClearScreen();
 	Console_SetCursorPosition(Console_pos);
 	Console_MakeCursorVisible();
 
@@ -107,29 +108,47 @@ void Console_PrintString(const char* string) {
 
 }
 
-void Console_PrintNum(uint32_t num, bool hex, bool withsign) {
+void Console_PrintNum(uint32_t num, uint32_t num_type, bool withsign) {
 
-    char digits[]  = "0123456789ABCDEF";
+	if (num_type != CONSOLE_NUMTYPE_OCTAL && num_type != CONSOLE_NUMTYPE_DECIMAL && num_type != CONSOLE_NUMTYPE_HEXLOW && num_type != CONSOLE_NUMTYPE_HEXCAP) return;
+
+    char digits_low[]  = "0123456789abcdef";
+    char digits_cap[]  = "0123456789ABCDEF";
 	bool neg = num > 0x80000000;
 	uint32_t val = num;
 	if (withsign) val = (neg ? 0-num : num);
 
 	if (withsign && neg) Console_PrintChar('-');
-
+	if (num_type == CONSOLE_NUMTYPE_OCTAL && val < 8) {
+        Console_PrintChar(digits_low[val]);
+        return;
+	}
     if (val < 10) {
-        Console_PrintChar(digits[val]);
+        Console_PrintChar(digits_low[val]);
         return;
     }
-
-    if (hex) {
+    if (num_type == CONSOLE_NUMTYPE_OCTAL) {
+        Console_PrintChar('0');
+    }
+    else if (num_type == CONSOLE_NUMTYPE_HEXLOW || num_type == CONSOLE_NUMTYPE_HEXCAP) {
         Console_PrintChar('0');
         Console_PrintChar('x');
     }
 
     bool start_printing = false;
-    for (uint32_t divisor = (hex ? 0x10000000 : 1000000000); divisor > 0; divisor /= (hex ? 0x10 : 10)) {
+	uint32_t divisor = 0x10000000;
+	if (num_type == CONSOLE_NUMTYPE_OCTAL) divisor = 010000000000;
+	else if (num_type == CONSOLE_NUMTYPE_DECIMAL) divisor = 1000000000;
+	uint32_t base = 0x10;
+	if (num_type == CONSOLE_NUMTYPE_OCTAL) base = 8;
+	else if (num_type == CONSOLE_NUMTYPE_DECIMAL) base = 10;
+
+    for (; divisor > 0; divisor /= base) {
         if (!start_printing && val/divisor > 0) start_printing = true;
-        if (start_printing) Console_PrintChar(digits[val/divisor]);
+        if (start_printing) {
+			if (num_type == CONSOLE_NUMTYPE_HEXCAP) Console_PrintChar(digits_cap[val/divisor]);
+			else Console_PrintChar(digits_low[val/divisor]);
+		}
         val %= divisor;
     }
 
@@ -164,19 +183,27 @@ void Console_VPrint(const char* format, va_list args) {
 		}
 		else if (c == 'd' || c == 'i') {
 			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, false, true);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_DECIMAL, true);
 		}
 		else if (c == 'u') {
 			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, false, false);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_DECIMAL, false);
+		}
+		else if (c == 'o') {
+			uint32_t num = va_arg(args, uint32_t);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_OCTAL, false);
 		}
 		else if (c == 'x') {
 			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, true, false);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXLOW, false);
+		}
+		else if (c == 'X') {
+			uint32_t num = va_arg(args, uint32_t);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXCAP, false);
 		}
 		else if (c == 'p') {
 			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, true, false);
+			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXLOW, false);
 		}
 		else if (c == 's') {
 			char* str = va_arg(args, char*);
@@ -195,6 +222,10 @@ void Console_VPrint(const char* format, va_list args) {
 }
 
 void Console_Panic(const char* format, ...) {
+
+	Console_ClearScreen();
+	Console_pos = CONSOLE_POS_START;
+	Console_SetCursorPosition(Console_pos);
 
     va_list args;
     va_list args_copy;

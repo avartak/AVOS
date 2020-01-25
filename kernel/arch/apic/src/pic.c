@@ -1,6 +1,10 @@
 #include <kernel/arch/apic/include/pic.h>
 #include <kernel/arch/i386/include/ioports.h>
 
+bool    PIC_exists;
+uint8_t PIC_InitialMask1;
+uint8_t PIC_InitialMask2;
+
 void PIC_Initialize() {
 
 	PIC_InitialMask1 = X86_Inb(PIC_IOPORT_DATA1);                       // Save the state of masks at the point of PIC initialization

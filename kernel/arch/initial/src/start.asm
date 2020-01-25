@@ -3,11 +3,7 @@
 extern Initialize_Paging
 extern Initialize_HigherHalfSwitch
 extern Initialize_CRT
-extern Initialize_GDT
-extern Initialize_IDT
-extern Initialize_APICs
-extern Initialize_PreInitDevices
-extern Console_PrintWelcome
+extern Initialize_System
 
 section .text
 
@@ -29,14 +25,8 @@ Start:
 
 	call  Initialize_Paging
 	call  Initialize_HigherHalfSwitch
-	call  Initialize_GDT
-	call  Initialize_IDT
 	call  Initialize_CRT
-
-	call  Initialize_APICs
-	call  Initialize_PreInitDevices
-
-	call  Console_PrintWelcome
+	call  Initialize_System
 
 	HaltSystem:
     hlt

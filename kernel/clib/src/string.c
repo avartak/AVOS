@@ -67,6 +67,16 @@ int memcmp(const void *s1, const void *s2, size_t num) {
 
 }
 
+void* memchr (const void* ptr, int value, size_t nbytes) {
+
+	char* pointer = (char*)ptr;
+	for (size_t i = 0; i < nbytes; i++) {
+		if (pointer[i] == (unsigned char)value) return (void*)(&(pointer[i]));
+	}
+	return (void*)0;
+
+}
+
 size_t strlen(const char* string) {
 
 	size_t len = 0;

@@ -32,6 +32,11 @@
 #define CONSOLE_COLOR_LIGHT_BROWN  0xE
 #define CONSOLE_COLOR_WHITE        0xF
 
+#define CONSOLE_NUMTYPE_DECIMAL    0
+#define CONSOLE_NUMTYPE_OCTAL      1
+#define CONSOLE_NUMTYPE_HEXLOW     2
+#define CONSOLE_NUMTYPE_HEXCAP     3
+
 extern uint16_t* Console_screen;
 extern uint16_t  Console_pos;
 extern bool      Console_inpanic;
@@ -43,8 +48,8 @@ extern void      Console_MakeCursorVisible();
 extern void      Console_MakeCursorInvisible();
 extern void      Console_SetCursorPosition(uint16_t pos);
 
-extern void      Console_PrintWelcome();
-extern void      Console_PrintNum(uint32_t num, bool hex, bool withsign);
+extern void      Console_Initialize();
+extern void      Console_PrintNum(uint32_t num, uint32_t num_type, bool withsign);
 extern void      Console_PrintChar(char c);
 extern void      Console_PrintChars(const char* string, uint32_t num);
 extern void      Console_PrintString(const char* string);
