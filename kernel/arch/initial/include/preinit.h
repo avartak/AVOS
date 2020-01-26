@@ -43,9 +43,9 @@ extern void Initialize_GDT();
 extern void Initialize_IDT();
 extern void Initialize_System();
 
-extern void Initialize_Paging_ForAPs();
-extern void Initialize_GDT_ForAPs();
-extern void Initialize_IDT_ForAPs();
+extern void Initialize_Paging_ForAP();
+extern void Initialize_GDT_ForAP();
+extern void Initialize_IDT_ForAP();
 extern bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address);
 extern void Initialize_AP();
 

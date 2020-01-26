@@ -33,17 +33,15 @@ void Initialize_Paging() {
 	X86_CR3_Write(ipd);
 	X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
 	X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-
 }
 
-void Initialize_Paging_ForAPs() {
+void Initialize_Paging_ForAP() {
 
     uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
    
     X86_CR3_Write(ipd);
     X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
     X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-
 }
 
 
@@ -55,20 +53,23 @@ void Initialize_GDT() {
 	uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
 	uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
 	
-	X86_GDT_SetupEntry(&(Kernel_GDT[0]), 0           , 0                   , 0                   , 0        );
-	X86_GDT_SetupEntry(&(Kernel_GDT[1]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[2]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[3]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[4]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
+	X86_GDT_SetupEntry(&(Kernel_GDT[0]), 0, 0                   , 0                   , 0        );
+	X86_GDT_SetupEntry(&(Kernel_GDT[1]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
+	X86_GDT_SetupEntry(&(Kernel_GDT[2]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
+	X86_GDT_SetupEntry(&(Kernel_GDT[3]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
+	X86_GDT_SetupEntry(&(Kernel_GDT[4]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
 	
 	Kernel_GDT_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
 	Kernel_GDT_desc.base  = (uintptr_t)Kernel_GDT;
 	
 	X86_GDT_Load(&Kernel_GDT_desc);
 	X86_GDT_LoadKernelSegments();
-	
-	return;
+}
 
+void Initialize_GDT_ForAP() {
+
+    X86_GDT_Load(&Kernel_GDT_desc);
+    X86_GDT_LoadKernelSegments();
 }
 
 
@@ -80,48 +81,12 @@ void Initialize_IDT() {
 	Kernel_IDT_desc.base  = (uintptr_t)Kernel_IDT;
 	
 	X86_IDT_Load(&Kernel_IDT_desc);
-	
-	return;
-
 }
 
-void Initialize_System() {
+void Initialize_IDT_ForAP() {
 
-	Initialize_GDT();
-	Initialize_IDT();
-
-	Console_Initialize();
-
-	APIC_SaveInfo();
-	LocalAPIC_Initialize();
-	IOAPIC_Initialize();
-
-	KERNEL_IDT_ADDENTRY(0x20);
-	PIT_Initialize();
-
-	KERNEL_IDT_ADDENTRY(0x21);
-	Keyboard_Initialize();
-
-	Kernel_numcpus_online++;
-	Console_Print("CPU (%x) initialized\n", LocalAPIC_ID());
-
-	extern uintptr_t BOOT;
-	memmove((void*)(0x8000+KERNEL_HIGHER_HALF_OFFSET), &BOOT, 0x1000);
-	for (size_t i = 0; i < LocalAPIC_Num; i++) {
-		struct MADT_Entry_LocalAPIC* lapic_id = (struct MADT_Entry_LocalAPIC*)(LocalAPIC_InfoPtrs[i]);
-		if (LocalAPIC_ID() == lapic_id->apic_id) continue;
-		Initialize_CPU(lapic_id->apic_id, 0x8000);
-		Console_Print("CPU (%x) initialized\n", lapic_id->apic_id);
-	}
-
-	Console_Print("CPUs online : %x\n", Kernel_numcpus_online);
-
-	Kernel_pagedirectory[0] = 0;
+    X86_IDT_Load(&Kernel_IDT_desc);
 }
-
-
-
-
 
 bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 
@@ -151,7 +116,6 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
     LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
     LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_STARTUP | LAPIC_STARTUP_VECTOR(boot_address));
     PIT_Delay(2);
-    if (Kernel_numcpus_online > inumcpus) return true;
 
     LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
     LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_STARTUP | LAPIC_STARTUP_VECTOR(boot_address));
@@ -160,29 +124,51 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
     return Kernel_numcpus_online > inumcpus;
 }
 
-void Initialize_GDT_ForAPs() {
 
-    X86_GDT_Load(&Kernel_GDT_desc);
-    X86_GDT_LoadKernelSegments();
+void Initialize_System() {
 
-    return;
+    Initialize_GDT();
+    Initialize_IDT();
 
-}
+    Console_Initialize();
 
-void Initialize_IDT_ForAPs() {
+    APIC_SaveInfo();
+    LocalAPIC_Initialize();
+    IOAPIC_Initialize();
 
-    X86_IDT_Load(&Kernel_IDT_desc);
+    KERNEL_IDT_ADDENTRY(0x20);
+    PIT_Initialize();
 
-    return;
+    KERNEL_IDT_ADDENTRY(0x21);
+    Keyboard_Initialize();
 
+    Kernel_numcpus_online++;
+    Console_Print("CPU (%x) initialized\n", LocalAPIC_ID());
+
+    extern uintptr_t BOOT;
+    memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &BOOT, 0x1000);
+    for (size_t i = 0; i < LocalAPIC_Num; i++) {
+        struct MADT_Entry_LocalAPIC* lapic_id = (struct MADT_Entry_LocalAPIC*)(LocalAPIC_InfoPtrs[i]);
+        if (LocalAPIC_ID() == lapic_id->apic_id) continue;
+        Initialize_CPU(lapic_id->apic_id, KERNEL_AP_BOOT_START_ADDR);
+    }
+
+    Console_Print("CPUs online : %x\n", Kernel_numcpus_online);
+
+    Kernel_pagedirectory[0] = 0;
+
+	while (true);
 }
 
 void Initialize_AP() {
 
-	Initialize_GDT_ForAPs();
-	Initialize_IDT_ForAPs();
+	Initialize_GDT_ForAP();
+	Initialize_IDT_ForAP();
 
 	LocalAPIC_Initialize();
 
 	Kernel_numcpus_online++;
+    Console_Print("CPU (%x) initialized\n", LocalAPIC_ID());
+
+	while (true);
 }

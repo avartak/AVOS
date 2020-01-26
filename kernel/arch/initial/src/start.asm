@@ -1,5 +1,7 @@
 %include "kernel/core/setup/include/setup.inc"
 
+%define PHYSADDR(x) (x-KERNEL_HIGHER_HALF_OFFSET)
+
 extern Initialize_Paging
 extern Initialize_HigherHalfSwitch
 extern Initialize_CRT
@@ -15,22 +17,22 @@ Start:
 	cli
 	cld 
 
-	mov   esp, Start+KERNEL_STACK_SIZE-KERNEL_HIGHER_HALF_OFFSET
+	mov   esp, PHYSADDR(Start+KERNEL_STACK_SIZE)
 
 	cmp   eax, 0x36d76289
-	jne   HaltSystem
+	jne   Halt
 
 	add   ebx, KERNEL_HIGHER_HALF_OFFSET
-	mov   [BootInfo_Ptr-KERNEL_HIGHER_HALF_OFFSET], ebx
+	mov   [PHYSADDR(BootInfo_Ptr)], ebx
 
 	call  Initialize_Paging
 	call  Initialize_HigherHalfSwitch
 	call  Initialize_CRT
-	call  Initialize_System
+	jmp   Initialize_System
 
-	HaltSystem:
+	Halt:
     hlt
-    jmp  HaltSystem
+    jmp  Halt
 
 	times KERNEL_STACK_SIZE-($-$$) db 0
 
