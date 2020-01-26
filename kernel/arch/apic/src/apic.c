@@ -84,7 +84,7 @@ uint32_t LocalAPIC_WriteTo(size_t index, uint32_t value) {
 	
 	volatile uint32_t* lapic = (volatile uint32_t*)LocalAPIC_address;
 	lapic[index] = value;
-	return lapic[0x20/4];
+	return lapic[LAPIC_REG_ID];
 }
 
 uint32_t LocalAPIC_ReadFrom(size_t index) {
@@ -110,60 +110,73 @@ uint32_t IOAPIC_ReadFrom(volatile struct IOAPIC_RW* ioapic, size_t index) {
 
 void LocalAPIC_EOI() {
 
-	LocalAPIC_WriteTo(0x0B0/4, 0);	 
+	LocalAPIC_WriteTo(LAPIC_REG_EOI, 0);	 
 
 }
 
 uint8_t LocalAPIC_ID() {
-	return LocalAPIC_ReadFrom(0x20/4) >> 24;
+	return LocalAPIC_ReadFrom(LAPIC_REG_ID) >> 24;
 }
 
 bool LocalAPIC_Initialize() {
 
+	// Enable the local APIC by writing to the spurious interrupt vector register
 	LocalAPIC_WriteTo(LAPIC_REG_SIVR, LAPIC_SIVR_SOFT_ENABLE | LAPIC_SIVR_INTR_SPURIOUS);
 
+	// Disable the timer, LINT0, LINT1, ERROR local interrupts
 	LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_MASKED);	 
 	LocalAPIC_WriteTo(LAPIC_REG_LINT0, LAPIC_LVT_MASKED);	 
 	LocalAPIC_WriteTo(LAPIC_REG_LINT1, LAPIC_LVT_MASKED);	 
 	LocalAPIC_WriteTo(LAPIC_REG_ERROR, LAPIC_LVT_MASKED);	 
 
-	if (LocalAPIC_ReadFrom(LAPIC_REG_VERSION) > 3) LocalAPIC_WriteTo(LAPIC_REG_PCMR, 0x10000);
-	if (LocalAPIC_ReadFrom(LAPIC_REG_VERSION) > 4) LocalAPIC_WriteTo(LAPIC_REG_TSR , 0x10000);
+	// Disable local interrupts from the thermal sensor and performance monitors (if they exist)
+	if (((LocalAPIC_ReadFrom(LAPIC_REG_VERSION) >> 16) & 0xFF) > 3) LocalAPIC_WriteTo(LAPIC_REG_PCMR, LAPIC_LVT_MASKED);
+	if (((LocalAPIC_ReadFrom(LAPIC_REG_VERSION) >> 16) & 0xFF) > 4) LocalAPIC_WriteTo(LAPIC_REG_TSR , LAPIC_LVT_MASKED);
 
-	LocalAPIC_WriteTo(LAPIC_REG_ICR, 0);	 
-	LocalAPIC_WriteTo(LAPIC_REG_DCR, 0);	 
+	// Clear registers used for configuring the local timer
+	LocalAPIC_WriteTo(LAPIC_REG_TICR, 0);	 
+	LocalAPIC_WriteTo(LAPIC_REG_TDCR, 0);	 
 
+	// Clear the error state register - needs writing twice, once for arming and then for the actual write
 	LocalAPIC_WriteTo(LAPIC_REG_ESR, 0);	 
 	LocalAPIC_WriteTo(LAPIC_REG_ESR, 0);	 
 
+	// Clear pending interrupts
 	LocalAPIC_WriteTo(LAPIC_REG_EOI, 0);	 
 
+	// Broadcast an INIT-LEVEL-DEASSERT to reset the arbitration priority register
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, 0);	 
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DEST_ALLSELF | LAPIC_LVT_DELIVERY_INIT | LAPIC_ICR_TRIGGER_LEVEL | LAPIC_ICR_LEVEL_DEASSERT);
+
+	// Make sure the broadcast went through
 	while (LocalAPIC_ReadFrom(LAPIC_REG_ICRLO) & LAPIC_ICR_DELIVERY_PENDING);
 
-	LocalAPIC_WriteTo(0x080/4, 0); 
+	// Enable all interrupts in the local APIC (this does not apply to the CPU) by setting the task priority register to the lowest possible value i.e. 0
+	LocalAPIC_WriteTo(LAPIC_REG_TPR, 0); 
 
 	return true;
 }
 
 bool IOAPIC_Initialize() {
 
+	// If legacy PIC (master/slave) exist then initialize them and disable them
 	if (PIC_exists) PIC_Initialize();
 
+	// Mask all IRQs coming to all IOAPICs
 	for (size_t i = 0; i < IOAPIC_Num; i++) {
 		struct MADT_Entry_IOAPIC* madt_ioapic = (struct MADT_Entry_IOAPIC*)IOAPIC_InfoPtrs[i];
 		uint8_t madt_ioapic_id = madt_ioapic->ioapic_id;
 		struct IOAPIC_RW* ioapic = (struct IOAPIC_RW*)(madt_ioapic->ioapic_address);
-		if (madt_ioapic_id != (IOAPIC_ReadFrom(ioapic, 0) >> 24)) return false;
+		if (madt_ioapic_id != (IOAPIC_ReadFrom(ioapic, IOAPIC_REG_ID) >> 24)) return false;
 
-		size_t max_interrupts = (IOAPIC_ReadFrom(ioapic, 0)) >> 24;
+		size_t max_interrupts = (IOAPIC_ReadFrom(ioapic, IOAPIC_REG_VERSION) >> 16) & 0xFF;
 		for (size_t j = 0; j <= max_interrupts; j++) {
-			IOAPIC_WriteTo(ioapic, 0x10+2*j  , 0x10000);
-			IOAPIC_WriteTo(ioapic, 0x10+2*j+1, 0);
+			IOAPIC_WriteTo(ioapic, IOAPIC_REDIRECT_TABLE_BASE+2*j  , IOAPIC_INTR_MASKED);
+			IOAPIC_WriteTo(ioapic, IOAPIC_REDIRECT_TABLE_BASE+2*j+1, LocalAPIC_ReadFrom(LAPIC_REG_ID) >> 24);
 		}
 	}	
 
+	// Enable interrupts on this CPU
 	X86_EnableInterrupts();
 
     return true;
@@ -171,6 +184,7 @@ bool IOAPIC_Initialize() {
 
 void IOAPIC_EnableInterrupt(uint8_t irq, uint8_t intr_vec, uint8_t local_apic_id) {
 
+	// Find the global system interrupt corresponding to an IRQ and its signal type (polarity, edge/level triggered)
 	uint32_t global_sys_intr = (uint32_t)irq;
 	uint16_t flags = 0;
 
@@ -186,17 +200,16 @@ void IOAPIC_EnableInterrupt(uint8_t irq, uint8_t intr_vec, uint8_t local_apic_id
         entry = (struct MADT_Entry*)((uint32_t)entry + entry->length);
     }
 
-	uint32_t polarity = ((flags & 2) == 0 ? 0 : 1 << 13);
-	uint32_t trigmode = ((flags & 8) == 0 ? 0 : 1 << 15);
+	// Direct the IRQ to a given local APIC (CPU)
     for (size_t i = 0; i < IOAPIC_Num; i++) {
         struct MADT_Entry_IOAPIC* madt_ioapic = (struct MADT_Entry_IOAPIC*)IOAPIC_InfoPtrs[i];
         volatile struct IOAPIC_RW* ioapic = (volatile struct IOAPIC_RW*)(madt_ioapic->ioapic_address);
-        size_t max_interrupts = (IOAPIC_ReadFrom(ioapic, 1) >> 16) & 0xFF;
+        size_t max_interrupts = (IOAPIC_ReadFrom(ioapic, IOAPIC_REG_VERSION) >> 16) & 0xFF;
 
 		if (madt_ioapic->global_system_intr_base <= global_sys_intr && madt_ioapic->global_system_intr_base + max_interrupts >= global_sys_intr) {
 			uint32_t intr_idx = global_sys_intr - madt_ioapic->global_system_intr_base;
-        	IOAPIC_WriteTo(ioapic, 0x10+2*intr_idx  , polarity | trigmode | intr_vec);
-        	IOAPIC_WriteTo(ioapic, 0x10+2*intr_idx+1, local_apic_id << 24);
+        	IOAPIC_WriteTo(ioapic, IOAPIC_REDIRECT_TABLE_BASE+2*intr_idx  , MADT_POLARITY(flags) | MADT_POLARITY(flags) | intr_vec);
+        	IOAPIC_WriteTo(ioapic, IOAPIC_REDIRECT_TABLE_BASE+2*intr_idx+1, local_apic_id);
 			break;
 		}
     }

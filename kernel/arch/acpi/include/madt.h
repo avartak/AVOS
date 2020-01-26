@@ -11,6 +11,9 @@
 #define MADT_ENTRY_NMI        4  
 #define MADT_ENTRY_LAPIC_ADDR 5
 
+#define MADT_POLARITY(x)      ((flags & 2) == 0 ? 0 : 1 << 13)
+#define MADT_TRIGMODE(x)      ((flags & 2) == 0 ? 0 : 1 << 15)
+
 struct MADT_Entry {
 	uint8_t  type;
 	uint8_t  length;

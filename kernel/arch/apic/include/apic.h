@@ -28,11 +28,12 @@
 #define LAPIC_REG_LINT0               (0x0350/4)   // Local Vector Table : LINT0
 #define LAPIC_REG_LINT1               (0x0360/4)   // Local Vector Table : LINT1
 #define LAPIC_REG_ERROR               (0x0370/4)   // Local Vector Table : Error
-#define LAPIC_REG_ICR                 (0x0380/4)   // Timer Initial Count
-#define LAPIC_REG_CCR                 (0x0390/4)   // Timer Current Count
-#define LAPIC_REG_DCR                 (0x03E0/4)   // Timer Divide Configuration
+#define LAPIC_REG_TICR                (0x0380/4)   // Timer Initial Count
+#define LAPIC_REG_TCCR                (0x0390/4)   // Timer Current Count
+#define LAPIC_REG_TDCR                (0x03E0/4)   // Timer Divide Configuration
 
 #define LAPIC_LVT_INTR_VECTOR         0xFF
+#define LAPIC_STARTUP_VECTOR(x)       (x >> 12)
 
 #define LAPIC_LVT_DELIVERY_MODE       0x700
 #define LAPIC_LVT_DELIVERY_FIXED      0
@@ -86,6 +87,11 @@
 #define LAPIC_SIVR_INTR_VECTOR        0xFF
 #define LAPIC_SIVR_INTR_SPURIOUS      0xFF
 #define LAPIC_SIVR_SOFT_ENABLE        0x100
+
+#define IOAPIC_REG_ID                 0
+#define IOAPIC_REG_VERSION            1
+#define IOAPIC_INTR_MASKED            0x10000
+#define IOAPIC_REDIRECT_TABLE_BASE    0x10
 
 struct IOAPIC_RW {
 	uint32_t reg;

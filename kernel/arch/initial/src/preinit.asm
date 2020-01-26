@@ -13,5 +13,5 @@ Initialize_HigherHalfSwitch:
 	High_Memory:
 	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
 	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
-	mov  [Kernel_pagedirectory], DWORD 0
+	;mov  [Kernel_pagedirectory], DWORD 0
 	ret

@@ -34,6 +34,7 @@ KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/arch/initial/src/preinit.s.o \
 $(KERNEL)/arch/initial/src/preinit.c.o \
+$(KERNEL)/arch/initial/src/bootloadap.s.o \
 $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \
 $(KERNEL)/arch/i386/src/gdt.s.o \
@@ -47,7 +48,6 @@ $(KERNEL)/arch/i386/src/trap.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
-$(KERNEL)/arch/smp/src/smp.c.o \
 $(KERNEL)/arch/timer/src/pit.c.o \
 $(KERNEL)/arch/keyboard/src/keyboard.c.o \
 $(KERNEL)/arch/console/src/console.c.o \
@@ -96,7 +96,6 @@ clean:
 	rm kernel/arch/initial/src/*.o
 	rm kernel/arch/i386/src/*.o
 	rm kernel/arch/apic/src/*.o
-	rm kernel/arch/smp/src/*.o
 	rm kernel/arch/timer/src/*.o
 	rm kernel/arch/keyboard/src/*.o
 	rm kernel/arch/console/src/*.o

@@ -92,7 +92,6 @@ struct X86_TSS {
     uint16_t reserved10;
     uint16_t reserved11;
     uint16_t iomap_base_address;
-    uint8_t  ioport_map[0x2000];
 }__attribute__((packed));
 
 extern void X86_GDT_Load(void* descriptor);
