@@ -48,7 +48,6 @@ extern void      Console_MakeCursorVisible();
 extern void      Console_MakeCursorInvisible();
 extern void      Console_SetCursorPosition(uint16_t pos);
 
-extern void      Console_Initialize();
 extern void      Console_PrintNum(uint32_t num, uint32_t num_type, bool withsign);
 extern void      Console_PrintChar(char c);
 extern void      Console_PrintChars(const char* string, uint32_t num);

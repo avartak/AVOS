@@ -1,5 +1,5 @@
-#ifndef KERNEL_PREINIT_H
-#define KERNEL_PREINIT_H
+#ifndef KERNEL_INITIALIZE_H
+#define KERNEL_INITIALIZE_H
 
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/arch/i386/include/paging.h>
@@ -37,16 +37,18 @@ extern struct X86_GDT_Descriptor Kernel_GDT_desc;
 extern struct X86_IDT_Entry      Kernel_IDT[0x100];
 extern struct X86_IDT_Descriptor Kernel_IDT_desc;
 
-extern void Initialize_Paging();
-extern void Initialize_HigherHalfSwitch();
-extern void Initialize_GDT();
-extern void Initialize_IDT();
-extern void Initialize_System();
+extern void Welcome();
 
-extern void Initialize_Paging_ForAP();
-extern void Initialize_GDT_ForAP();
-extern void Initialize_IDT_ForAP();
+extern void Initialize_HigherHalfSwitch();
+extern void Initialize_BSP_Paging();
+extern void Initialize_BSP_GDT();
+extern void Initialize_BSP_IDT();
+extern void Initialize_BSP();
+
+extern void Initialize_AP_Paging();
+extern void Initialize_AP_GDT();
+extern void Initialize_AP_IDT();
 extern bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address);
-extern void Initialize_AP();
+extern void Initialize_AP()__attribute__ ((noreturn));
 
 #endif

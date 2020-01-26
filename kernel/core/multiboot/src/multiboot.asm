@@ -23,7 +23,6 @@ Multiboot2_Header_tag1:
 	.type           dw    1
 	.flags          dw    1
 	.size           dd    Multiboot2_Header_tag1_end - Multiboot2_Header_tag1_start
-	.mbi_tag_type1  dd    1
 	.mbi_tag_type2  dd    2
 	.mbi_tag_type4  dd    4
 	.mbi_tag_type5  dd    5

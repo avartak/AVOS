@@ -50,19 +50,6 @@ void Console_ClearScreen() {
 	Console_ClearLine(CONSOLE_VGA_NUM_LINES);
 }
 
-void Console_Initialize() {
-
-    for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
-
-    char* str = "Welcome to AVOS!";
-    for (size_t i = 0; str[i] != 0; i++) Console_screen[CONSOLE_POS_START_WELCOME+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
-
-	Console_ClearScreen();
-	Console_SetCursorPosition(Console_pos);
-	Console_MakeCursorVisible();
-
-}
-
 void Console_PrintChar(char c) {
 
 	if (Console_inpanic) {

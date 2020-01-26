@@ -15,7 +15,7 @@ X86_DisableInterrupts:
 	mov  eax, 0
 	jnz  .end
 	mov  al, 0xFF
-	.end
+	.end:
 	cli
 	ret
 
@@ -30,7 +30,7 @@ X86_RestoreInterrupts:
 	cmp  al, 0xFF
 	je   .end
     sti
-	.end
+	.end:
     ret
 
 global X86_GetStackBase
@@ -38,4 +38,13 @@ X86_GetStackBase:
     mov  eax, esp
     and  eax, KERNEL_STACK_SIZE
 	add  eax, KERNEL_STACK_SIZE
+
+global X86_SwitchToHigherHalf
+X86_SwitchToHigherHalf:
+    mov  eax, High_Memory
+    jmp  eax
+    High_Memory:
+	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
+	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
+    ret
 

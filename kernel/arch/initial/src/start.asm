@@ -2,10 +2,12 @@
 
 %define PHYSADDR(x) (x-KERNEL_HIGHER_HALF_OFFSET)
 
-extern Initialize_Paging
-extern Initialize_HigherHalfSwitch
+extern Welcome
+extern Initialize_BSP_Paging
 extern Initialize_CRT
+extern Initialize_BSP
 extern Initialize_System
+extern X86_SwitchToHigherHalf
 
 section .text
 
@@ -25,10 +27,13 @@ Start:
 	add   ebx, KERNEL_HIGHER_HALF_OFFSET
 	mov   [PHYSADDR(BootInfo_Ptr)], ebx
 
-	call  Initialize_Paging
-	call  Initialize_HigherHalfSwitch
+	call  Initialize_BSP_Paging
+	call  X86_SwitchToHigherHalf
 	call  Initialize_CRT
-	jmp   Initialize_System
+
+	call  Welcome
+	call  Initialize_BSP
+	call  Initialize_System
 
 	Halt:
     hlt

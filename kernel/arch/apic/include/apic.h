@@ -99,6 +99,7 @@ struct IOAPIC_RW {
 	uint32_t data;
 };
 
+extern bool      APIC_InfoSaved;
 extern bool      APIC_SaveInfo();
 
 extern uintptr_t LocalAPIC_address;

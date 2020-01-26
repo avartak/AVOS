@@ -10,6 +10,8 @@
 
 extern struct Multiboot_Info_Start* BootInfo_Ptr;
 
+bool APIC_InfoSaved = false;
+
 uintptr_t LocalAPIC_address = 0;
 size_t    LocalAPIC_Num = 0;
 uintptr_t LocalAPIC_InfoPtrs[MACHINE_MAX_CPUS];
@@ -18,6 +20,8 @@ uintptr_t IOAPIC_InfoPtrs[MACHINE_MAX_IOAPICS];
 size_t    IOAPIC_Num = 0;
 
 bool APIC_SaveInfo() {
+
+	if (APIC_InfoSaved) return true;
 
 	struct RSDPv1* rsdp = (struct RSDPv1*)0;
 
@@ -77,6 +81,7 @@ bool APIC_SaveInfo() {
 	    entry = (struct MADT_Entry*)((uint32_t)entry + entry->length);
 	}
 
+	APIC_InfoSaved = true;
 	return true;	
 }
 
@@ -120,6 +125,8 @@ uint8_t LocalAPIC_ID() {
 
 bool LocalAPIC_Initialize() {
 
+	APIC_SaveInfo();
+
 	// Enable the local APIC by writing to the spurious interrupt vector register
 	LocalAPIC_WriteTo(LAPIC_REG_SIVR, LAPIC_SIVR_SOFT_ENABLE | LAPIC_SIVR_INTR_SPURIOUS);
 
@@ -158,6 +165,8 @@ bool LocalAPIC_Initialize() {
 }
 
 bool IOAPIC_Initialize() {
+
+	APIC_SaveInfo();
 
 	// If legacy PIC (master/slave) exist then initialize them and disable them
 	if (PIC_exists) PIC_Initialize();

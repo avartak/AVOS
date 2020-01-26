@@ -5,14 +5,14 @@
 
 ; Macro to manipulate label addresses
 
-%define BOOTADDR(x) (x-BOOT+KERNEL_AP_BOOT_START_ADDR)
+%define BOOTADDR(x) (x-StartAP+KERNEL_AP_BOOT_START_ADDR)
 %define PHYSADDR(x) (x-KERNEL_HIGHER_HALF_OFFSET)
 
 ; External functions we will be calling
 
-extern Initialize_Paging_ForAP
-extern Initialize_HigherHalfSwitch
+extern Initialize_AP_Paging
 extern Initialize_AP
+extern X86_SwitchToHigherHalf
 
 ; Code section
 
@@ -24,8 +24,8 @@ BITS 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-global BOOT
-BOOT:
+global StartAP
+StartAP:
 
 	; First disable interrupts
 
@@ -52,9 +52,9 @@ section .text
 BITS 32
 
 	ProtectedMode:
-	jmp   GDT.Code32:PHYSADDR(BOOTReloc)
+	jmp   GDT.Code32:PHYSADDR(StartAPReloc)
 
-	BOOTReloc:
+	StartAPReloc:
 	
 	; Switch all registers to protected mode
 	
@@ -66,13 +66,9 @@ BITS 32
 	mov   ss, ax
 	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
 
-    call Initialize_Paging_ForAP
-    call Initialize_HigherHalfSwitch
-    call Initialize_AP
-
-	Halt:
-	hlt
-	jmp  Halt
+	call  Initialize_AP_Paging
+	call  X86_SwitchToHigherHalf
+	call  Initialize_AP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,5 +93,4 @@ GDT:
 
 	times KERNEL_AP_BOOT_START_SIZE-($-$$) db 0
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
