@@ -52,7 +52,7 @@ void Page_Release(void* pointer, uint8_t order) {
 		if (i == PAGE_MAX_ORDER || PAGE_MAP_ISBITSET(addr, i)) break;
 		i++;
 	}	
-
+	
 	uint8_t j = order;
 	while (j < i) {
 		struct Page_List* buddy = (struct Page_List*)(PAGE_BUDDY(addr, j) + KERNEL_HIGHER_HALF_OFFSET);
@@ -63,7 +63,7 @@ void Page_Release(void* pointer, uint8_t order) {
 		buddy->next = (struct Page_List*)0;
 		j++;
 	}
-
+	
 	struct Page_List* pagelist_ptr = (struct Page_List*)( (addr & ~((1 << (12+i)) - 1)) + KERNEL_HIGHER_HALF_OFFSET );
 	pagelist_ptr->prev = PAGE_LIST_NULL;
 	pagelist_ptr->next = Page_lists[i];
@@ -78,7 +78,7 @@ void* Page_Acquire(uint8_t order) {
 		if (Page_lists[i] != PAGE_LIST_NULL) break;
 		else if (i == PAGE_MAX_ORDER) return PAGE_LIST_NULL;
 	}
-
+	
 	void* page = Page_lists[i];
 	uintptr_t addr = (uintptr_t)page - KERNEL_HIGHER_HALF_OFFSET;
 	for (int8_t j = i; j >= order; j--) {
@@ -101,29 +101,29 @@ void Page_MapMemoryChunk(uint64_t chunk_base, uint64_t chunk_size) {
 	if (chunk_size == 0) return;
 	if (chunk_base < KERNEL_MMAP_LOWMEM_END - KERNEL_HIGHER_HALF_OFFSET) return;
 	if (chunk_base >= KERNEL_MMAP_VIRTUAL_END - KERNEL_HIGHER_HALF_OFFSET) return;
-
+	
 	uint32_t base = (uint32_t)chunk_base;
 	uint32_t size = (uint32_t)(chunk_base + chunk_size > 0x100000000 ? 0x100000000 - chunk_base : chunk_size);
-
+	
 	uint8_t max_order = 0;
 	for (uint8_t i = 0; i <= PAGE_MAX_ORDER; i++) {
 		if (PAGE_SIZE_AT_ORDER(i) <= size) max_order = i;
 	}
-
+	
 	uint32_t base_lowskim = base;
 	uint32_t size_lowskim = (base % PAGE_SIZE_AT_ORDER(max_order) == 0 ? 0 : PAGE_SIZE_AT_ORDER(max_order) - (base % PAGE_SIZE_AT_ORDER(max_order)));
-
+	
 	uint32_t base_topskim = (base + size) & ~(PAGE_SIZE_AT_ORDER(max_order)-1);
 	uint32_t size_topskim = base + size - base_topskim;
-
+	
 	uint32_t base_central = base_lowskim + size_lowskim;
 	uint32_t size_central = base_topskim - base_central;
-
+	
 	Page_MapMemoryChunk(base_topskim, size_topskim);
 	for (size_t i = 0; i < size_central/PAGE_SIZE_AT_ORDER(max_order); i++) {
 		uintptr_t page_ptr = base_central + (size_central/PAGE_SIZE_AT_ORDER(max_order) - 1 - i) * PAGE_SIZE_AT_ORDER(max_order);
 		struct Page_List* plist = (struct Page_List*)(page_ptr + KERNEL_HIGHER_HALF_OFFSET);
-
+		
 		plist->prev = PAGE_LIST_NULL;
 		plist->next = Page_lists[max_order];
 		if (Page_lists[max_order] != PAGE_LIST_NULL) Page_lists[max_order]->prev = plist;
