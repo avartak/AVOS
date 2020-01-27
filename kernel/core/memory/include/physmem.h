@@ -15,7 +15,7 @@
 #define PAGE_MAP_CLEARBIT(addr, order)    (  Page_maps[order][PAGE_MAP_IDX(addr, order)] &= ~(1 << PAGE_MAP_BIT(addr, order)) )
 #define PAGE_MAP_TOGGLEBIT(addr, order)   (  Page_maps[order][PAGE_MAP_IDX(addr, order)] ^=  (1 << PAGE_MAP_BIT(addr, order)) )
 
-#define PAGE_BUDDY(addr, order)           (  addr & (1 << (KERNEL_PAGE_SIZE_IN_BITS+1+order)) ? addr + (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) : addr - (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) )
+#define PAGE_BUDDY(addr, order)           (  addr % (1 << (KERNEL_PAGE_SIZE_IN_BITS+1+order)) == 0 ? addr + (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) : addr - (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) )
 
 #define PAGE_SIZE_AT_ORDER(order)         (size_t)(1 << (KERNEL_PAGE_SIZE_IN_BITS+order))
 #define PAGE_LIST_NULL                    ((struct Page_List*)0xFFFFFFFF)

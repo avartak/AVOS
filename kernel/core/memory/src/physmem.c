@@ -54,15 +54,17 @@ void Page_Release(void* pointer, uint8_t order) {
 	}	
 
 	uint8_t j = order;
-	while (j <= i) {
-		struct Page_List* buddy = (struct Page_List*)PAGE_BUDDY(addr, order);
-		buddy->prev->next = buddy->next;
-		buddy->next->prev = buddy->prev;
+	while (j < i) {
+		struct Page_List* buddy = (struct Page_List*)(PAGE_BUDDY(addr, j) + KERNEL_HIGHER_HALF_OFFSET);
+		if (buddy->prev != PAGE_LIST_NULL) buddy->prev->next = buddy->next;
+		if (buddy->next != PAGE_LIST_NULL) buddy->next->prev = buddy->prev;
+		if (buddy->prev == PAGE_LIST_NULL) Page_lists[j] = buddy->next;
 		buddy->prev = (struct Page_List*)0;
 		buddy->next = (struct Page_List*)0;
+		j++;
 	}
 
-	struct Page_List* pagelist_ptr = (struct Page_List*)(addr & ~(~((1 << (12+i)) - 1)));
+	struct Page_List* pagelist_ptr = (struct Page_List*)( (addr & ~((1 << (12+i)) - 1)) + KERNEL_HIGHER_HALF_OFFSET );
 	pagelist_ptr->prev = PAGE_LIST_NULL;
 	pagelist_ptr->next = Page_lists[i];
 	if (Page_lists[i] != PAGE_LIST_NULL) Page_lists[i]->prev = pagelist_ptr;
@@ -78,21 +80,21 @@ void* Page_Acquire(uint8_t order) {
 	}
 
 	void* page = Page_lists[i];
-	uintptr_t breakup_addr = (uintptr_t)page;
-	for (uint8_t j = i; j >= order; j--) {
-		PAGE_MAP_TOGGLEBIT(breakup_addr, j);
+	uintptr_t addr = (uintptr_t)page - KERNEL_HIGHER_HALF_OFFSET;
+	for (int8_t j = i; j >= order; j--) {
+		PAGE_MAP_TOGGLEBIT(addr, j);
 		if (j == i) {
 			Page_lists[j] = Page_lists[j]->next;
 			if (Page_lists[j] != PAGE_LIST_NULL) Page_lists[j]->prev = PAGE_LIST_NULL;
 		}
 		else {
-			breakup_addr += 1 << (12+j);
-			Page_lists[j] = (struct Page_List*)(breakup_addr);
+			uintptr_t breakup_addr = addr + (1 << (12+j));
+			Page_lists[j] = (struct Page_List*)(breakup_addr + KERNEL_HIGHER_HALF_OFFSET);
 			Page_lists[j]->next = PAGE_LIST_NULL;
 			Page_lists[j]->prev = PAGE_LIST_NULL;
 		}
 	}
-	return (void*)((uintptr_t)page + KERNEL_HIGHER_HALF_OFFSET);
+	return page;
 }
 
 void Page_MapMemoryChunk(uint64_t chunk_base, uint64_t chunk_size) {
