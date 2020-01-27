@@ -29,22 +29,22 @@ X86_RestoreInterrupts:
 	mov  eax, [esp+4]
 	cmp  al, 0xFF
 	je   .end
-    sti
+	sti
 	.end:
-    ret
+	ret
 
 global X86_GetStackBase
 X86_GetStackBase:
-    mov  eax, esp
-    and  eax, KERNEL_STACK_SIZE
+	mov  eax, esp
+	and  eax, KERNEL_STACK_SIZE
 	add  eax, KERNEL_STACK_SIZE
 
 global X86_SwitchToHigherHalf
 X86_SwitchToHigherHalf:
 	mov  eax, High_Memory
-    jmp  eax
-    High_Memory:
+	jmp  eax
+	High_Memory:
 	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
 	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
-    ret
+	ret
 
