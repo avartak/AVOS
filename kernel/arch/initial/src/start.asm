@@ -1,8 +1,6 @@
 %include "kernel/core/setup/include/setup.inc"
 
-%define PHYSADDR(x) (x-KERNEL_HIGHER_HALF_OFFSET)
-
-extern Welcome
+extern Initialize_Screen
 extern Initialize_BSP_Paging
 extern Initialize_CRT
 extern Initialize_BSP
@@ -31,7 +29,7 @@ Start:
 	call  X86_SwitchToHigherHalf
 	call  Initialize_CRT
 
-	call  Welcome
+	call  Initialize_Screen
 	call  Initialize_BSP
 	call  Initialize_System
 

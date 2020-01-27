@@ -11,7 +11,7 @@
 #define CONSOLE_VGA_NUM_LINES      25
 #define CONSOLE_VGA_NUM_COLUMNS    80
 
-#define CONSOLE_POS_START_WELCOME  32
+#define CONSOLE_POS_START_BANNER   38
 #define CONSOLE_POS_START          80
 #define CONSOLE_POS_END            80*25
 

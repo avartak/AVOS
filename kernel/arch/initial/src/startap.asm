@@ -6,7 +6,6 @@
 ; Macro to manipulate label addresses
 
 %define BOOTADDR(x) (x-StartAP+KERNEL_AP_BOOT_START_ADDR)
-%define PHYSADDR(x) (x-KERNEL_HIGHER_HALF_OFFSET)
 
 ; External functions we will be calling
 

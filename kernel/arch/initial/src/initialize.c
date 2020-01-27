@@ -20,14 +20,14 @@ struct X86_GDT_Descriptor Kernel_GDT_desc;
 struct X86_IDT_Entry      Kernel_IDT[0x100];
 struct X86_IDT_Descriptor Kernel_IDT_desc;
 
-void Welcome() {
+void Initialize_Screen() {
 
     for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
 
-    char* str = "Welcome to AVOS!";
-    for (size_t i = 0; str[i] != 0; i++) Console_screen[CONSOLE_POS_START_WELCOME+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | str[i];
+	const char* avos = "AVOS";
+	for (size_t i = 0; avos[i] != 0; i++) Console_screen[CONSOLE_POS_START_BANNER+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | avos[i];
 
-    Console_ClearScreen();
+	Console_ClearScreen();
     Console_SetCursorPosition(Console_pos);
     Console_MakeCursorVisible();
 
@@ -45,11 +45,10 @@ void Initialize_BSP_Paging() {
 	for (size_t i = KERNEL_MMAP_HIMEMIO_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
 		pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
-	
+
 	X86_CR3_Write(ipd);
 	X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
 	X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-
 }
 
 void Initialize_AP_Paging() {
@@ -59,7 +58,6 @@ void Initialize_AP_Paging() {
     X86_CR3_Write(ipd);
     X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
     X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-
 }
 
 
@@ -151,7 +149,6 @@ void Initialize_BSP() {
 
     LocalAPIC_Initialize();
 
-    Console_Print("CPU (%x) initialized\n", LocalAPIC_ID());
     Kernel_numcpus_online++;
 
 }
@@ -163,7 +160,6 @@ void Initialize_AP() {
 
 	LocalAPIC_Initialize();
 
-    Console_Print("CPU (%x) initialized\n", LocalAPIC_ID());
 	Kernel_numcpus_online++;
 
 	while (true) X86_Halt();
@@ -171,6 +167,8 @@ void Initialize_AP() {
 
 void Initialize_System() {
 
+	Page_BuddyMaps_Initialize();
+	
     IOAPIC_Initialize();
 
     KERNEL_IDT_ADDENTRY(0x20);
@@ -187,11 +185,7 @@ void Initialize_System() {
         Initialize_CPU(lapic_id->apic_id, KERNEL_AP_BOOT_START_ADDR);
     }
 
-    Console_Print("CPUs online : %x\n", Kernel_numcpus_online);
-
     Kernel_pagedirectory[0] = 0;
 
-	Page_BuddyMaps_Initialize();
-	
 	while (true) X86_Halt();
 }

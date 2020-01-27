@@ -17,7 +17,7 @@
 
 #define PAGE_BUDDY(addr, order)           (  addr & (1 << (KERNEL_PAGE_SIZE_IN_BITS+1+order)) ? addr + (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) : addr - (1 << (KERNEL_PAGE_SIZE_IN_BITS+order)) )
 
-#define PAGE_SIZE_AT_ORDER(order)         (1 << (KERNEL_PAGE_SIZE_IN_BITS+order))
+#define PAGE_SIZE_AT_ORDER(order)         (size_t)(1 << (KERNEL_PAGE_SIZE_IN_BITS+order))
 #define PAGE_LIST_NULL                    ((struct Page_List*)0xFFFFFFFF)
 #define PAGE_MAX_ORDER                    10
 
@@ -36,7 +36,7 @@ extern size_t Page_maps_size[];
 extern struct Page_List* Page_lists[];
 
 extern void  Page_BuddyMaps_Initialize();
-extern void  Page_MapMemoryChunk(struct Page_BootMap* chunk);
+extern void  Page_MapMemoryChunk(uint64_t chunk_base, uint64_t chunk_size);
 extern void* Page_Acquire(uint8_t order);
 extern void  Page_Release(void* pointer, uint8_t order);
 

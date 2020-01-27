@@ -41,7 +41,7 @@ X86_GetStackBase:
 
 global X86_SwitchToHigherHalf
 X86_SwitchToHigherHalf:
-    mov  eax, High_Memory
+	mov  eax, High_Memory
     jmp  eax
     High_Memory:
 	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
