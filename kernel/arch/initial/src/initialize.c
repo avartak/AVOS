@@ -8,6 +8,8 @@
 #include <kernel/arch/keyboard/include/keyboard.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/clib/include/string.h>
+#include <kernel/core/multiboot/include/multiboot.h>
+#include <kernel/core/memory/include/physmem.h>
 
 size_t   Kernel_numcpus_online = 0; 
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE)));
@@ -189,5 +191,7 @@ void Initialize_System() {
 
     Kernel_pagedirectory[0] = 0;
 
+	Page_BuddyMaps_Initialize();
+	
 	while (true) X86_Halt();
 }

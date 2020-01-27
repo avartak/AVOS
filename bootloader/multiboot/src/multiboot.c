@@ -412,7 +412,7 @@ bool Multiboot_SaveMemoryMaps(uint32_t mbi_addr) {
 	mbi_mem_ram = (struct Multiboot_Info_Memory_E820*)mem_ram_tag;
 	if (mbi_mem_ram->type != 0) return false;
 	
-	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, false, mmap, mmap_size) - mem_ram_tag;
+	mbi_mem_ram->size = Memory_StoreInfo(16 + mem_ram_tag, true, mmap, mmap_size) - mem_ram_tag;
 	mbi_mem_ram->type = MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED;
 	mbi_mem_ram->entry_size = sizeof(struct BootInfo_BlockRAM);
 	mbi_mem_ram->entry_version = 0;

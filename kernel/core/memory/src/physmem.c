@@ -1,17 +1,33 @@
 #include <kernel/core/memory/include/physmem.h>
+#include <kernel/core/multiboot/include/multiboot.h>
+#include <kernel/arch/console/include/console.h>
 
 uint8_t* Page_maps[] = {
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x10000])  {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x20000])  {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x40000])  {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x80000])  {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x100000]) {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x200000]) {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x400000]) {},
-	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x800000]) {},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x10000]  ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x20000]  ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x40000]  ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x80000]  ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x100000] ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x200000] ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x400000] ){},
+	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x800000] ){},
 	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x1000000]){},
 	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x2000000]){},
 	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x4000000]){}
+};
+
+size_t Page_maps_size[] = {
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x10000  ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x20000  ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x40000  ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x80000  ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x100000 ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x200000 ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x400000 ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x800000 ,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x1000000,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x2000000,
+	KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START/0x4000000
 };
 
 struct Page_List* Page_lists[] = {
@@ -80,3 +96,44 @@ void* Page_Acquire(uint8_t order) {
 	return (void*)((uintptr_t)page + KERNEL_HIGHER_HALF_OFFSET);
 }
 
+void Page_MapMemoryChunk(struct Page_BootMap* chunk) {
+	Console_Print("Block start, size : %x,  %x ", (uint32_t)(chunk->address), (uint32_t)(chunk->size));
+	if (chunk->address < KERNEL_MMAP_LOWMEM_END - KERNEL_HIGHER_HALF_OFFSET) {
+		Console_Print("(Ignored)");
+		return;
+	}
+	if (chunk->address >= KERNEL_MMAP_VIRTUAL_END - KERNEL_HIGHER_HALF_OFFSET) {
+		Console_Print("(Ignored)");
+		return;
+	}
+	Console_Print("\n");
+}
+
+void Page_BuddyMaps_Initialize() {
+
+	for (size_t i = 0; i <= PAGE_MAX_ORDER; i++) {
+		for (size_t j = 0; j < Page_maps_size[i]; j++) {
+			Page_maps[i][j] = 0;
+		}
+	}
+
+	extern struct Multiboot_Info_Start* BootInfo_Ptr;
+	
+	struct Multiboot_Info_Tag* mbi_tag;
+	uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
+	struct Page_BootMap* mmap = (struct Page_BootMap*)0;
+	size_t mmap_nentries = 0;
+	
+	mmap_nentries = 0;
+	for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
+		if (mbi_tag->type == MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED) {
+			struct Multiboot_Info_Memory_E820* mbi_tag_mmap = (struct Multiboot_Info_Memory_E820*)mbi_tag;
+			mmap = (struct Page_BootMap*)(mbi_tag_mmap->entries);
+			mmap_nentries = (mbi_tag_mmap->entry_size == 0 ? 0 : (mbi_tag_mmap->size - 16)/(mbi_tag_mmap->entry_size));
+		}
+	}
+	if (mmap == (struct Page_BootMap*)0|| mmap_nentries == 0) return;
+
+	Console_Print("\nMemory Map\n");
+	for (size_t i = 0; i < mmap_nentries; i++) Page_MapMemoryChunk(&mmap[mmap_nentries-1-i]);
+}

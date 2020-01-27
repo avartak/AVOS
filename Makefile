@@ -101,6 +101,7 @@ clean:
 	rm kernel/arch/console/src/*.o
 	rm kernel/arch/acpi/src/*.o
 	rm kernel/core/abi/src/*.o
+	rm kernel/core/multiboot/src/*.o
 	rm kernel/core/process/src/*.o
 	rm kernel/core/synch/src/*.o
 	rm kernel/core/memory/src/*.o

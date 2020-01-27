@@ -8,8 +8,6 @@
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/multiboot/include/multiboot.h>
 
-extern struct Multiboot_Info_Start* BootInfo_Ptr;
-
 bool APIC_InfoSaved = false;
 
 uintptr_t LocalAPIC_address = 0;
@@ -24,6 +22,8 @@ bool APIC_SaveInfo() {
 	if (APIC_InfoSaved) return true;
 
 	struct RSDPv1* rsdp = (struct RSDPv1*)0;
+
+	extern struct Multiboot_Info_Start* BootInfo_Ptr;
 
 	struct Multiboot_Info_Tag* mbi_tag;
 	uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
