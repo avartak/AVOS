@@ -53,7 +53,8 @@ $(KERNEL)/arch/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
 $(KERNEL)/core/process/src/state.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
-$(KERNEL)/core/synch/src/irqlock.c.o
+$(KERNEL)/core/synch/src/irqlock.c.o \
+$(KERNEL)/core/memory/src/physmem.c.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
@@ -102,6 +103,7 @@ clean:
 	rm kernel/core/abi/src/*.o
 	rm kernel/core/process/src/*.o
 	rm kernel/core/synch/src/*.o
+	rm kernel/core/memory/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o
