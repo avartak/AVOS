@@ -9,9 +9,9 @@
 
 ; External functions we will be calling
 
-extern Initialize_AP_Paging
-extern Initialize_AP
-extern X86_SwitchToHigherHalf
+extern Initialize_HigherHalf
+extern Initialize_ThisProcessor
+extern GetToWork
 
 ; Code section
 
@@ -40,7 +40,7 @@ StartAP:
 	or    al , 1
 	mov   cr0, eax
 
-	jmp   GDT.Code32:BOOTADDR(ProtectedMode)
+	jmp   GDT.Code:BOOTADDR(ProtectedMode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,41 +51,37 @@ section .text
 BITS 32
 
 	ProtectedMode:
-	jmp   GDT.Code32:PHYSADDR(StartAPReloc)
+	jmp   GDT.Code:PHYSADDR(StartAPReloc)
 
 	StartAPReloc:
 	
 	; Switch all registers to protected mode
 	
-	mov   ax, GDT.Data32
+	mov   ax, GDT.Data
 	mov   ds, ax
 	mov   es, ax
-	mov   fs, ax
-	mov   gs, ax
 	mov   ss, ax
 	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
 
-	call  Initialize_AP_Paging
-	call  X86_SwitchToHigherHalf
-	call  Initialize_AP
+	call  Initialize_HigherHalf
+	call  Initialize_ThisProcessor
+	call  GetToWork
+
+	Halt:
+    hlt
+    jmp  Halt
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Description of the GDT is given at the end 
 
 align 8
 
 GDT:
 	.Null   : equ $-GDT 
 	dq 0
-	.Code32 : equ $-GDT 
+	.Code   : equ $-GDT 
 	dq 0x00CF9A000000FFFF
-	.Data32 : equ $-GDT 
+	.Data   : equ $-GDT 
 	dq 0x00CF92000000FFFF
-	.Code16 : equ $-GDT 
-	dq 0x000F9A000000FFFF
-	.Data16 : equ $-GDT 
-	dq 0x000F92000000FFFF
 	.Pointer:
 	dw $-GDT-1
 	dd GDT

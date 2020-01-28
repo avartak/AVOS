@@ -39,12 +39,3 @@ X86_GetStackBase:
 	and  eax, KERNEL_STACK_SIZE
 	add  eax, KERNEL_STACK_SIZE
 
-global X86_SwitchToHigherHalf
-X86_SwitchToHigherHalf:
-	mov  eax, High_Memory
-	jmp  eax
-	High_Memory:
-	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
-	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
-	ret
-

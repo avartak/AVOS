@@ -12,7 +12,10 @@
 #include <kernel/core/memory/include/physmem.h>
 
 size_t   Kernel_numcpus_online = 0; 
-uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE)));
+uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE))) = {
+	[0]                                               = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE,
+	[X86_PAGING_PGDIR_IDX(KERNEL_MMAP_VIRTUAL_START)] = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE
+};
 
 struct X86_GDT_Entry      Kernel_GDT[7];
 struct X86_GDT_Descriptor Kernel_GDT_desc;
@@ -20,88 +23,44 @@ struct X86_GDT_Descriptor Kernel_GDT_desc;
 struct X86_IDT_Entry      Kernel_IDT[0x100];
 struct X86_IDT_Descriptor Kernel_IDT_desc;
 
-void Initialize_Screen() {
+void Initialize_Tables() {
 
-    for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
-
-	const char* avos = "AVOS";
-	for (size_t i = 0; avos[i] != 0; i++) Console_screen[CONSOLE_POS_START_BANNER+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | avos[i];
-
-	Console_ClearScreen();
-    Console_SetCursorPosition(Console_pos);
-    Console_MakeCursorVisible();
-
-}
-
-void Initialize_BSP_Paging() {
-
-	uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
-	uint32_t*  pd = (uint32_t*)ipd;
-	
-	pd[0] = 0 | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
-	for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
-		pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
-	}
-	for (size_t i = KERNEL_MMAP_HIMEMIO_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
-		pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
-	}
-
-	X86_CR3_Write(ipd);
-	X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
-	X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-}
-
-void Initialize_AP_Paging() {
+	/* Paging tables */
 
     uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
-   
-    X86_CR3_Write(ipd);
-    X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
-    X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-}
+    uint32_t*  pd = (uint32_t*)ipd;
 
+    pd[0] = 0 | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
+    for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
+        pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
+    }
+    for (size_t i = KERNEL_MMAP_HIMEMIO_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
+        pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
+    }
 
-void Initialize_BSP_GDT() {
+	/* GDT */
 
-	uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
-	
-	X86_GDT_SetupEntry(&(Kernel_GDT[0]), 0, 0                   , 0                   , 0        );
-	X86_GDT_SetupEntry(&(Kernel_GDT[1]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[2]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[3]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[4]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
-	
-	Kernel_GDT_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
-	Kernel_GDT_desc.base  = (uintptr_t)Kernel_GDT;
-	
-	X86_GDT_Load(&Kernel_GDT_desc);
-	X86_GDT_LoadKernelSegments();
-}
+    uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
 
-void Initialize_AP_GDT() {
+    X86_GDT_SetupEntry(&(Kernel_GDT[0]), 0, 0                   , 0                   , 0        );
+    X86_GDT_SetupEntry(&(Kernel_GDT[1]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
+    X86_GDT_SetupEntry(&(Kernel_GDT[2]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
+    X86_GDT_SetupEntry(&(Kernel_GDT[3]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
+    X86_GDT_SetupEntry(&(Kernel_GDT[4]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
 
-    X86_GDT_Load(&Kernel_GDT_desc);
-    X86_GDT_LoadKernelSegments();
-}
+    Kernel_GDT_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
+    Kernel_GDT_desc.base  = (uintptr_t)Kernel_GDT;
 
+	/* IDT */
 
-void Initialize_BSP_IDT() {
+    for (size_t i = 0; i < 256; i++) X86_IDT_SetupEntry(&(Kernel_IDT[i]), 0, 0, 0);
 
-	for (size_t i = 0; i < 256; i++) X86_IDT_SetupEntry(&(Kernel_IDT[i]), 0, 0, 0);
-
-	Kernel_IDT_desc.limit = (sizeof(struct X86_IDT_Entry))*0x100 - 1;
-	Kernel_IDT_desc.base  = (uintptr_t)Kernel_IDT;
-	
-	X86_IDT_Load(&Kernel_IDT_desc);
-}
-
-void Initialize_AP_IDT() {
-
-    X86_IDT_Load(&Kernel_IDT_desc);
+    Kernel_IDT_desc.limit = (sizeof(struct X86_IDT_Entry))*0x100 - 1;
+    Kernel_IDT_desc.base  = (uintptr_t)Kernel_IDT;
 }
 
 bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
@@ -142,10 +101,17 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 }
 
 
-void Initialize_BSP() {
+void Initialize_ThisProcessor() {
 
-    Initialize_BSP_GDT();
-    Initialize_BSP_IDT();
+	uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
+    X86_CR3_Write(ipd);
+    X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
+    X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
+
+    X86_GDT_Load(&Kernel_GDT_desc);
+    X86_GDT_LoadKernelSegments();
+
+	X86_IDT_Load(&Kernel_IDT_desc);
 
     LocalAPIC_Initialize();
 
@@ -153,23 +119,13 @@ void Initialize_BSP() {
 
 }
 
-void Initialize_AP() {
-
-	Initialize_AP_GDT();
-	Initialize_AP_IDT();
-
-	LocalAPIC_Initialize();
-
-	Kernel_numcpus_online++;
-
-	while (true) X86_Halt();
-}
-
 void Initialize_System() {
 
 	Page_BuddyMaps_Initialize();
 	
     IOAPIC_Initialize();
+
+	Console_Initialize();
 
     KERNEL_IDT_ADDENTRY(0x20);
     PIT_Initialize();
@@ -187,5 +143,10 @@ void Initialize_System() {
 
     Kernel_pagedirectory[0] = 0;
 
+}
+
+void GetToWork() {
+
 	while (true) X86_Halt();
+
 }

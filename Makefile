@@ -33,6 +33,7 @@ CLIB_OBJS=$(CLIB)/src/string.c.o
 KERNEL=kernel
 KERNEL_OBJS=\
 $(KERNEL)/arch/initial/src/initialize.c.o \
+$(KERNEL)/arch/initial/src/initialize.s.o \
 $(KERNEL)/arch/initial/src/startap.s.o \
 $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \

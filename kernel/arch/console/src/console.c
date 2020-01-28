@@ -225,3 +225,16 @@ void Console_Panic(const char* format, ...) {
 	Console_inpanic = true;
 	while (true);	
 }
+
+void Console_Initialize() {
+
+    for (size_t i = 0; i < CONSOLE_VGA_NUM_COLUMNS; i++) Console_screen[i] = Console_Attribute(CONSOLE_COLOR_BLACK, CONSOLE_COLOR_GREEN) | 0;
+
+    const char* avos = "AVOS";
+    for (size_t i = 0; avos[i] != 0; i++) Console_screen[CONSOLE_POS_START_BANNER+i] = Console_Attribute(CONSOLE_COLOR_RED, CONSOLE_COLOR_GREEN) | avos[i];
+
+    Console_ClearScreen();
+    Console_SetCursorPosition(Console_pos);
+    Console_MakeCursorVisible();
+
+}

@@ -55,5 +55,6 @@ extern void      Console_PrintString(const char* string);
 extern void      Console_VPrint(const char* format, va_list args);
 extern void      Console_Print(const char* format, ...);
 extern void      Console_Panic(const char* format, ...);
+extern void      Console_Initialize();
 
 #endif

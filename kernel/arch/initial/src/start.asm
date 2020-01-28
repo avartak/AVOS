@@ -1,11 +1,11 @@
 %include "kernel/core/setup/include/setup.inc"
 
-extern Initialize_Screen
-extern Initialize_BSP_Paging
+extern Initialize_HigherHalf
+extern Initialize_Tables
 extern Initialize_CRT
-extern Initialize_BSP
+extern Initialize_ThisProcessor
 extern Initialize_System
-extern X86_SwitchToHigherHalf
+extern GetToWork
 
 section .text
 
@@ -25,13 +25,12 @@ Start:
 	add   ebx, KERNEL_HIGHER_HALF_OFFSET
 	mov   [PHYSADDR(BootInfo_Ptr)], ebx
 
-	call  Initialize_BSP_Paging
-	call  X86_SwitchToHigherHalf
+	call  Initialize_HigherHalf
 	call  Initialize_CRT
-
-	call  Initialize_Screen
-	call  Initialize_BSP
+	call  Initialize_Tables
+	call  Initialize_ThisProcessor
 	call  Initialize_System
+	call  GetToWork
 
 	Halt:
     hlt
