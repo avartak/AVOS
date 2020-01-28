@@ -2,8 +2,9 @@
 #include <kernel/arch/i386/include/functions.h>
 
 struct State* State_GetCurrent() {
-	
-	struct State* kstate = (struct State*)X86_GetStackBase();
-	kstate--;
-	return kstate;
+	return (struct State*)(X86_GetStackBase() - sizeof(struct State));
+}
+
+struct CPU* CPU_GetCurrent() {
+    return (struct CPU*)(X86_GetStackBase() - sizeof(struct State) - sizeof(struct CPU));
 }

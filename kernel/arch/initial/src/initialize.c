@@ -41,30 +41,6 @@ void Initialize_Tables() {
 	/* Page allocation tables */
 	
 	Page_BuddyMaps_Initialize();
-
-	/* GDT */
-	
-	uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-	uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
-	
-	X86_GDT_SetupEntry(&(Kernel_GDT[0]), 0, 0                   , 0                   , 0        );
-	X86_GDT_SetupEntry(&(Kernel_GDT[1]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[2]), 0, X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[3]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
-	X86_GDT_SetupEntry(&(Kernel_GDT[4]), 0, X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
-	
-	Kernel_GDT_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
-	Kernel_GDT_desc.base  = (uintptr_t)Kernel_GDT;
-	
-	/* IDT */
-	
-	for (size_t i = 0; i < 256; i++) X86_IDT_SetupEntry(&(Kernel_IDT[i]), 0, 0, 0);
-	
-	Kernel_IDT_desc.limit = (sizeof(struct X86_IDT_Entry))*0x100 - 1;
-	Kernel_IDT_desc.base  = (uintptr_t)Kernel_IDT;
 }
 
 bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
@@ -113,15 +89,56 @@ void Initialize_ThisProcessor() {
 	X86_CR3_Write(ipd);
 	X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
 	X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-	
+
+	/* State of the base kernel thread */
+
+	struct State* state       = State_GetCurrent();
+	state->preemption_vetos   = 0;
+	state->interrupt_priority = 0;
+	state->interrupt_disabled = false;
+	state->scheduler          = (struct Context*)0xFFFFFFFF;
+	state->process            = (struct Process*)0xFFFFFFFF;
+
+	/* State of the CPU */
+
+    struct CPU* cpu = CPU_GetCurrent();
+	cpu->apic_id    = LocalAPIC_ID();
+	cpu->acpi_id    = 0;
+
 	/* GDT */
+
+	uint32_t tss_seg_base  = (uint32_t)(&(cpu->task_state));
+	uint32_t tss_seg_limit = sizeof(struct X86_TSS) - 1;
+
+    uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+    uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
+	uint8_t gdt_tss_access       = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_ACCESSED; 
+	   
+    X86_GDT_SetupEntry(&(cpu->gdt[0]), 0           , 0                   , 0                       , 0        );
+    X86_GDT_SetupEntry(&(cpu->gdt[1]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access    , gdt_flags);
+    X86_GDT_SetupEntry(&(cpu->gdt[2]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access    , gdt_flags);
+    X86_GDT_SetupEntry(&(cpu->gdt[3]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_code_access    , gdt_flags);
+    X86_GDT_SetupEntry(&(cpu->gdt[4]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_data_access    , gdt_flags);
+	X86_GDT_SetupEntry(&(cpu->gdt[5]), tss_seg_base, tss_seg_limit       , gdt_tss_access          , 0        );   
+
+    cpu->gdt_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
+    cpu->gdt_desc.base  = (uintptr_t)(cpu->gdt);
 	
-	X86_GDT_Load(&Kernel_GDT_desc);
+	X86_GDT_Load(&(cpu->gdt_desc));
 	X86_GDT_LoadKernelSegments();
-	
+	X86_GDT_LoadTaskRegister(X86_GDT_SEG_USER_TSS | X86_GDT_RPL3);	
+
 	/* IDT */
+
+    for (size_t i = 0; i < 256; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
+
+    cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*0x100 - 1;
+    cpu->idt_desc.base  = (uintptr_t)(cpu->idt);
 	
-	X86_IDT_Load(&Kernel_IDT_desc);
+	X86_IDT_Load(&(cpu->idt_desc));
 	
 	/* Local APIC */
 	

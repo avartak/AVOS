@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define X86_IDT_NENTRIES            0x100
+
 #define X86_IDT_FLAGS_PRESENT       0x80
 #define X86_IDT_FLAGS_DPL0          0
 #define X86_IDT_FLAGS_DPL1          0x20

@@ -26,13 +26,13 @@ Initialize_HigherHalf:
 global Initialize_Stack
 Initialize_Stack:
     extern Page_Acquire
-	push 0
+	push KERNEL_STACK_SIZE >> 12
 	call Page_Acquire
 	add  esp, 4
 
 	mov  edx, [esp]
     mov  esp,  eax
-	add  esp, 0x1000
+	add  esp, KERNEL_STACK_SIZE-KERNEL_STRUCT_CPU_SIZE-KERNEL_STRUCT_STATE_SIZE
     push edx
     ret
 

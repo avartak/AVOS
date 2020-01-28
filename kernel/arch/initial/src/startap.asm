@@ -65,8 +65,8 @@ BITS 32
 	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
 
 	call  Initialize_HigherHalf
-	call  Initialize_ThisProcessor
 	call  Initialize_Stack
+	call  Initialize_ThisProcessor
 	call  GetToWork
 
 	Halt:

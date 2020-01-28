@@ -30,8 +30,8 @@ Start:
 	call  Initialize_HigherHalf
 	call  Initialize_CRT
 	call  Initialize_Tables
-	call  Initialize_ThisProcessor
 	call  Initialize_Stack
+	call  Initialize_ThisProcessor
 	call  Initialize_System
 	call  GetToWork
 

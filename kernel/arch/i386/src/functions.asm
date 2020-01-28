@@ -36,6 +36,6 @@ X86_RestoreInterrupts:
 global X86_GetStackBase
 X86_GetStackBase:
 	mov  eax, esp
-	and  eax, KERNEL_STACK_SIZE
+	and  eax, ~(KERNEL_STACK_SIZE-1)
 	add  eax, KERNEL_STACK_SIZE
-
+	ret
