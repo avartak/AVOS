@@ -5,13 +5,13 @@
 #include <stdatomic.h>
 
 void SpinLock_Initialize(struct SpinLock* lock, const char* name) {
-    atomic_flag_clear_explicit(&lock->flag, memory_order_relaxed);
+    atomic_flag_clear_explicit(&(lock->flag), memory_order_relaxed);
 	lock->name = name;
 }
 
 void SpinLock_Acquire(struct SpinLock* lock) {
     STATE_INCREMENT_PREEMPTION_VETO();
-    while (atomic_flag_test_and_set_explicit(&lock->flag, memory_order_acquire));
+    while (atomic_flag_test_and_set_explicit(&(lock->flag), memory_order_acquire));
 }
 
 void SpinLock_Release(struct SpinLock* lock) {

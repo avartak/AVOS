@@ -7,6 +7,7 @@
 
 #include <kernel/arch/i386/include/gdt.h>
 #include <kernel/arch/i386/include/interrupts.h>
+#include <kernel/arch/i386/include/trap.h>
 #include <kernel/arch/console/include/console.h>
 
 struct CPU {
@@ -28,19 +29,27 @@ struct Context {
 }__attribute__((packed));
 
 struct Process {
-	uint32_t id;
+	uint32_t          id;
+	struct Process*   parent;
+	uint8_t           life_cycle;
+	bool              killed;
+	uint32_t*         page_directory;
+	struct context*   context;
+	uint8_t*          kernel_thread;
+	struct TrapFrame* trap_frame;
+	void*             wakeup_on;
 }__attribute__((packed));
 
 struct State {
-	size_t  preemption_vetos;
-	uint8_t interrupt_priority;
-	bool    interrupt_disabled;
+	size_t          preemption_vetos;
+	uint8_t         interrupt_priority;
 	struct Context* scheduler;
 	struct Process* process;
+	struct CPU*     cpu;
 }__attribute__((packed));
 
 extern struct State* State_GetCurrent();
-extern struct CPU*   CPU_GetCurrent();
+extern struct CPU*   State_GetCPU();
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
 	do { \

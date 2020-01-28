@@ -2,6 +2,7 @@
 #define KERNEL_PHYSMEM_H
 
 #include <kernel/core/setup/include/setup.h>
+#include <kernel/core/synch/include/irqlock.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -34,6 +35,7 @@ struct Page_List {
 extern uint8_t* Page_maps[];
 extern size_t Page_maps_size[];
 extern struct Page_List* Page_lists[];
+extern struct IRQLock Page_operation_lock;
 
 extern void  Page_BuddyMaps_Initialize();
 extern void  Page_MapMemoryChunk(uint64_t chunk_base, uint64_t chunk_size);

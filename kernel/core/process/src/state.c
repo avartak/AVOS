@@ -5,6 +5,6 @@ struct State* State_GetCurrent() {
 	return (struct State*)(X86_GetStackBase() - sizeof(struct State));
 }
 
-struct CPU* CPU_GetCurrent() {
-    return (struct CPU*)(X86_GetStackBase() - sizeof(struct State) - sizeof(struct CPU));
+struct CPU* State_GetCPU() {
+    return State_GetCurrent()->cpu;
 }

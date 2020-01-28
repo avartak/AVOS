@@ -7,7 +7,7 @@
 
 struct IRQLock {
 	struct SpinLock lock;
-	uint8_t interrupt_priority;
+	uint8_t previous_interrupt_priority;
 };
 
 extern void IRQLock_Initialize(struct IRQLock* lock, const char* name);

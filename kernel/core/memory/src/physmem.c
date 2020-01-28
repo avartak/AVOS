@@ -1,6 +1,8 @@
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/core/multiboot/include/multiboot.h>
 
+struct IRQLock Page_operation_lock;
+
 uint8_t* Page_maps[] = {
 	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x10000]  ){},
 	(uint8_t [(KERNEL_MMAP_VIRTUAL_END-KERNEL_MMAP_VIRTUAL_START)/0x20000]  ){},
@@ -45,6 +47,8 @@ struct Page_List* Page_lists[] = {
 
 void Page_Release(void* pointer, uint8_t order) {
 
+	IRQLock_Acquire(&Page_operation_lock);
+
 	uintptr_t addr = (uintptr_t)pointer - KERNEL_HIGHER_HALF_OFFSET;
 	uint8_t i = order;
 	while (true) {
@@ -69,9 +73,14 @@ void Page_Release(void* pointer, uint8_t order) {
 	pagelist_ptr->next = Page_lists[i];
 	if (Page_lists[i] != PAGE_LIST_NULL) Page_lists[i]->prev = pagelist_ptr;
 	Page_lists[i] = pagelist_ptr;
+
+	IRQLock_Release(&Page_operation_lock);
 }
 
 void* Page_Acquire(uint8_t order) {
+
+	IRQLock_Acquire(&Page_operation_lock);
+	//SpinLock_Acquire(&(Page_operation_lock.lock));
 
 	uint8_t i = order;
 	for (; i <= PAGE_MAX_ORDER; i++) {
@@ -94,6 +103,9 @@ void* Page_Acquire(uint8_t order) {
 			Page_lists[j]->prev = PAGE_LIST_NULL;
 		}
 	}
+
+	IRQLock_Release(&Page_operation_lock);
+	//SpinLock_Release(&(Page_operation_lock.lock));
 	return page;
 }
 
@@ -159,4 +171,6 @@ void Page_BuddyMaps_Initialize() {
 	if (mmap == (struct Page_BootMap*)0|| mmap_nentries == 0) return;
 
 	for (size_t i = 0; i < mmap_nentries; i++) Page_MapMemoryChunk(mmap[mmap_nentries-1-i].address, mmap[mmap_nentries-1-i].size);
+
+	IRQLock_Initialize(&Page_operation_lock, "physmem");
 }
