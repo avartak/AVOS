@@ -1,7 +1,6 @@
 %include "kernel/core/setup/include/setup.inc"
 
 extern Initialize_HigherHalf
-extern Initialize_Tables
 extern Initialize_CRT
 extern Initialize_ThisProcessor
 extern Initialize_Stack
@@ -29,7 +28,7 @@ Start:
 
 	call  Initialize_HigherHalf
 	call  Initialize_CRT
-	call  Initialize_Tables
+	call  Initialize_Memory
 	call  Initialize_Stack
 	call  Initialize_ThisProcessor
 	call  Initialize_System

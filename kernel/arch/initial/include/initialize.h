@@ -32,12 +32,7 @@
 extern size_t   Kernel_numcpus_online; 
 extern uint32_t Kernel_pagedirectory[]__attribute__((aligned(X86_PAGING_PAGESIZE)));
 
-extern struct X86_GDT_Entry      Kernel_GDT[];
-extern struct X86_GDT_Descriptor Kernel_GDT_desc;
-
-extern struct X86_IDT_Entry      Kernel_IDT[0x100];
-extern struct X86_IDT_Descriptor Kernel_IDT_desc;
-
+extern void Initialize_Memory();
 extern bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address);
 extern void Initialize_ThisProcessor();
 extern void Initialize_System();

@@ -17,20 +17,13 @@ uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X
 	[X86_PAGING_PGDIR_IDX(KERNEL_MMAP_VIRTUAL_START)] = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE
 };
 
-struct X86_GDT_Entry      Kernel_GDT[7];
-struct X86_GDT_Descriptor Kernel_GDT_desc;
-
-struct X86_IDT_Entry      Kernel_IDT[0x100];
-struct X86_IDT_Descriptor Kernel_IDT_desc;
-
-void Initialize_Tables() {
+void Initialize_Memory() {
 
 	/* Paging tables */
 	
 	uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
 	uint32_t*  pd = (uint32_t*)ipd;
 	
-	pd[0] = 0 | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
 	    pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
