@@ -103,17 +103,27 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 
 void Initialize_ThisProcessor() {
 
+	/* Paging */
+
 	uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
     X86_CR3_Write(ipd);
     X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
     X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
 
+	/* GDT */
+
     X86_GDT_Load(&Kernel_GDT_desc);
     X86_GDT_LoadKernelSegments();
 
+	/* IDT */
+
 	X86_IDT_Load(&Kernel_IDT_desc);
 
+	/* Local APIC */
+
     LocalAPIC_Initialize();
+
+	/* CPU online */
 
     Kernel_numcpus_online++;
 
