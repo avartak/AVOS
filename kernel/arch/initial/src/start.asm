@@ -4,6 +4,8 @@ extern Initialize_HigherHalf
 extern Initialize_Tables
 extern Initialize_CRT
 extern Initialize_ThisProcessor
+extern Initialize_Stack
+extern Initialize_Memory
 extern Initialize_System
 extern GetToWork
 
@@ -17,7 +19,7 @@ Start:
 	cli
 	cld 
 
-	mov   esp, PHYSADDR(Start+KERNEL_STACK_SIZE)
+	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
 
 	cmp   eax, 0x36d76289
 	jne   Halt
@@ -29,14 +31,13 @@ Start:
 	call  Initialize_CRT
 	call  Initialize_Tables
 	call  Initialize_ThisProcessor
+	call  Initialize_Stack
 	call  Initialize_System
 	call  GetToWork
 
 	Halt:
     hlt
     jmp  Halt
-
-	times KERNEL_STACK_SIZE-($-$$) db 0
 
 section .data
 

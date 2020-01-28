@@ -19,8 +19,8 @@ Initialize_HigherHalf:
 	mov  eax, High_Memory
 	jmp  eax
 	High_Memory:
-	add  esp   , DWORD KERNEL_HIGHER_HALF_OFFSET
-	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
+	add  esp , DWORD KERNEL_HIGHER_HALF_OFFSET
+	add [esp], DWORD KERNEL_HIGHER_HALF_OFFSET
 	ret
 
 global Initialize_Stack

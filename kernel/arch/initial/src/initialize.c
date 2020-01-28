@@ -38,6 +38,10 @@ void Initialize_Tables() {
 	    pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
 	
+	/* Page allocation tables */
+	
+	Page_BuddyMaps_Initialize();
+
 	/* GDT */
 	
 	uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
@@ -126,13 +130,10 @@ void Initialize_ThisProcessor() {
 	/* CPU online */
 	
 	Kernel_numcpus_online++;
-
 }
 
 void Initialize_System() {
 
-	Page_BuddyMaps_Initialize();
-	
 	IOAPIC_Initialize();
 	
 	Console_Initialize();
@@ -142,7 +143,7 @@ void Initialize_System() {
 	
 	KERNEL_IDT_ADDENTRY(0x21);
 	Keyboard_Initialize();
-	
+
 	extern uintptr_t StartAP;
 	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, 0x1000);
 	for (size_t i = 0; i < LocalAPIC_Num; i++) {

@@ -11,6 +11,7 @@
 
 extern Initialize_HigherHalf
 extern Initialize_ThisProcessor
+extern Initialize_Stack
 extern GetToWork
 
 ; Code section
@@ -65,6 +66,7 @@ BITS 32
 
 	call  Initialize_HigherHalf
 	call  Initialize_ThisProcessor
+	call  Initialize_Stack
 	call  GetToWork
 
 	Halt:
