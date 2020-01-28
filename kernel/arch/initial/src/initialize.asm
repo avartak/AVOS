@@ -23,3 +23,17 @@ Initialize_HigherHalf:
 	add [esp]  , DWORD KERNEL_HIGHER_HALF_OFFSET
 	ret
 
+global Initialize_Stack
+Initialize_Stack:
+    extern Page_Acquire
+	push 0
+	call Page_Acquire
+	add  esp, 4
+
+	mov  edx, [esp]
+    mov  esp,  eax
+	add  esp, 0x1000
+    push edx
+    ret
+
+
