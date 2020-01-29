@@ -10,6 +10,12 @@
 #include <kernel/arch/i386/include/trap.h>
 #include <kernel/arch/console/include/console.h>
 
+struct CPU_Timer {
+	uint8_t  timer_type;
+	bool     internal_timer_setup;
+	uint64_t internal_timer_ticks;
+}__attribute__((packed));
+
 struct CPU {
 	uint32_t apic_id;
 	uint32_t acpi_id;
@@ -19,6 +25,7 @@ struct CPU {
 	struct X86_GDT_Descriptor gdt_desc;
 	struct X86_IDT_Entry idt[X86_IDT_NENTRIES];
 	struct X86_IDT_Descriptor idt_desc;
+	struct CPU_Timer timer;
 }__attribute__((packed));
 
 struct Context {
@@ -50,6 +57,7 @@ struct State {
 
 extern struct State* State_GetCurrent();
 extern struct CPU*   State_GetCPU();
+extern size_t        State_CPUBlockSize();
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
 	do { \

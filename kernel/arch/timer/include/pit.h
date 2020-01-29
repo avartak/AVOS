@@ -2,6 +2,7 @@
 #define KERNEL_PIT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define PIT_IOPORT_CHAN0                 0x40
 #define PIT_IOPORT_CHAN1                 0x41
@@ -33,6 +34,7 @@
 #define PIT_IRQLINE                       0
 
 extern uint64_t PIT_ticks;
+extern bool     PIT_enabled;
 
 extern void     PIT_Initialize();
 extern void     PIT_Reset();

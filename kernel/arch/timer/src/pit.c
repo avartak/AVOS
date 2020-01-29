@@ -4,6 +4,7 @@
 #include <stdatomic.h>
 
 uint64_t PIT_ticks = 0;
+bool     PIT_enabled = false;
 
 void     PIT_Initialize();
 void     PIT_Reset();
@@ -19,6 +20,7 @@ void PIT_Initialize() {
     X86_Outb(PIT_IOPORT_CHAN0, (uint8_t)((pit_counter & 0xFF00) >> 8));
 
     IOAPIC_EnableInterrupt(0, 0x20, LocalAPIC_ID());
+	PIT_enabled = true;
 }
 
 void PIT_Reset() {

@@ -8,3 +8,7 @@ struct State* State_GetCurrent() {
 struct CPU* State_GetCPU() {
     return State_GetCurrent()->cpu;
 }
+
+size_t State_CPUBlockSize() {
+	return sizeof(struct State) + sizeof(struct CPU);
+}
