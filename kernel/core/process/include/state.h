@@ -13,6 +13,7 @@
 struct CPU {
 	uint32_t apic_id;
 	uint32_t acpi_id;
+	struct Context* scheduler;
 	struct X86_TSS task_state;
 	struct X86_GDT_Entry gdt[X86_GDT_NENTRIES];
 	struct X86_GDT_Descriptor gdt_desc;
@@ -43,7 +44,6 @@ struct Process {
 struct State {
 	size_t          preemption_vetos;
 	uint8_t         interrupt_priority;
-	struct Context* scheduler;
 	struct Process* process;
 	struct CPU*     cpu;
 }__attribute__((packed));

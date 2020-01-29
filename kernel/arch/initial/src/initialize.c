@@ -89,8 +89,6 @@ void Initialize_ThisProcessor() {
 	struct State* state       = State_GetCurrent();
 	state->preemption_vetos   = 0;
 	state->interrupt_priority = 0;
-	state->scheduler          = (struct Context*)0xFFFFFFFF;
-	state->process            = (struct Process*)0xFFFFFFFF;
 	state->cpu                = (struct CPU*)((uintptr_t)state - sizeof(struct CPU));
 
 	/* State of the CPU */
