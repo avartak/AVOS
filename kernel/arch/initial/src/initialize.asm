@@ -28,7 +28,7 @@ Initialize_Stack:
     extern Page_Acquire
 	extern State_CPUBlockSize
 
-	push KERNEL_STACK_SIZE >> 12
+	push (KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS)
 	call Page_Acquire
 	add  esp, 4
 
@@ -37,6 +37,7 @@ Initialize_Stack:
 	add  esp, KERNEL_STACK_SIZE
 	call State_CPUBlockSize
 	add  esp, eax
+	and  esp, ~(KERNEL_STACK_ALIGNMENT-1)
     push edx
     ret
 
