@@ -6,8 +6,8 @@
 #include <stdatomic.h>
 
 #include <kernel/arch/i386/include/gdt.h>
-#include <kernel/arch/i386/include/interrupts.h>
-#include <kernel/arch/i386/include/trap.h>
+#include <kernel/arch/i386/include/idt.h>
+#include <kernel/arch/i386/include/interrupt.h>
 #include <kernel/arch/console/include/console.h>
 
 struct CPU_Timer {

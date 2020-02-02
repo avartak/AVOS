@@ -12,15 +12,26 @@
 %endmacro
 
 %macro Interrupt_DoCommonHandling 1
-	extern Interrupt_Handler
+	extern Interrupt_BaseHandler
 	extern LocalAPIC_EOI
-	pushad
 	push %1
-	call Interrupt_Handler
+	push ds
+	push es
+	push fs
+	push gs
+	pushad
+	
+	push esp
+	call Interrupt_BaseHandler
 	add  esp, 4
 	call LocalAPIC_EOI
+
 	popad
-	add  esp, 4
+	pop  gs
+	pop  fs
+	pop  es
+	pop  ds
+	add  esp, 8
 	iret
 
 %endmacro
@@ -76,7 +87,7 @@ Interrupt_HandlerForNoErrorCode 0x2C
 Interrupt_HandlerForNoErrorCode 0x2D
 Interrupt_HandlerForNoErrorCode 0x2E
 Interrupt_HandlerForNoErrorCode 0x2F
-
 Interrupt_HandlerForNoErrorCode 0x30
+
 Interrupt_HandlerForNoErrorCode 0x80
 

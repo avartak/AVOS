@@ -80,7 +80,6 @@ void Page_Release(void* pointer, uint8_t order) {
 void* Page_Acquire(uint8_t order) {
 
 	IRQLock_Acquire(&Page_operation_lock);
-	//SpinLock_Acquire(&(Page_operation_lock.lock));
 
 	uint8_t i = order;
 	for (; i <= PAGE_MAX_ORDER; i++) {
@@ -105,7 +104,6 @@ void* Page_Acquire(uint8_t order) {
 	}
 
 	IRQLock_Release(&Page_operation_lock);
-	//SpinLock_Release(&(Page_operation_lock.lock));
 	return page;
 }
 

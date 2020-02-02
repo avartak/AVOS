@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include <kernel/core/synch/include/spinlock.h>
 
 #define CONSOLE_VGA_TEXT_BUFFER    0xB8000
 #define CONSOLE_VGA_NUM_LINES      25
@@ -40,6 +41,8 @@
 extern uint16_t* Console_screen;
 extern uint16_t  Console_pos;
 extern bool      Console_inpanic;
+
+extern struct SpinLock Console_lock;
 
 extern uint16_t  Console_Attribute(uint8_t fore, uint8_t back);
 extern void      Console_ClearLine(uint8_t line);

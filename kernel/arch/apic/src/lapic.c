@@ -1,8 +1,7 @@
 #include <kernel/arch/apic/include/apic.h>
 #include <kernel/arch/apic/include/lapic.h>
-#include <kernel/arch/timer/include/pit.h>
+#include <kernel/arch/pit/include/pit.h>
 #include <kernel/arch/console/include/console.h>
-#include <kernel/arch/timer/include/pit.h>
 #include <kernel/core/setup/include/setup.h>
 
 uintptr_t LocalAPIC_address = 0;
@@ -71,13 +70,6 @@ bool LocalAPIC_Initialize() {
 	// Enable all interrupts in the local APIC (this does not apply to the CPU) by setting the task priority register to the lowest possible value i.e. 0
 	LocalAPIC_WriteTo(LAPIC_REG_TPR, 0); 
 
-	// Calibrate local APIC timer
-	LocalAPIC_WriteTo(LAPIC_REG_TDCR, 0x3);
-	LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_TIMER_MODE_PERIODIC | 0x30);
-	LocalAPIC_WriteTo(LAPIC_REG_TICR, 0xFFFFFFFF);
-	LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_MASKED);
-	LocalAPIC_GetTimerFrequency(25);
-
 	return true;
 }
 
@@ -85,6 +77,7 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 
 	// Can't do this unless the PIT is up and running
 	if (!PIT_enabled) return 0;
+	PIT_Set(10000);
 
 	size_t freq = 0;
 	for (size_t i = 0; i < iterations; i++) {
@@ -101,7 +94,7 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 		// Wait for the PIT to count 10 ms
 		PIT_Delay(100);
 		
-		// Stop the APIC timer
+		// Stop and reset the APIC timer
 		LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_MASKED);
 		
 		// Now we know how often the APIC timer has ticked in 10 ms
@@ -109,11 +102,32 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 	
 	}
 
+	PIT_Reset();
+
 	// The timer frequency
 	freq /= iterations;
 	freq *= 1600;
-	Console_Print("%u\n", freq);
 
 	return freq;
 
 }
+
+void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
+
+	LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_MASKED);
+
+	size_t lapic_freq = LocalAPIC_GetTimerFrequency(10);
+	if (lapic_freq == 0) return;
+
+	State_GetCPU()->timer.timer_ticks = 0;
+	Interrupt_AddEntry(vector, LocalAPIC_Timer_HandleInterrupt);
+
+    LocalAPIC_WriteTo(LAPIC_REG_TDCR, 0x3);
+    LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_TIMER_MODE_PERIODIC | vector);
+    LocalAPIC_WriteTo(LAPIC_REG_TICR, lapic_freq/freq);
+}
+
+void LocalAPIC_Timer_HandleInterrupt(__attribute__ ((unused))struct Interrupt_Frame* frame) {
+	(State_GetCPU()->timer.timer_ticks)++;
+}
+

@@ -1,4 +1,4 @@
-#include <kernel/arch/i386/include/interrupts.h>
+#include <kernel/arch/i386/include/idt.h>
 
 void X86_IDT_SetupEntry(struct X86_IDT_Entry* entry, uintptr_t address, uint16_t segment, uint8_t type) {
 

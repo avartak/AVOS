@@ -1,5 +1,5 @@
-#ifndef KERNEL_X86_INTERRUPTS_H
-#define KERNEL_X86_INTERRUPTS_H
+#ifndef KERNEL_X86_IDT_H
+#define KERNEL_X86_IDT_H
 
 #include <stdint.h>
 

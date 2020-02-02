@@ -7,6 +7,8 @@ uint16_t* Console_screen = (uint16_t*)(CONSOLE_VGA_TEXT_BUFFER+KERNEL_HIGHER_HAL
 uint16_t  Console_pos = CONSOLE_POS_START;
 bool      Console_inpanic = false;
 
+struct SpinLock Console_lock;
+
 void Console_MakeCursorInvisible() {
 
     X86_Outb(0x3D4, 0x0A);
@@ -143,6 +145,8 @@ void Console_PrintNum(uint32_t num, uint32_t num_type, bool withsign) {
 
 void Console_Print(const char* format, ...) {
 
+	SpinLock_Acquire(&Console_lock);
+
 	va_list args;
 	va_list args_copy;
 	va_start(args, format);
@@ -150,6 +154,8 @@ void Console_Print(const char* format, ...) {
 	va_end(args);
 	Console_VPrint(format, args_copy);
 	va_end(args_copy);
+
+	SpinLock_Release(&Console_lock);
 
 }
 
@@ -237,4 +243,5 @@ void Console_Initialize() {
     Console_SetCursorPosition(Console_pos);
     Console_MakeCursorVisible();
 
+	SpinLock_Initialize(&Console_lock, "console");
 }

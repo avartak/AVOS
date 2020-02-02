@@ -5,7 +5,7 @@
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/apic/include/ioapic.h>
 #include <kernel/arch/acpi/include/madt.h>
-#include <kernel/arch/timer/include/pit.h>
+#include <kernel/arch/pit/include/pit.h>
 #include <kernel/arch/keyboard/include/keyboard.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/clib/include/string.h>
@@ -54,7 +54,9 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 	uint16_t* warm_reset_vector = (uint16_t*)(SMP_WARM_RESET_VECTOR + KERNEL_HIGHER_HALF_OFFSET);
 	warm_reset_vector[0] = SMP_WARM_RESET_BOOT_OFF(boot_address);
 	warm_reset_vector[1] = SMP_WARM_RESET_BOOT_SEG(boot_address);
-	
+
+	PIT_Set(10000);
+
 	// Issue an INIT-LEVEL-ASSERT followed by INIT-LEVEL-DEASSERT (with a 200 microsecond delay)
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_INIT | LAPIC_ICR_TRIGGER_LEVEL | LAPIC_ICR_LEVEL_ASSERT);
@@ -70,8 +72,11 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_STARTUP | LAPIC_STARTUP_VECTOR(boot_address));
 	PIT_Delay(2);
+
+	PIT_Reset();
 	
 	while (Kernel_numcpus_online == inumcpus);
+
 	return true;
 }
 
@@ -128,6 +133,10 @@ void Initialize_ThisProcessor() {
 	/* IDT */
 	
 	for (size_t i = 0; i < X86_IDT_NENTRIES; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
+
+	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x20]), (uintptr_t)Interrupt_0x20, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x21]), (uintptr_t)Interrupt_0x21, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x30]), (uintptr_t)Interrupt_0x30, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
 	
 	cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*X86_IDT_NENTRIES - 1;
 	cpu->idt_desc.base  = (uintptr_t)(cpu->idt);
@@ -149,9 +158,9 @@ void Initialize_System() {
 	
 	Console_Initialize();
 	
-	PIT_Initialize();
+	PIT_Initialize(PIT_IRQLINE, 0x20);
 	
-	Keyboard_Initialize();
+	Keyboard_Initialize(KEYBOARD_PS2_IRQLINE, 0x21);
 	
 	extern uintptr_t StartAP;
 	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, KERNEL_AP_BOOT_START_SIZE);
@@ -165,6 +174,10 @@ void Initialize_System() {
 }
 
 void GetToWork() {
+
+	LocalAPIC_Initialize_Timer(0x30, 200);
+
+	Console_Print("CPU %u starting work\n", LocalAPIC_ID());
 
 	while (true) X86_Halt();
 

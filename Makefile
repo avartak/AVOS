@@ -39,18 +39,18 @@ $(KERNEL)/arch/i386/src/functions.s.o \
 $(KERNEL)/arch/i386/src/controlregs.s.o \
 $(KERNEL)/arch/i386/src/gdt.s.o \
 $(KERNEL)/arch/i386/src/gdt.c.o \
-$(KERNEL)/arch/i386/src/interrupts.s.o \
-$(KERNEL)/arch/i386/src/interrupts.c.o \
+$(KERNEL)/arch/i386/src/idt.s.o \
+$(KERNEL)/arch/i386/src/idt.c.o \
 $(KERNEL)/arch/i386/src/flags.s.o \
 $(KERNEL)/arch/i386/src/ioports.s.o \
-$(KERNEL)/arch/i386/src/trap.s.o \
-$(KERNEL)/arch/i386/src/trap.c.o \
+$(KERNEL)/arch/i386/src/interrupt.s.o \
+$(KERNEL)/arch/i386/src/interrupt.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
 $(KERNEL)/arch/apic/src/ioapic.c.o \
 $(KERNEL)/arch/apic/src/lapic.c.o \
-$(KERNEL)/arch/timer/src/pit.c.o \
+$(KERNEL)/arch/pit/src/pit.c.o \
 $(KERNEL)/arch/keyboard/src/keyboard.c.o \
 $(KERNEL)/arch/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
@@ -99,7 +99,7 @@ clean:
 	rm kernel/arch/initial/src/*.o
 	rm kernel/arch/i386/src/*.o
 	rm kernel/arch/apic/src/*.o
-	rm kernel/arch/timer/src/*.o
+	rm kernel/arch/pit/src/*.o
 	rm kernel/arch/keyboard/src/*.o
 	rm kernel/arch/console/src/*.o
 	rm kernel/arch/acpi/src/*.o
