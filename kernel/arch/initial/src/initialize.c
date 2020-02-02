@@ -2,7 +2,8 @@
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/i386/include/ioports.h>
 #include <kernel/arch/i386/include/functions.h>
-#include <kernel/arch/apic/include/apic.h>
+#include <kernel/arch/apic/include/lapic.h>
+#include <kernel/arch/apic/include/ioapic.h>
 #include <kernel/arch/acpi/include/madt.h>
 #include <kernel/arch/timer/include/pit.h>
 #include <kernel/arch/keyboard/include/keyboard.h>
@@ -26,10 +27,10 @@ void Initialize_Memory() {
 	uint32_t*  pd = (uint32_t*)ipd;
 	
 	for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
-	    pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
+		pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
 	for (size_t i = KERNEL_MMAP_HIMEMIO_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) {
-	    pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
+		pd[X86_PAGING_PGDIR_IDX(i)] = i | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
 	
 	/* Page allocation tables */
@@ -83,53 +84,53 @@ void Initialize_ThisProcessor() {
 	X86_CR3_Write(ipd);
 	X86_CR4_Write(X86_CR4_Read() | X86_CR4_PSE);
 	X86_CR0_Write(X86_CR0_Read() | X86_CR0_PG | X86_CR0_WP);
-
+	
 	/* State of the base kernel thread */
-
+	
 	struct State* state       = State_GetCurrent();
 	state->preemption_vetos   = 0;
 	state->interrupt_priority = 0;
 	state->cpu                = (struct CPU*)((uintptr_t)state - sizeof(struct CPU));
-
+	
 	/* State of the CPU */
-
-    struct CPU* cpu = State_GetCPU();
+	
+	struct CPU* cpu = State_GetCPU();
 	cpu->apic_id    = LocalAPIC_ID();
 	cpu->acpi_id    = 0;
 	Kernel_cpus[Kernel_numcpus_online] = cpu;
-
+	
 	/* GDT */
-
+	
 	uint32_t tss_seg_base  = (uint32_t)(&(cpu->task_state));
 	uint32_t tss_seg_limit = sizeof(struct X86_TSS) - 1;
-
-    uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-    uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
-    uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-    uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
-    uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
+	
+	uint8_t gdt_kern_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+	uint8_t gdt_user_code_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_READWRITE;
+	uint8_t gdt_kern_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING0 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+	uint8_t gdt_user_data_access = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_PRIV_RING3 | X86_GDT_FLAGS_CODEORDATA |                            X86_GDT_FLAGS_READWRITE;
+	uint8_t gdt_flags            = X86_GDT_FLAGS_4GB     | X86_GDT_FLAGS_PMODE32;
 	uint8_t gdt_tss_access       = X86_GDT_FLAGS_PRESENT | X86_GDT_FLAGS_EXECUTABLE | X86_GDT_FLAGS_ACCESSED; 
 	   
-    X86_GDT_SetupEntry(&(cpu->gdt[0]), 0           , 0                   , 0                   , 0        );
-    X86_GDT_SetupEntry(&(cpu->gdt[1]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
-    X86_GDT_SetupEntry(&(cpu->gdt[2]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
-    X86_GDT_SetupEntry(&(cpu->gdt[3]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
-    X86_GDT_SetupEntry(&(cpu->gdt[4]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
+	X86_GDT_SetupEntry(&(cpu->gdt[0]), 0           , 0                   , 0                   , 0        );
+	X86_GDT_SetupEntry(&(cpu->gdt[1]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_code_access, gdt_flags);
+	X86_GDT_SetupEntry(&(cpu->gdt[2]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_kern_data_access, gdt_flags);
+	X86_GDT_SetupEntry(&(cpu->gdt[3]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_code_access, gdt_flags);
+	X86_GDT_SetupEntry(&(cpu->gdt[4]), 0           , X86_GDT_SEGLIMIT_4GB, gdt_user_data_access, gdt_flags);
 	X86_GDT_SetupEntry(&(cpu->gdt[5]), tss_seg_base, tss_seg_limit       , gdt_tss_access      , 0        );   
-
-    cpu->gdt_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
-    cpu->gdt_desc.base  = (uintptr_t)(cpu->gdt);
+	
+	cpu->gdt_desc.limit = (sizeof(struct X86_GDT_Entry))*7 - 1;
+	cpu->gdt_desc.base  = (uintptr_t)(cpu->gdt);
 	
 	X86_GDT_Load(&(cpu->gdt_desc));
 	X86_GDT_LoadKernelSegments();
 	X86_GDT_LoadTaskRegister(X86_GDT_SEG_USER_TSS | X86_GDT_RPL3);	
-
+	
 	/* IDT */
-
-    for (size_t i = 0; i < X86_IDT_NENTRIES; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
-
-    cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*X86_IDT_NENTRIES - 1;
-    cpu->idt_desc.base  = (uintptr_t)(cpu->idt);
+	
+	for (size_t i = 0; i < X86_IDT_NENTRIES; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
+	
+	cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*X86_IDT_NENTRIES - 1;
+	cpu->idt_desc.base  = (uintptr_t)(cpu->idt);
 	
 	X86_IDT_Load(&(cpu->idt_desc));
 	
@@ -148,12 +149,10 @@ void Initialize_System() {
 	
 	Console_Initialize();
 	
-	KERNEL_IDT_ADDENTRY(0x20);
 	PIT_Initialize();
 	
-	KERNEL_IDT_ADDENTRY(0x21);
 	Keyboard_Initialize();
-
+	
 	extern uintptr_t StartAP;
 	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, KERNEL_AP_BOOT_START_SIZE);
 	for (size_t i = 0; i < LocalAPIC_Num; i++) {

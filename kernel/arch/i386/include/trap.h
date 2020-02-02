@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+#include <kernel/arch/i386/include/interrupts.h>
+#include <kernel/core/process/include/state.h>
+
+#define TRAP_ADDINTERRUPT(num) \
+    do { \
+        extern void Interrupt_##num(); \
+        X86_IDT_SetupEntry(&(State_GetCPU()->idt[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32); \
+    } while (0)
+
+
 struct TrapFrame {
 	uint32_t edi;
 	uint32_t esi;
@@ -21,6 +31,7 @@ struct TrapFrame {
 	uint16_t padding3;
 	uint16_t ds;
 	uint16_t padding4;
+
 	uint32_t trapno;
 	
 	uint32_t err;
@@ -35,5 +46,6 @@ struct TrapFrame {
 };
 
 extern void Interrupt_Handler(uint32_t interrupt);
+extern void Interrupt_AddEntry(uint8_t entry, uintptr_t handler);
 
 #endif

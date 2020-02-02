@@ -77,5 +77,6 @@ Interrupt_HandlerForNoErrorCode 0x2D
 Interrupt_HandlerForNoErrorCode 0x2E
 Interrupt_HandlerForNoErrorCode 0x2F
 
+Interrupt_HandlerForNoErrorCode 0x30
 Interrupt_HandlerForNoErrorCode 0x80
 

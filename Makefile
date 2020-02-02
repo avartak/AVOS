@@ -48,6 +48,8 @@ $(KERNEL)/arch/i386/src/trap.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
+$(KERNEL)/arch/apic/src/ioapic.c.o \
+$(KERNEL)/arch/apic/src/lapic.c.o \
 $(KERNEL)/arch/timer/src/pit.c.o \
 $(KERNEL)/arch/keyboard/src/keyboard.c.o \
 $(KERNEL)/arch/console/src/console.c.o \

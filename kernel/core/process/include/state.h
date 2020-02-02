@@ -12,8 +12,7 @@
 
 struct CPU_Timer {
 	uint8_t  timer_type;
-	bool     internal_timer_setup;
-	uint64_t internal_timer_ticks;
+	uint64_t timer_ticks;
 }__attribute__((packed));
 
 struct CPU {

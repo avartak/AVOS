@@ -1,6 +1,8 @@
 #include <kernel/arch/keyboard/include/keyboard.h>
 #include <kernel/arch/i386/include/ioports.h>
-#include <kernel/arch/apic/include/apic.h>
+#include <kernel/arch/i386/include/trap.h>
+#include <kernel/arch/apic/include/ioapic.h>
+#include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
 
@@ -87,6 +89,7 @@ static uint8_t Keyboard_ctlmap[256] =
 
 
 void Keyboard_Initialize() {
+	TRAP_ADDINTERRUPT(0x21);
     IOAPIC_EnableInterrupt(1, 0x21, LocalAPIC_ID());
 }
 
