@@ -54,6 +54,15 @@
 #define LAPIC_LVT_TIMER_MODE_PERIODIC (1 << 17)
 #define LAPIC_LVT_TIMER_MODE_TSC      (2 << 17)
 
+#define LAPIC_TDCR_DIVIDE_BY_2        0
+#define LAPIC_TDCR_DIVIDE_BY_4        1
+#define LAPIC_TDCR_DIVIDE_BY_8        2
+#define LAPIC_TDCR_DIVIDE_BY_16       3
+#define LAPIC_TDCR_DIVIDE_BY_32       4
+#define LAPIC_TDCR_DIVIDE_BY_64       5
+#define LAPIC_TDCR_DIVIDE_BY_128      6
+#define LAPIC_TDCR_DIVIDE_BY_1        7
+
 #define LAPIC_ICR_INTR_VECTOR         0xFF
 
 #define LAPIC_ICR_DELIVERY_MODE       0x700

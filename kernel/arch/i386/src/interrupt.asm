@@ -2,19 +2,23 @@
 	global Interrupt_%1 
 	Interrupt_%1:
 	push dword 0
-	Interrupt_DoCommonHandling %1
+	push %1
+	jmp  Interrupt_DoCommonHandling
 %endmacro
 
 %macro Interrupt_HandlerWithErrorCode 1
 	global Interrupt_%1
     Interrupt_%1:
-	Interrupt_DoCommonHandling %1
+	push %1
+	jmp  Interrupt_DoCommonHandling
 %endmacro
 
-%macro Interrupt_DoCommonHandling 1
+section .text
+
+global Interrupt_DoCommonHandling
+	Interrupt_DoCommonHandling:
 	extern Interrupt_BaseHandler
 	extern LocalAPIC_EOI
-	push %1
 	push ds
 	push es
 	push fs
@@ -26,6 +30,8 @@
 	add  esp, 4
 	call LocalAPIC_EOI
 
+global Interrupt_Return
+	Interrupt_Return:
 	popad
 	pop  gs
 	pop  fs
@@ -33,10 +39,6 @@
 	pop  ds
 	add  esp, 8
 	iret
-
-%endmacro
-
-section .text
 
 Interrupt_HandlerForNoErrorCode 0x0
 Interrupt_HandlerForNoErrorCode 0x1

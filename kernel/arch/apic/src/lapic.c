@@ -83,7 +83,7 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 	for (size_t i = 0; i < iterations; i++) {
 		
 		// Tell APIC timer to use divider 16
-		LocalAPIC_WriteTo(LAPIC_REG_TDCR, 0x3);
+		LocalAPIC_WriteTo(LAPIC_REG_TDCR, LAPIC_TDCR_DIVIDE_BY_16);
 		
 		// Setup the APIC timer
 		LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_TIMER_MODE_PERIODIC | 0xF0);
@@ -119,15 +119,19 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 	size_t lapic_freq = LocalAPIC_GetTimerFrequency(10);
 	if (lapic_freq == 0) return;
 
-	State_GetCPU()->timer.timer_ticks = 0;
+	IRQLock_Acquire(&State_lock);
+	STATE_CURRENT->cpu->timer_ticks = 0;
+	IRQLock_Release(&State_lock);
 	Interrupt_AddEntry(vector, LocalAPIC_Timer_HandleInterrupt);
 
-    LocalAPIC_WriteTo(LAPIC_REG_TDCR, 0x3);
+    LocalAPIC_WriteTo(LAPIC_REG_TDCR, LAPIC_TDCR_DIVIDE_BY_16);
     LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_TIMER_MODE_PERIODIC | vector);
     LocalAPIC_WriteTo(LAPIC_REG_TICR, lapic_freq/freq);
 }
 
-void LocalAPIC_Timer_HandleInterrupt(__attribute__ ((unused))struct Interrupt_Frame* frame) {
-	(State_GetCPU()->timer.timer_ticks)++;
+void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
+	IRQLock_Acquire(&State_lock);
+	(STATE_CURRENT->cpu->timer_ticks)++;
+	IRQLock_Release(&State_lock);
 }
 

@@ -8,12 +8,11 @@
 #include <kernel/arch/i386/include/gdt.h>
 #include <kernel/arch/i386/include/idt.h>
 #include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/arch/i386/include/functions.h>
 #include <kernel/arch/console/include/console.h>
-
-struct CPU_Timer {
-	uint8_t  timer_type;
-	uint64_t timer_ticks;
-}__attribute__((packed));
+#include <kernel/core/process/include/process.h>
+#include <kernel/core/process/include/context.h>
+#include <kernel/core/synch/include/irqlock.h>
 
 struct CPU {
 	uint32_t apic_id;
@@ -24,27 +23,7 @@ struct CPU {
 	struct X86_GDT_Descriptor gdt_desc;
 	struct X86_IDT_Entry idt[X86_IDT_NENTRIES];
 	struct X86_IDT_Descriptor idt_desc;
-	struct CPU_Timer timer;
-}__attribute__((packed));
-
-struct Context {
-    uint32_t edi;
-    uint32_t esi;
-    uint32_t ebx;
-    uint32_t ebp;
-    uint32_t eip;
-}__attribute__((packed));
-
-struct Process {
-	uint32_t          id;
-	struct Process*   parent;
-	uint8_t           life_cycle;
-	bool              killed;
-	uint32_t*         page_directory;
-	struct context*   context;
-	uint8_t*          kernel_thread;
-	struct TrapFrame* trap_frame;
-	void*             wakeup_on;
+	uint64_t timer_ticks;
 }__attribute__((packed));
 
 struct State {
@@ -54,21 +33,23 @@ struct State {
 	struct CPU*     cpu;
 }__attribute__((packed));
 
-extern struct State* State_GetCurrent();
-extern struct CPU*   State_GetCPU();
-extern size_t        State_CPUBlockSize();
+#define STATE_CURRENT ((struct State*)(X86_GetStackBase() - sizeof(struct State)))
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
-	do { \
-		State_GetCurrent()->preemption_vetos++; \
-		atomic_signal_fence(memory_order_seq_cst); \
-	} while (0)
+    do { \
+        STATE_CURRENT->preemption_vetos++; \
+        atomic_signal_fence(memory_order_seq_cst); \
+    } while (0)
 
 #define STATE_DECREMENT_PREEMPTION_VETO() \
     do { \
-		if (State_GetCurrent()->preemption_vetos == 0) Console_Panic("Panic(STATE_DECREMENT_PREEMPTION_VETO): No existing veto on preemption\n"); \
+        if (STATE_CURRENT->preemption_vetos == 0) Console_Panic("Panic(STATE_DECREMENT_PREEMPTION_VETO): No existing veto on preemption\n"); \
         atomic_signal_fence(memory_order_seq_cst); \
-        State_GetCurrent()->preemption_vetos--; \
+        STATE_CURRENT->preemption_vetos--; \
     } while (0)
+
+extern struct IRQLock State_lock;
+
+extern size_t State_CPUBlockSize();
 
 #endif

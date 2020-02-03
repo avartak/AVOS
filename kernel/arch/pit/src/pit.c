@@ -47,7 +47,7 @@ uint16_t PIT_ReadCounter() {
     return counter;
 }
 
-void PIT_HandleInterrupt(__attribute__ ((unused))struct Interrupt_Frame* frame) {
+void PIT_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
 	PIT_ticks++;
 }
 

@@ -43,6 +43,7 @@ extern void Interrupt_0x30();
 
 extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
 
+extern void Interrupt_Return();
 extern void Interrupt_BaseHandler(struct Interrupt_Frame* frame);
 extern void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
 

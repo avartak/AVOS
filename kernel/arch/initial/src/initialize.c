@@ -11,6 +11,10 @@
 #include <kernel/clib/include/string.h>
 #include <kernel/core/multiboot/include/multiboot.h>
 #include <kernel/core/memory/include/physmem.h>
+#include <kernel/core/process/include/state.h>
+#include <kernel/core/process/include/scheduler.h>
+#include <kernel/core/synch/include/spinlock.h>
+#include <kernel/core/synch/include/irqlock.h>
 
 size_t   Kernel_numcpus_online = 0; 
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE))) = {
@@ -26,6 +30,9 @@ void Initialize_Memory() {
 	uintptr_t ipd = (uintptr_t)Kernel_pagedirectory - KERNEL_HIGHER_HALF_OFFSET;
 	uint32_t*  pd = (uint32_t*)ipd;
 	
+	for (size_t i = X86_PAGING_EXTPAGESIZE; i < KERNEL_MMAP_VIRTUAL_START; i+=X86_PAGING_EXTPAGESIZE) {
+		pd[X86_PAGING_PGDIR_IDX(i)] = 0;
+	}
 	for (size_t i = KERNEL_MMAP_VIRTUAL_START; i < KERNEL_MMAP_VIRTUAL_END; i+=X86_PAGING_EXTPAGESIZE) {
 		pd[X86_PAGING_PGDIR_IDX(i)] = (i - KERNEL_HIGHER_HALF_OFFSET) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE;
 	}
@@ -92,14 +99,15 @@ void Initialize_ThisProcessor() {
 	
 	/* State of the base kernel thread */
 	
-	struct State* state       = State_GetCurrent();
+	struct State* state       = STATE_CURRENT;
 	state->preemption_vetos   = 0;
 	state->interrupt_priority = 0;
+	state->process            = (struct Process*)0;
 	state->cpu                = (struct CPU*)((uintptr_t)state - sizeof(struct CPU));
 	
 	/* State of the CPU */
 	
-	struct CPU* cpu = State_GetCPU();
+	struct CPU* cpu = STATE_CURRENT->cpu;
 	cpu->apic_id    = LocalAPIC_ID();
 	cpu->acpi_id    = 0;
 	Kernel_cpus[Kernel_numcpus_online] = cpu;
@@ -134,9 +142,9 @@ void Initialize_ThisProcessor() {
 	
 	for (size_t i = 0; i < X86_IDT_NENTRIES; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
 
-	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x20]), (uintptr_t)Interrupt_0x20, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
-	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x21]), (uintptr_t)Interrupt_0x21, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
-	X86_IDT_SetupEntry(&(State_GetCPU()->idt[0x30]), (uintptr_t)Interrupt_0x30, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[0x20]), (uintptr_t)Interrupt_0x20, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[0x21]), (uintptr_t)Interrupt_0x21, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+	X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[0x30]), (uintptr_t)Interrupt_0x30, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
 	
 	cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*X86_IDT_NENTRIES - 1;
 	cpu->idt_desc.base  = (uintptr_t)(cpu->idt);
@@ -153,6 +161,8 @@ void Initialize_ThisProcessor() {
 }
 
 void Initialize_System() {
+
+	Process_Initialize();
 
 	IOAPIC_Initialize();
 	
@@ -179,6 +189,7 @@ void GetToWork() {
 
 	Console_Print("CPU %u starting work\n", LocalAPIC_ID());
 
-	while (true) X86_Halt();
+	//while (true) X86_Halt();
+	Schedule();
 
 }

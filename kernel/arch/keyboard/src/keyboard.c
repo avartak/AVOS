@@ -125,7 +125,7 @@ uint8_t Keyboard_GetChar() {
 	return c;
 }
 
-void Keyboard_HandleInterrupt(__attribute__ ((unused))struct Interrupt_Frame* frame) {
+void Keyboard_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
 
 	Console_PrintChar(Keyboard_GetChar());
 }

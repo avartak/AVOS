@@ -54,10 +54,14 @@ $(KERNEL)/arch/pit/src/pit.c.o \
 $(KERNEL)/arch/keyboard/src/keyboard.c.o \
 $(KERNEL)/arch/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
+$(KERNEL)/core/process/src/process.c.o \
 $(KERNEL)/core/process/src/state.c.o \
+$(KERNEL)/core/process/src/context.s.o \
+$(KERNEL)/core/process/src/scheduler.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
-$(KERNEL)/core/memory/src/physmem.c.o
+$(KERNEL)/core/memory/src/physmem.c.o \
+$(KERNEL)/core/memory/src/virtmem.c.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)

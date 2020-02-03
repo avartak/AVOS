@@ -13,12 +13,12 @@ void IRQLock_Acquire(struct IRQLock* lock) {
 	lock->previous_interrupt_priority = ((X86_ReadEFlags() & X86_EFLAGS_IF) > 0 ? 0 : 0xFF);
 	X86_DisableInterrupts();
 	SpinLock_Acquire(&(lock->lock));
-	State_GetCurrent()->interrupt_priority = 0xFF; 
+	STATE_CURRENT->interrupt_priority = 0xFF; 
 }
 
 void IRQLock_Release(struct IRQLock* lock) {
-	State_GetCurrent()->interrupt_priority = lock->previous_interrupt_priority; 
+	STATE_CURRENT->interrupt_priority = lock->previous_interrupt_priority; 
 	SpinLock_Release(&(lock->lock));
-	if (State_GetCurrent()->interrupt_priority != 0xFF) X86_EnableInterrupts();
+	if (STATE_CURRENT->interrupt_priority != 0xFF) X86_EnableInterrupts();
 }
 
