@@ -62,6 +62,12 @@ void Process_Yield(struct Process* proc) {
 
 }
 
+void Process_Kill(struct Process* proc) {
+
+	proc->killed = true;
+	if (proc->life_cycle == PROCESS_SLEEPING) proc->life_cycle = PROCESS_RUNNABLE;
+
+} 
 bool Process_Initialize(struct Process* proc) {
 
 	if (proc->life_cycle != PROCESS_EMBRYO) return false;
@@ -97,9 +103,3 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
-void Process_Kill(struct Process* proc) {
-
-	proc->killed = true;
-	if (proc->life_cycle == PROCESS_SLEEPING) proc->life_cycle = PROCESS_RUNNABLE;
-
-} 

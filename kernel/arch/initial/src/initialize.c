@@ -189,7 +189,6 @@ void GetToWork() {
 
 	Console_Print("CPU %u starting work\n", LocalAPIC_ID());
 
-	//while (true) X86_Halt();
 	Schedule();
 
 }
