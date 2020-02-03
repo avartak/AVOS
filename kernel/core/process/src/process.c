@@ -1,5 +1,6 @@
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/process/include/state.h>
+#include <kernel/core/process/include/scheduler.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/core/memory/include/virtmem.h>
@@ -54,6 +55,13 @@ void Process_FirstEntryToUserSpace() {
 
 }
 
+void Process_Yield(struct Process* proc) {
+
+	proc->life_cycle = PROCESS_RUNNABLE;
+	Scheduler_Return();
+
+}
+
 bool Process_Initialize(struct Process* proc) {
 
 	if (proc->life_cycle != PROCESS_EMBRYO) return false;
@@ -89,3 +97,9 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
+void Process_Kill(struct Process* proc) {
+
+	proc->killed = true;
+	if (proc->life_cycle == PROCESS_SLEEPING) proc->life_cycle = PROCESS_RUNNABLE;
+
+} 

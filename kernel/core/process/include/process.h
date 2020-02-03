@@ -29,5 +29,7 @@ extern bool Process_Initialize(struct Process* proc);
 extern void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift);
 extern void Process_PrepareSwitch(struct Process* proc);
 extern void Process_FirstEntryToUserSpace();
+extern void Process_Yield(struct Process* proc);
+extern void Process_Kill(struct Process* proc);
 
 #endif
