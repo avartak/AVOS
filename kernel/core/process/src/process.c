@@ -11,8 +11,6 @@
 #include <kernel/arch/initial/include/initialize.h>
 
 struct SpinLock Process_lock;
-struct Process_List* Process_infocus = (struct Process_List*)0xFFFFFFFF;
-size_t Process_count = 0;
 
 void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift) {
 
@@ -50,7 +48,13 @@ void Process_PrepareSwitch(struct Process* proc) {
 	IRQLock_Release(&State_lock);
 }
 
-bool Process_Setup(struct Process* proc) {
+void Process_FirstEntryToUserSpace() {
+
+	SpinLock_Release(&Process_lock);
+
+}
+
+bool Process_Initialize(struct Process* proc) {
 
 	if (proc->life_cycle != PROCESS_EMBRYO) return false;
 
@@ -85,54 +89,3 @@ bool Process_Setup(struct Process* proc) {
 	return true;
 }
 
-void Process_FirstEntryToUserSpace() {
-
-	SpinLock_Release(&Process_lock);
-
-}	
-
-bool Process_Add() {
-
-	struct Process_List* proc_new;
-
-	if (Process_infocus == (struct Process_List*)0xFFFFFFFF) {
-		void* page = Page_Acquire(0);
-		if (page == PAGE_LIST_NULL) return false;
-		proc_new = (struct Process_List*)page;
-	}
-
-	else if (((uintptr_t)Process_infocus & ~(X86_PAGING_PAGESIZE-1)) != ((uintptr_t)(Process_infocus+1) & ~(X86_PAGING_PAGESIZE-1))) {
-		void* page = Page_Acquire(0);
-		if (page == PAGE_LIST_NULL) return false;
-		proc_new = (struct Process_List*)page;
-	}
-
-	else {
-		proc_new = Process_infocus+1;
-	}
-
-	if (Process_infocus == (struct Process_List*)0xFFFFFFFF) {
-		Process_infocus = proc_new;
-		Process_infocus->next = Process_infocus;
-		Process_infocus->prev = Process_infocus;
-	}
-	else {
-		proc_new->next = Process_infocus->next;
-		proc_new->prev = Process_infocus;
-		Process_infocus->next = proc_new;
-		Process_infocus = proc_new;
-	}
-
-	(Process_infocus->process).life_cycle = PROCESS_UNUSED;
-	Process_count++;
-
-	return true;
-}
-
-void Process_Initialize() {
-
-	SpinLock_Initialize(&Process_lock, "process");
-	for (size_t i = 0; i < KERNEL_NPROCS_INITIAL; i++) Process_Add();
-
-	IRQLock_Initialize(&State_lock, "state");
-}

@@ -8,6 +8,8 @@
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/initial/include/initialize.h>
 
+struct Process Scheduler_processes[KERNEL_MAX_PROCS];
+
 void Scheduler_RunProcess(struct Process* proc) {
 
 	struct State* proc_state = (struct State*)(proc->kernel_thread + KERNEL_STACK_SIZE - sizeof(struct State));	
@@ -41,13 +43,23 @@ void Scheduler_Return() {
 
 void Schedule() {
 
+	size_t iproc = 0;
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
 
-		if ((Process_infocus->process).life_cycle == PROCESS_RUNNABLE) Scheduler_RunProcess(&Process_infocus->process);
-		Process_infocus = Process_infocus->next;
+		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) Scheduler_RunProcess(&Scheduler_processes[iproc]);
+		iproc++;
+		if (iproc == KERNEL_MAX_PROCS) iproc = 0;
 
 		SpinLock_Release(&Process_lock);
 	} 
 
+}
+
+void Scheduler_Initialize() {
+
+	SpinLock_Initialize(&Process_lock, "process");
+	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_UNUSED;
+
+	IRQLock_Initialize(&State_lock, "state");
 }

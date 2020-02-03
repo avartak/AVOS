@@ -162,8 +162,6 @@ void Initialize_ThisProcessor() {
 
 void Initialize_System() {
 
-	Process_Initialize();
-
 	IOAPIC_Initialize();
 	
 	Console_Initialize();
@@ -172,6 +170,8 @@ void Initialize_System() {
 	
 	Keyboard_Initialize(KEYBOARD_PS2_IRQLINE, 0x21);
 	
+	Scheduler_Initialize();
+
 	extern uintptr_t StartAP;
 	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, KERNEL_AP_BOOT_START_SIZE);
 	for (size_t i = 0; i < LocalAPIC_Num; i++) {
