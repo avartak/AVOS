@@ -119,9 +119,9 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 	size_t lapic_freq = LocalAPIC_GetTimerFrequency(10);
 	if (lapic_freq == 0) return;
 
-	IRQLock_Acquire(&State_lock);
+	SpinLock_Acquire(&State_lock);
 	STATE_CURRENT->cpu->timer_ticks = 0;
-	IRQLock_Release(&State_lock);
+	SpinLock_Release(&State_lock);
 	Interrupt_AddEntry(vector, LocalAPIC_Timer_HandleInterrupt);
 
     LocalAPIC_WriteTo(LAPIC_REG_TDCR, LAPIC_TDCR_DIVIDE_BY_16);
@@ -130,8 +130,8 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 }
 
 void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
-	IRQLock_Acquire(&State_lock);
+	SpinLock_Acquire(&State_lock);
 	(STATE_CURRENT->cpu->timer_ticks)++;
-	IRQLock_Release(&State_lock);
+	SpinLock_Release(&State_lock);
 }
 

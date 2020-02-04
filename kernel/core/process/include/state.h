@@ -12,7 +12,7 @@
 #include <kernel/arch/console/include/console.h>
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/process/include/context.h>
-#include <kernel/core/synch/include/irqlock.h>
+#include <kernel/core/synch/include/spinlock.h>
 
 struct CPU {
 	uint32_t apic_id;
@@ -48,7 +48,7 @@ struct State {
         STATE_CURRENT->preemption_vetos--; \
     } while (0)
 
-extern struct IRQLock State_lock;
+extern struct SpinLock State_lock;
 
 extern size_t State_CPUBlockSize();
 

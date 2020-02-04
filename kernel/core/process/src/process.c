@@ -12,7 +12,9 @@
 #include <kernel/arch/initial/include/initialize.h>
 
 struct SpinLock Process_lock;
+size_t Process_next_pid = 1;
 
+// Need the process lock held 
 void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift) {
 
 	uintptr_t old_end = proc->memory_endpoint;
@@ -36,9 +38,10 @@ void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift) {
 
 }
 
+// Need the state to be locked
 void Process_PrepareSwitch(struct Process* proc) {
 
-	IRQLock_Acquire(&State_lock);
+	SpinLock_Acquire(&State_lock);
 
     STATE_CURRENT->cpu->task_state.ss0 = X86_GDT_SEG_KERN_DATA;
     STATE_CURRENT->cpu->task_state.esp0 = (uintptr_t)proc->kernel_thread + KERNEL_STACK_SIZE - sizeof(struct State);
@@ -46,35 +49,27 @@ void Process_PrepareSwitch(struct Process* proc) {
     X86_GDT_LoadTaskRegister(X86_GDT_SEG_USER_TSS | X86_GDT_RPL3);
     X86_CR3_Write((uintptr_t)proc->page_directory - KERNEL_HIGHER_HALF_OFFSET);
 
-	IRQLock_Release(&State_lock);
+	SpinLock_Release(&State_lock);
 }
 
+// The process lock will be held from Schedule()
 void Process_FirstEntryToUserSpace() {
 
 	SpinLock_Release(&Process_lock);
 
 }
 
-void Process_Yield(struct Process* proc) {
-
-	proc->life_cycle = PROCESS_RUNNABLE;
-	Scheduler_Return();
-
-}
-
-void Process_Kill(struct Process* proc) {
-
-	proc->killed = true;
-	if (proc->life_cycle == PROCESS_SLEEPING) proc->life_cycle = PROCESS_RUNNABLE;
-
-} 
 bool Process_Initialize(struct Process* proc) {
 
-	if (proc->life_cycle != PROCESS_EMBRYO) return false;
+	if (proc->life_cycle != PROCESS_BOOKED) return false;
 
 	// Allocate stack for the kernel thread
-	void* kthread = Page_Acquire(0);
+	void* kthread = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
 	if (kthread == PAGE_LIST_NULL) return false;
+
+	// Now we go about initializing the process
+	proc->life_cycle = PROCESS_BOOKED;
+	proc->id = Process_next_pid++;
 	proc->kernel_thread = (uint8_t*)kthread;
 
 	uintptr_t stack_ptr = (uintptr_t)proc->kernel_thread + KERNEL_STACK_SIZE;
@@ -103,3 +98,79 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
+uint32_t Process_Fork() {
+
+	SpinLock_Acquire(&Process_lock);
+	struct Process* forked_proc = Scheduler_Book();
+	SpinLock_Release(&Process_lock);
+
+	if (forked_proc == (struct Process*)0) return -1;
+
+	if (!Process_Initialize(forked_proc)) return -1;
+
+	if (!Memory_MakePageDirectory(forked_proc->page_directory)) {
+		Page_Release(forked_proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+
+		SpinLock_Acquire(&Process_lock);
+		Scheduler_ChangeLifeCycle(forked_proc, PROCESS_IDLE);
+		SpinLock_Release(&Process_lock);
+
+		return -1;
+	}
+
+	forked_proc->parent = STATE_CURRENT->process;
+	forked_proc->killed = false;
+	forked_proc->memory_endpoint = STATE_CURRENT->process->memory_endpoint;
+	*(forked_proc->interrupt_frame) = *(STATE_CURRENT->process->interrupt_frame);
+	forked_proc->interrupt_frame->eax = 0;	
+
+	SpinLock_Acquire(&Process_lock);
+	Scheduler_ChangeLifeCycle(forked_proc, PROCESS_RUNNABLE);
+	SpinLock_Release(&Process_lock);
+
+	return STATE_CURRENT->process->id;
+
+}
+
+void Process_Exit() {
+	SpinLock_Acquire(&Process_lock);
+	Scheduler_ChangeParent(STATE_CURRENT->process, (struct Process*)0);
+	Scheduler_ChangeLifeCycle(STATE_CURRENT->process, PROCESS_ZOMBIE);
+	Scheduler_Return();
+}
+
+void Process_Sleep(void* alarm, struct SpinLock* lock) {
+
+	if (lock != &Process_lock) {
+		SpinLock_Acquire(&Process_lock);
+		SpinLock_Release(lock);
+	}
+
+	STATE_CURRENT->process->wakeup_on = alarm;
+	Scheduler_ChangeLifeCycle(STATE_CURRENT->process, PROCESS_ASLEEP);
+
+	if (lock != &Process_lock) {
+		SpinLock_Release(&Process_lock);
+		SpinLock_Acquire(lock);
+	}
+}
+
+uint32_t Process_Wait() {
+	
+	uint32_t retval = -1;
+	SpinLock_Acquire(&Process_lock);
+	while (Scheduler_ProcessHasKids(STATE_CURRENT->process) && !STATE_CURRENT->process->killed) {
+		struct Process* zombie_kid = Scheduler_GetZombieKid(STATE_CURRENT->process);
+		if (zombie_kid != (struct Process*)0) {
+			retval = zombie_kid->id;
+			Page_Release(zombie_kid->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+			Memory_UnmakePageDirectory(zombie_kid->page_directory);
+			zombie_kid->life_cycle = PROCESS_IDLE;
+			break;
+		}
+		Process_Sleep(STATE_CURRENT->process, &Process_lock);
+	}
+	SpinLock_Release(&Process_lock);
+
+	return retval;
+}

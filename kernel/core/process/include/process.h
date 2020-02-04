@@ -21,15 +21,17 @@ struct Process {
     void*             wakeup_on;
 }__attribute__((packed));
 
-enum Process_LifeCycle {PROCESS_UNUSED, PROCESS_EMBRYO, PROCESS_SLEEPING, PROCESS_RUNNABLE, PROCESS_RUNNING, PROCESS_ZOMBIE};
+enum Process_LifeCycle {PROCESS_IDLE, PROCESS_BOOKED, PROCESS_RUNNABLE, PROCESS_RUNNING, PROCESS_ASLEEP, PROCESS_ZOMBIE};
 
 extern struct SpinLock Process_lock;
+extern size_t Process_next_pid;
 
-extern bool Process_Initialize(struct Process* proc);
-extern void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift);
-extern void Process_PrepareSwitch(struct Process* proc);
-extern void Process_FirstEntryToUserSpace();
-extern void Process_Yield(struct Process* proc);
-extern void Process_Kill(struct Process* proc);
+extern bool     Process_Initialize(struct Process* proc);
+extern void     Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift);
+extern void     Process_PrepareSwitch(struct Process* proc);
+extern void     Process_FirstEntryToUserSpace();
+
+extern uint32_t Process_Fork();
+extern void     Process_Exit();
 
 #endif
