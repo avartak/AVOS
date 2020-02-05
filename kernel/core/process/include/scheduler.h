@@ -11,12 +11,10 @@ extern void            Scheduler_Initialize();
 extern void            Scheduler_RunProcess(struct Process* proc);
 extern void            Scheduler_Return();
 extern struct Process* Scheduler_Book();
-extern void            Scheduler_ChangeLifeCycle(struct Process* proc, enum Process_LifeCycle cycle);
-extern bool            Scheduler_Kill(uint32_t pid);
 extern void            Scheduler_ChangeParent(struct Process* old_parent, struct Process* new_parent);
 extern void            Scheduler_Wakeup(void* alarm);
 extern bool            Scheduler_ProcessHasKids(struct Process* proc);
-extern struct Process* Scheduler_GetZombieKid(struct Process* proc);
+extern struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeCycle cycle);
 
 extern void            Schedule()__attribute__ ((noreturn));
 

@@ -9,15 +9,20 @@
 #include <kernel/core/synch/include/spinlock.h>
 
 struct Process {
+	// Provenance
     uint32_t          id;
     struct Process*   parent;
+	// Status
     uint8_t           life_cycle;
-    bool              killed;
+	int               exit_status;
+	// Memory
     uintptr_t*        page_directory;
 	uintptr_t         memory_endpoint;
+	// Execution
     struct Context*   context;
     uint8_t*          kernel_thread;
     struct Interrupt_Frame* interrupt_frame;
+	// Signal
     void*             wakeup_on;
 }__attribute__((packed));
 
