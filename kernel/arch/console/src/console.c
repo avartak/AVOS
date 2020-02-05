@@ -243,5 +243,5 @@ void Console_Initialize() {
     Console_SetCursorPosition(Console_pos);
     Console_MakeCursorVisible();
 
-	SpinLock_Initialize(&Console_lock, "console");
+	SpinLock_Initialize(&Console_lock);
 }

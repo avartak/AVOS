@@ -6,10 +6,9 @@
 
 struct SpinLock {
 	atomic_size_t flag;
-	const char* name;
 };
 
-extern void SpinLock_Initialize(struct SpinLock* lock, const char* name);
+extern void SpinLock_Initialize(struct SpinLock* lock);
 extern void SpinLock_Acquire(struct SpinLock* lock);
 extern void SpinLock_Release(struct SpinLock* lock);
 extern bool SpinLock_Locked(struct SpinLock* lock);

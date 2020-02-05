@@ -155,20 +155,20 @@ void Page_BuddyMaps_Initialize() {
 	
 	struct Multiboot_Info_Tag* mbi_tag;
 	uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
-	struct Page_BootMap* mmap = (struct Page_BootMap*)0;
+	struct Multiboot_RAMInfo_Entry* mmap = (struct Multiboot_RAMInfo_Entry*)0;
 	size_t mmap_nentries = 0;
 	
 	mmap_nentries = 0;
 	for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
 		if (mbi_tag->type == MULTIBOOT_TAG_TYPE_RAM_INFO_PAGE_ALIGNED) {
 			struct Multiboot_Info_Memory_E820* mbi_tag_mmap = (struct Multiboot_Info_Memory_E820*)mbi_tag;
-			mmap = (struct Page_BootMap*)(mbi_tag_mmap->entries);
+			mmap = (struct Multiboot_RAMInfo_Entry*)(mbi_tag_mmap->entries);
 			mmap_nentries = (mbi_tag_mmap->entry_size == 0 ? 0 : (mbi_tag_mmap->size - 16)/(mbi_tag_mmap->entry_size));
 		}
 	}
-	if (mmap == (struct Page_BootMap*)0|| mmap_nentries == 0) return;
+	if (mmap == (struct Multiboot_RAMInfo_Entry*)0|| mmap_nentries == 0) return;
 
 	for (size_t i = 0; i < mmap_nentries; i++) Page_MapMemoryChunk(mmap[mmap_nentries-1-i].address, mmap[mmap_nentries-1-i].size);
 
-	IRQLock_Initialize(&Page_operation_lock, "physmem");
+	IRQLock_Initialize(&Page_operation_lock);
 }

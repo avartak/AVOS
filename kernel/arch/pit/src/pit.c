@@ -14,7 +14,7 @@ void PIT_Initialize(uint8_t irq, uint8_t vector) {
 	Interrupt_AddEntry(vector, PIT_HandleInterrupt);
     IOAPIC_EnableInterrupt(irq, vector, LocalAPIC_ID());
 
-	SpinLock_Initialize(&PIT_lock, "pit");
+	SpinLock_Initialize(&PIT_lock);
 
 	PIT_enabled = true;
 }

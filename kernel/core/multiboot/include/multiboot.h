@@ -71,6 +71,11 @@ struct Multiboot_E820_Entry {
     uint32_t acpi3;
 }__attribute__((packed));
 
+struct Multiboot_RAMInfo_Entry {
+    uint64_t  address;
+    uint64_t  size;
+};
+
 struct Multiboot_RSDPv1 {
     char     signature[8];
     uint8_t  checksum;

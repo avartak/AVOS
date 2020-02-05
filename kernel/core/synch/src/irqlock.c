@@ -4,8 +4,8 @@
 #include <kernel/arch/i386/include/functions.h>
 #include <kernel/arch/i386/include/flags.h>
 
-void IRQLock_Initialize(struct IRQLock* lock, const char* name) {
-	SpinLock_Initialize(&(lock->lock), name);	
+void IRQLock_Initialize(struct IRQLock* lock) {
+	SpinLock_Initialize(&(lock->lock));	
 	lock->previous_interrupt_priority = 0;
 }
 

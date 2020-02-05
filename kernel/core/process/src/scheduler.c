@@ -13,10 +13,9 @@ struct Process Scheduler_processes[KERNEL_MAX_PROCS];
 // Initialized the processes and related locks 
 void Scheduler_Initialize() {
 
-	SpinLock_Initialize(&Process_lock, "process");
+	SpinLock_Initialize(&Process_lock);
 	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_IDLE;
-
-	SpinLock_Initialize(&State_lock, "state");
+	SpinLock_Initialize(&State_lock);
 }
 
 void Schedule() {

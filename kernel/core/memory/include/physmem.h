@@ -1,12 +1,12 @@
 #ifndef KERNEL_PHYSMEM_H
 #define KERNEL_PHYSMEM_H
 
-#include <kernel/core/setup/include/setup.h>
-#include <kernel/core/synch/include/irqlock.h>
-
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+
+#include <kernel/core/setup/include/setup.h>
+#include <kernel/core/synch/include/irqlock.h>
 
 #define PAGE_MAP_IDX(addr, order)         (  addr >> (KERNEL_PAGE_SIZE_IN_BITS+1+KERNEL_BYTE_IN_BITS+order) )
 #define PAGE_MAP_BIT(addr, order)         ( (addr >> (KERNEL_PAGE_SIZE_IN_BITS+1+order))  & ((1 << KERNEL_BYTE_IN_BITS)-1) )
@@ -21,11 +21,6 @@
 #define PAGE_SIZE_AT_ORDER(order)         (size_t)(1 << (KERNEL_PAGE_SIZE_IN_BITS+order))
 #define PAGE_LIST_NULL                    ((struct Page_List*)0xFFFFFFFF)
 #define PAGE_MAX_ORDER                    10
-
-struct Page_BootMap {
-    uint64_t  address;
-    uint64_t  size;
-};
 
 struct Page_List {
 	struct Page_List* next;
