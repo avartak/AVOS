@@ -12,3 +12,8 @@ void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*))
 
 	Interrupt_Handlers[entry] = handler;
 }
+
+void Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value) {
+
+	frame->eax = value;
+}

@@ -2,8 +2,7 @@
 #define KERNEL_INTERRUPT_H
 
 #include <stdint.h>
-
-#include <kernel/core/process/include/state.h>
+#include <stddef.h>
 
 struct Interrupt_Frame {
 	uint32_t edi;
@@ -46,5 +45,6 @@ extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
 extern void Interrupt_Return();
 extern void Interrupt_BaseHandler(struct Interrupt_Frame* frame);
 extern void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
+extern void Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value);
 
 #endif

@@ -3,6 +3,7 @@
 #include <kernel/arch/pit/include/pit.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
+#include <kernel/core/process/include/state.h>
 
 uintptr_t LocalAPIC_address = 0;
 size_t    LocalAPIC_Num = 0;

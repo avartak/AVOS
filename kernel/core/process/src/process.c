@@ -92,7 +92,7 @@ bool Process_Initialize(struct Process* proc) {
 	stack_ptr -= sizeof(struct Context);
 	proc->context = (struct Context*)stack_ptr;
 	memset(proc->context, 0, sizeof(struct Context));
-	proc->context->eip = (uintptr_t)Process_FirstEntryToUserSpace;
+	Context_SetProgramCounter(proc->context, (uintptr_t)Process_FirstEntryToUserSpace);
 
 	return true;
 }
@@ -121,7 +121,7 @@ uint32_t Process_Fork() {
 	forked_proc->exit_status = -1;
 	forked_proc->memory_endpoint = STATE_CURRENT->process->memory_endpoint;
 	*(forked_proc->interrupt_frame) = *(STATE_CURRENT->process->interrupt_frame);
-	forked_proc->interrupt_frame->eax = 0;	
+	Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
 
 	SpinLock_Acquire(&Process_lock);
 	forked_proc->life_cycle = PROCESS_RUNNABLE;

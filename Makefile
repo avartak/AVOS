@@ -56,6 +56,7 @@ $(KERNEL)/arch/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
 $(KERNEL)/core/process/src/process.c.o \
 $(KERNEL)/core/process/src/state.c.o \
+$(KERNEL)/core/process/src/context.c.o \
 $(KERNEL)/core/process/src/context.s.o \
 $(KERNEL)/core/process/src/scheduler.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
