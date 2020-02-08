@@ -4,6 +4,8 @@
 #include <kernel/core/process/include/context.h>
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/setup/include/setup.h>
+#include <kernel/core/memory/include/physmem.h>
+#include <kernel/core/memory/include/virtmem.h>
 #include <kernel/arch/i386/include/gdt.h>
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/initial/include/initialize.h>
@@ -24,6 +26,7 @@ void Schedule() {
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
 
+		if (Scheduler_processes[iproc].life_cycle == PROCESS_KILLED  ) Scheduler_TerminateProcess(&Scheduler_processes[iproc]);
 		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) Scheduler_RunProcess(&Scheduler_processes[iproc]);
 		iproc++;
 		if (iproc == KERNEL_MAX_PROCS) iproc = 0;
@@ -47,6 +50,7 @@ void Scheduler_RunProcess(struct Process* proc) {
     X86_CR3_Write((uintptr_t)proc->page_directory - KERNEL_HIGHER_HALF_OFFSET);
 
 	proc->life_cycle = PROCESS_RUNNING;
+	proc->start_time = STATE_CURRENT->cpu->timer_ticks;
 	Context_Switch(&(STATE_CURRENT->cpu->scheduler), proc->context);
 
 	X86_CR3_Write((uintptr_t)Kernel_pagedirectory);
@@ -59,6 +63,12 @@ void Scheduler_Return() {
 	struct Process* proc = STATE_CURRENT->process;
 	Context_Switch(&proc->context, STATE_CURRENT->cpu->scheduler);
 
+}
+
+bool Scheduler_ProcessShouldYield(struct Process* proc) {
+
+	if (STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) return true;
+	else return false;
 }
 
 // Must run under the process lock
@@ -88,10 +98,19 @@ void Scheduler_ChangeParent(struct Process* old_parent, struct Process* new_pare
 }
 
 // Must run under the process lock
-void Scheduler_Wakeup(void* alarm) {
+void Scheduler_Wakeup(struct Process* alarm) {
 
     for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
         if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+    }
+
+}
+
+// Must run under the process lock
+void Scheduler_WakeupFromSleepLock(struct SleepLock* lock) {
+
+    for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
+        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == lock) Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
     }
 
 }
@@ -116,3 +135,22 @@ struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeC
 
 }
 
+// Must run under the process lock
+void Scheduler_TerminateProcess(struct Process* proc) {
+
+    Scheduler_ChangeParent(proc, (struct Process*)0);
+    proc->life_cycle = PROCESS_ZOMBIE;
+    Memory_UnmakePageDirectory(proc->page_directory);
+    Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+    Scheduler_Wakeup(proc->parent);
+}
+
+// Must run under the process lock
+void Scheduler_KillProcess(uint32_t process_id) {
+
+    for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
+        if (Scheduler_processes[i].id == process_id && Scheduler_processes[i].life_cycle != PROCESS_IDLE && Scheduler_processes[i].life_cycle != PROCESS_ZOMBIE) {
+			Scheduler_processes[i].life_cycle = PROCESS_KILLED;
+		}
+    }
+}

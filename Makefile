@@ -61,6 +61,7 @@ $(KERNEL)/core/process/src/context.s.o \
 $(KERNEL)/core/process/src/scheduler.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
+$(KERNEL)/core/synch/src/sleeplock.c.o \
 $(KERNEL)/core/memory/src/physmem.c.o \
 $(KERNEL)/core/memory/src/virtmem.c.o
 

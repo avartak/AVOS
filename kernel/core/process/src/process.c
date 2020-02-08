@@ -14,44 +14,6 @@
 struct SpinLock Process_lock;
 size_t Process_next_pid = 1;
 
-// Need the process lock held 
-void Process_ChangeMemoryEndPoint(struct Process* proc, int32_t shift) {
-
-	uintptr_t old_end = proc->memory_endpoint;
-	uintptr_t new_end = (int32_t)(proc->memory_endpoint) + shift;
-
-    if (new_end == old_end) return;
-
-    else if (new_end < old_end) {
-        Memory_UnmapPages(proc->page_directory, (void*)new_end, old_end - new_end);
-        proc->memory_endpoint = new_end;
-    }
-
-    else {
-        uint16_t flags = X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
-        size_t size_alloc = Memory_MapPages(proc->page_directory, (void*)old_end, new_end - old_end, flags);
-        uintptr_t old_page = old_end & ~(X86_PAGING_PAGESIZE-1);
-
-        if (old_page + size_alloc < new_end) proc->memory_endpoint = old_page + size_alloc;
-        else proc->memory_endpoint = new_end;
-    }
-
-}
-
-// Need the state to be locked
-void Process_PrepareSwitch(struct Process* proc) {
-
-	SpinLock_Acquire(&State_lock);
-
-    STATE_CURRENT->cpu->task_state.ss0 = X86_GDT_SEG_KERN_DATA;
-    STATE_CURRENT->cpu->task_state.esp0 = (uintptr_t)proc->kernel_thread + KERNEL_STACK_SIZE - sizeof(struct State);
-    STATE_CURRENT->cpu->task_state.iomap_base_address = (uint16_t)0xFFFF;
-    X86_GDT_LoadTaskRegister(X86_GDT_SEG_USER_TSS | X86_GDT_RPL3);
-    X86_CR3_Write((uintptr_t)proc->page_directory - KERNEL_HIGHER_HALF_OFFSET);
-
-	SpinLock_Release(&State_lock);
-}
-
 // The process lock will be held from Schedule()
 void Process_FirstEntryToUserSpace() {
 
@@ -97,6 +59,60 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
+// Must be run under process lock
+void Process_Sleep() {
+
+    struct Process* proc = STATE_CURRENT->process;
+    if (proc == (struct Process*)0) return;
+    if (STATE_CURRENT->preemption_vetos != 0) return;
+
+    proc->wakeup_on = STATE_CURRENT->process;
+    proc->life_cycle = PROCESS_ASLEEP;
+    Scheduler_Return();
+    proc->wakeup_on = (void*)0;
+
+}
+
+void Process_SleepOn(struct SleepLock* lock) {
+
+    struct Process* proc = STATE_CURRENT->process;
+    if (proc == (struct Process*)0) return;
+    if (STATE_CURRENT->preemption_vetos != 0) return;
+
+    SpinLock_Acquire(&Process_lock);
+    SpinLock_Release(&lock->access_lock);
+
+    proc->wakeup_on = lock;
+    proc->life_cycle = PROCESS_ASLEEP;
+    Scheduler_Return();
+    proc->wakeup_on = (void*)0;
+
+    SpinLock_Release(&Process_lock);
+    SpinLock_Acquire(&lock->access_lock);
+}
+
+void Process_Yield() {
+
+    struct Process* proc = STATE_CURRENT->process;
+    if (proc == (struct Process*)0) return;
+
+    SpinLock_Acquire(&Process_lock);
+
+    proc->life_cycle = PROCESS_RUNNABLE;
+    Scheduler_Return();
+
+    SpinLock_Release(&Process_lock);
+}
+
+
+uint32_t Process_ID() {
+
+	struct Process* proc = STATE_CURRENT->process;
+	if (proc == (struct Process*)0) return -1;
+
+	return proc->id;
+}
+
 uint32_t Process_Fork() {
 
 	SpinLock_Acquire(&Process_lock);
@@ -119,6 +135,7 @@ uint32_t Process_Fork() {
 
 	forked_proc->parent = STATE_CURRENT->process;
 	forked_proc->exit_status = -1;
+	forked_proc->run_time = STATE_CURRENT->process->run_time;
 	forked_proc->memory_endpoint = STATE_CURRENT->process->memory_endpoint;
 	*(forked_proc->interrupt_frame) = *(STATE_CURRENT->process->interrupt_frame);
 	Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
@@ -131,39 +148,33 @@ uint32_t Process_Fork() {
 
 }
 
-void Process_Exit(int status) {
-	SpinLock_Acquire(&Process_lock);
+void Process_ChangeMemoryEndPoint(int32_t shift) {
 
-	struct Process* proc = STATE_CURRENT->process;
+    struct Process* proc = STATE_CURRENT->process;
+    if (proc == (struct Process*)0) return;
 
-	Scheduler_ChangeParent(proc, (struct Process*)0);
-	proc->life_cycle = PROCESS_ZOMBIE;
-	proc->exit_status = status;
-	Memory_UnmakePageDirectory(proc->page_directory);
-	Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-	Scheduler_Wakeup(proc->parent);
+    uintptr_t old_end = proc->memory_endpoint;
+    uintptr_t new_end = (int32_t)(proc->memory_endpoint) + shift;
 
-	Scheduler_Return();
+    if (new_end == old_end) return;
+
+    else if (new_end < old_end) {
+        Memory_UnmapPages(proc->page_directory, (void*)new_end, old_end - new_end);
+        proc->memory_endpoint = new_end;
+    }
+
+    else {
+        uint16_t flags = X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
+        size_t size_alloc = Memory_MapPages(proc->page_directory, (void*)old_end, new_end - old_end, flags);
+        uintptr_t old_page = old_end & ~(X86_PAGING_PAGESIZE-1);
+
+        if (old_page + size_alloc < new_end) proc->memory_endpoint = old_page + size_alloc;
+        else proc->memory_endpoint = new_end;
+    }
 }
 
-void Process_Sleep(void* alarm, struct SpinLock* lock) {
 
-	if (lock != &Process_lock) {
-		SpinLock_Acquire(&Process_lock);
-		SpinLock_Release(lock);
-	}
-
-	STATE_CURRENT->process->wakeup_on = alarm;
-	STATE_CURRENT->process->life_cycle = PROCESS_ASLEEP;
-	Scheduler_Return();
-	STATE_CURRENT->process->wakeup_on = (void*)0;
-
-	if (lock != &Process_lock) {
-		SpinLock_Release(&Process_lock);
-		SpinLock_Acquire(lock);
-	}
-}
-
+// No locks should be held by the process when waiting
 uint32_t Process_Wait() {
 
 	SpinLock_Acquire(&Process_lock);
@@ -171,7 +182,7 @@ uint32_t Process_Wait() {
 	uint32_t retval = -1;
 	struct Process* proc = STATE_CURRENT->process;
 	while (true) {
-		if (!Scheduler_ProcessHasKids(proc)) {
+		if (!Scheduler_ProcessHasKids(proc) || proc->life_cycle == PROCESS_KILLED) {
 			retval = -1;
 			break;
 		}
@@ -181,10 +192,26 @@ uint32_t Process_Wait() {
 			zombie_kid->life_cycle = PROCESS_IDLE;
 			break;
 		}
-		Process_Sleep(proc, &Process_lock);
+		Process_Sleep();
 	}
 	
 	SpinLock_Release(&Process_lock);
 
 	return retval;
 }
+
+void Process_Exit(int status) {
+
+    struct Process* proc = STATE_CURRENT->process;
+    if (proc == (struct Process*)0) return;
+
+    SpinLock_Acquire(&Process_lock);
+
+	Scheduler_TerminateProcess(proc);
+    proc->exit_status = status;
+
+    Scheduler_Return();
+}
+
+
+
