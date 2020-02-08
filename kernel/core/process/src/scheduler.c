@@ -91,7 +91,11 @@ void Scheduler_ChangeParent(struct Process* old_parent, struct Process* new_pare
 void Scheduler_Wakeup(struct Process* alarm) {
 
     for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
+			Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+			Scheduler_processes[i].wakeup_on  = (void*)0;
+		}
+		
     }
 
 }
@@ -100,7 +104,10 @@ void Scheduler_Wakeup(struct Process* alarm) {
 void Scheduler_WakeupFromSleepLock(struct SleepLock* lock) {
 
     for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == lock) Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == lock) {
+			Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+			Scheduler_processes[i].wakeup_on  = (void*)0;
+		}
     }
 
 }

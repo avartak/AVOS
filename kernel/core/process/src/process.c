@@ -69,8 +69,6 @@ void Process_Sleep() {
     proc->wakeup_on = STATE_CURRENT->process;
     proc->life_cycle = PROCESS_ASLEEP;
     Scheduler_Return();
-    proc->wakeup_on = (void*)0;
-
 }
 
 void Process_SleepOn(struct SleepLock* lock) {
