@@ -1,11 +1,11 @@
 #include <kernel/core/process/include/scheduler.h>
 #include <kernel/core/process/include/state.h>
 #include <kernel/core/process/include/process.h>
-#include <kernel/core/process/include/context.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/core/memory/include/virtmem.h>
-#include <kernel/arch/i386/include/gdt.h>
+#include <kernel/core/syscall/include/syscall.h>
+#include <kernel/arch/i386/include/context.h>
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/i386/include/interrupt.h>
 #include <kernel/arch/initial/include/initialize.h>
@@ -18,6 +18,8 @@ void Scheduler_Initialize() {
 	SpinLock_Initialize(&Process_lock);
 	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_IDLE;
 	SpinLock_Initialize(&State_lock);
+
+	SysCall_Initialize(0x80);
 }
 
 void Schedule() {
@@ -39,20 +41,7 @@ void Schedule() {
 // Should be run under the process lock
 void Scheduler_RunProcess(struct Process* proc) {
 
-	struct State* proc_state = (struct State*)(proc->kernel_thread + KERNEL_STACK_SIZE - sizeof(struct State));	
-	proc_state->cpu = STATE_CURRENT->cpu;
-
-    STATE_CURRENT->cpu->task_state.ss0 = X86_GDT_SEG_KERN_DATA;
-    STATE_CURRENT->cpu->task_state.esp0 = (uintptr_t)proc_state;
-    STATE_CURRENT->cpu->task_state.iomap_base_address = (uint16_t)0xFFFF;
-
-    X86_GDT_LoadTaskRegister(X86_GDT_SEG_USER_TSS | X86_GDT_RPL3);
-    X86_CR3_Write((uintptr_t)proc->page_directory - KERNEL_HIGHER_HALF_OFFSET);
-
-	proc->life_cycle = PROCESS_RUNNING;
-	proc->start_time = STATE_CURRENT->cpu->timer_ticks;
-	Context_Switch(&(STATE_CURRENT->cpu->scheduler), proc->context);
-
+	CPU_SetupProcess(proc);
 	X86_CR3_Write((uintptr_t)Kernel_pagedirectory);
 
 }
@@ -138,6 +127,12 @@ struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeC
 
 // Must run under the process lock
 void Scheduler_TerminateProcess(struct Process* proc) {
+
+	if (proc->wakeup_on != proc) {
+		struct SleepLock* sleep_lock = (struct SleepLock*)proc->wakeup_on;
+		SleepLock_SilentRelease(sleep_lock);
+		Scheduler_WakeupFromSleepLock(sleep_lock);
+	}
 
     Scheduler_ChangeParent(proc, (struct Process*)0);
     proc->life_cycle = PROCESS_ZOMBIE;

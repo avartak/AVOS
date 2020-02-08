@@ -1,5 +1,5 @@
-#ifndef KERNEL_CORE_CONTEXT_H
-#define KERNEL_CORE_CONTEXT_H
+#ifndef KERNEL_X86_CONTEXT_H
+#define KERNEL_X86_CONTEXT_H
 
 #include <stdint.h>
 

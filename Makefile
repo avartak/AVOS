@@ -45,6 +45,9 @@ $(KERNEL)/arch/i386/src/flags.s.o \
 $(KERNEL)/arch/i386/src/ioports.s.o \
 $(KERNEL)/arch/i386/src/interrupt.s.o \
 $(KERNEL)/arch/i386/src/interrupt.c.o \
+$(KERNEL)/arch/i386/src/context.c.o \
+$(KERNEL)/arch/i386/src/context.s.o \
+$(KERNEL)/arch/i386/src/cpu.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
@@ -56,9 +59,8 @@ $(KERNEL)/arch/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
 $(KERNEL)/core/process/src/process.c.o \
 $(KERNEL)/core/process/src/state.c.o \
-$(KERNEL)/core/process/src/context.c.o \
-$(KERNEL)/core/process/src/context.s.o \
 $(KERNEL)/core/process/src/scheduler.c.o \
+$(KERNEL)/core/syscall/src/syscall.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
 $(KERNEL)/core/synch/src/sleeplock.c.o \
@@ -114,6 +116,7 @@ clean:
 	rm kernel/core/process/src/*.o
 	rm kernel/core/synch/src/*.o
 	rm kernel/core/memory/src/*.o
+	rm kernel/core/syscall/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

@@ -40,6 +40,7 @@ struct Interrupt_Frame {
 extern void Interrupt_0x20();
 extern void Interrupt_0x21();
 extern void Interrupt_0x30();
+extern void Interrupt_0x80();
 
 extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
 

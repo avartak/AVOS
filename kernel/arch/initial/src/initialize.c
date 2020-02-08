@@ -142,9 +142,10 @@ void Initialize_ThisProcessor() {
 	
 	for (size_t i = 0; i < X86_IDT_NENTRIES; i++) X86_IDT_SetupEntry(&(cpu->idt[i]), 0, 0, 0);
 
-	IDT_ADDENTRY(0x20);	
-	IDT_ADDENTRY(0x21);	
-	IDT_ADDENTRY(0x30);	
+	INTR_ADDENTRY(0x20);	
+	INTR_ADDENTRY(0x21);	
+	INTR_ADDENTRY(0x30);	
+	TRAP_ADDENTRY(0x80);
 
 	cpu->idt_desc.limit = (sizeof(struct X86_IDT_Entry))*X86_IDT_NENTRIES - 1;
 	cpu->idt_desc.base  = (uintptr_t)(cpu->idt);

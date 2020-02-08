@@ -20,6 +20,8 @@
 
 #define KERNEL_MAX_PROCS          0x40
 
+#define KERNEL_NUM_SYSCALLS       0x100
+
 #define MACHINE_MAX_CPUS          0xFF
 #define MACHINE_MAX_IOAPICS       0xFF
 

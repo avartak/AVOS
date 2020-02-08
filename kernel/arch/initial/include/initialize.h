@@ -23,7 +23,8 @@
 
 #define SMP_STARTUP_TRIES          2
 
-#define IDT_ADDENTRY(num)          X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+#define INTR_ADDENTRY(num)          X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL0 | X86_IDT_TYPE_INTR32);
+#define TRAP_ADDENTRY(num)          X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL3 | X86_IDT_TYPE_TRAP32);
 
 extern size_t      Kernel_numcpus_online; 
 extern uint32_t    Kernel_pagedirectory[]__attribute__((aligned(X86_PAGING_PAGESIZE)));

@@ -8,13 +8,9 @@ void (*Interrupt_Handlers[X86_IDT_NENTRIES])(struct Interrupt_Frame*);
 
 void Interrupt_BaseHandler(struct Interrupt_Frame* frame) {
 
-	struct Process* proc = STATE_CURRENT->process;
-	if (frame->vector == 0x80) {
-		if (proc != (struct Process*)0 && proc->life_cycle == PROCESS_KILLED) Process_Exit(proc->exit_status);
-	}
-
 	Interrupt_Handlers[frame->vector](frame);
 
+	struct Process* proc = STATE_CURRENT->process;
 	if (proc != (struct Process*)0 && Scheduler_ProcessShouldYield(proc)) Process_Yield();
 }
 

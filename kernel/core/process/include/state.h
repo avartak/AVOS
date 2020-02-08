@@ -9,22 +9,10 @@
 #include <kernel/arch/i386/include/idt.h>
 #include <kernel/arch/i386/include/interrupt.h>
 #include <kernel/arch/i386/include/functions.h>
+#include <kernel/arch/i386/include/cpu.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/core/process/include/process.h>
-#include <kernel/core/process/include/context.h>
 #include <kernel/core/synch/include/spinlock.h>
-
-struct CPU {
-	uint32_t apic_id;
-	uint32_t acpi_id;
-	struct Context* scheduler;
-	struct X86_TSS task_state;
-	struct X86_GDT_Entry gdt[X86_GDT_NENTRIES];
-	struct X86_GDT_Descriptor gdt_desc;
-	struct X86_IDT_Entry idt[X86_IDT_NENTRIES];
-	struct X86_IDT_Descriptor idt_desc;
-	uint64_t timer_ticks;
-}__attribute__((packed));
 
 struct State {
 	size_t          preemption_vetos;
