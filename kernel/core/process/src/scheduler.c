@@ -2,12 +2,12 @@
 #include <kernel/core/process/include/state.h>
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/process/include/context.h>
-#include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/core/memory/include/virtmem.h>
 #include <kernel/arch/i386/include/gdt.h>
 #include <kernel/arch/i386/include/controlregs.h>
+#include <kernel/arch/i386/include/interrupt.h>
 #include <kernel/arch/initial/include/initialize.h>
 
 struct Process Scheduler_processes[KERNEL_MAX_PROCS];
@@ -67,7 +67,8 @@ void Scheduler_Return() {
 
 bool Scheduler_ProcessShouldYield(struct Process* proc) {
 
-	if (STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) return true;
+	if (proc->life_cycle == PROCESS_KILLED && Interrupt_ReturningToUserMode(proc->interrupt_frame)) return true;
+	else if (proc->life_cycle == PROCESS_RUNNING && STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) return true;
 	else return false;
 }
 

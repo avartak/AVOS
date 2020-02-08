@@ -98,7 +98,7 @@ void Process_Yield() {
 
     SpinLock_Acquire(&Process_lock);
 
-    proc->life_cycle = PROCESS_RUNNABLE;
+    if (proc->life_cycle != PROCESS_ZOMBIE && proc->life_cycle != PROCESS_KILLED) proc->life_cycle = PROCESS_RUNNABLE;
     Scheduler_Return();
 
     SpinLock_Release(&Process_lock);

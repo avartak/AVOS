@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #include <kernel/core/process/include/process.h>
+#include <kernel/core/synch/include/spinlock.h>
+#include <kernel/core/synch/include/irqlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
 
 extern struct Process  Scheduler_processes[];

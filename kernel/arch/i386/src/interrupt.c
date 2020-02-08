@@ -15,9 +15,7 @@ void Interrupt_BaseHandler(struct Interrupt_Frame* frame) {
 
 	Interrupt_Handlers[frame->vector](frame);
 
-	if (proc != (struct Process*)0 && proc->life_cycle == PROCESS_KILLED && proc->interrupt_frame->cs == X86_GDT_SEG_USER_CODE) Process_Exit(proc->exit_status);
-	if (proc != (struct Process*)0 && proc->life_cycle == PROCESS_RUNNING && Scheduler_ProcessShouldYield(proc)) Process_Yield();
-	if (proc != (struct Process*)0 && proc->life_cycle == PROCESS_KILLED && proc->interrupt_frame->cs == X86_GDT_SEG_USER_CODE) Process_Exit(proc->exit_status);
+	if (proc != (struct Process*)0 && Scheduler_ProcessShouldYield(proc)) Process_Yield();
 }
 
 void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*)) {
@@ -28,4 +26,10 @@ void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*))
 void Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value) {
 
 	frame->eax = value;
+}
+
+bool Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame) {
+
+	if (frame->cs == X86_GDT_SEG_USER_CODE) return true;
+    else return false;
 }
