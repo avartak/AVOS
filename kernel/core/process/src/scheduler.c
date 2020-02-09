@@ -48,7 +48,10 @@ void Scheduler_HandleInterruptReturn() {
 
     if (STATE_CURRENT->preemption_vetos != 0) return;
 
-    if (proc->signaled_change == PROCESS_KILLED && Interrupt_ReturningToUserMode(proc->interrupt_frame)) Process_Exit(-1);
+	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
+		if (proc->signaled_change == PROCESS_KILLED) Process_Exit(-1);
+		if (proc->signaled_change == PROCESS_ASLEEP) Process_Sleep();
+	}
 
     if (proc->life_cycle == PROCESS_RUNNING && proc->interrupt_frame->vector == 0x30) {
 		if (STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) {
@@ -59,7 +62,10 @@ void Scheduler_HandleInterruptReturn() {
 		}
 	}
 
-	if (proc->signaled_change == PROCESS_KILLED && Interrupt_ReturningToUserMode(proc->interrupt_frame)) Process_Exit(-1);
+	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
+		if (proc->signaled_change == PROCESS_KILLED) Process_Exit(-1);
+		if (proc->signaled_change == PROCESS_ASLEEP) Process_Sleep();
+	}
 }
 
 // Must run under the process lock

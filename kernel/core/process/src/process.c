@@ -64,6 +64,7 @@ void Process_Sleep() {
 
     struct Process* proc = STATE_CURRENT->process;
     if (proc == (struct Process*)0) return;
+	if (proc->life_cycle == PROCESS_IDLE || proc->life_cycle == PROCESS_ZOMBIE) return;
     if (STATE_CURRENT->preemption_vetos != 1) return;
 
     proc->wakeup_on = STATE_CURRENT->process;

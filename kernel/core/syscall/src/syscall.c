@@ -16,6 +16,7 @@ void SysCall(__attribute__((unused))struct Interrupt_Frame* frame) {
 	struct Process* proc = STATE_CURRENT->process;
 	if (proc == (struct Process*)0) return;
 	if (proc->signaled_change == PROCESS_KILLED) return;
+	if (proc->signaled_change == PROCESS_ASLEEP) return;
 
 	SysCall_Handlers[isys]();
 }
