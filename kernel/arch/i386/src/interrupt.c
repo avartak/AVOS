@@ -10,8 +10,7 @@ void Interrupt_BaseHandler(struct Interrupt_Frame* frame) {
 
 	Interrupt_Handlers[frame->vector](frame);
 
-	struct Process* proc = STATE_CURRENT->process;
-	if (proc != (struct Process*)0 && Scheduler_ProcessShouldYield(proc)) Process_Yield();
+	Scheduler_HandleInterruptReturn();
 }
 
 void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*)) {

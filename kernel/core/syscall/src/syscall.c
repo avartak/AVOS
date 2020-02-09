@@ -14,7 +14,8 @@ void SysCall(__attribute__((unused))struct Interrupt_Frame* frame) {
 	if (isys >= KERNEL_NUM_SYSCALLS) return;
 
 	struct Process* proc = STATE_CURRENT->process;
-	if (proc != (struct Process*)0 && proc->life_cycle != PROCESS_RUNNING) return;
+	if (proc == (struct Process*)0) return;
+	if (proc->signaled_change == PROCESS_KILLED) return;
 
 	SysCall_Handlers[isys]();
 }

@@ -64,11 +64,11 @@ void Process_Sleep() {
 
     struct Process* proc = STATE_CURRENT->process;
     if (proc == (struct Process*)0) return;
-    if (STATE_CURRENT->preemption_vetos != 0) return;
+    if (STATE_CURRENT->preemption_vetos != 1) return;
 
     proc->wakeup_on = STATE_CURRENT->process;
     proc->life_cycle = PROCESS_ASLEEP;
-    Scheduler_Return();
+	SCHEDULER_RETURN;
 }
 
 void Process_SleepOn(struct SleepLock* lock) {
@@ -82,26 +82,12 @@ void Process_SleepOn(struct SleepLock* lock) {
 
     proc->wakeup_on = lock;
     proc->life_cycle = PROCESS_ASLEEP;
-    Scheduler_Return();
+	SCHEDULER_RETURN;
     proc->wakeup_on = (void*)0;
 
     SpinLock_Release(&Process_lock);
     SpinLock_Acquire(&lock->access_lock);
 }
-
-void Process_Yield() {
-
-    struct Process* proc = STATE_CURRENT->process;
-    if (proc == (struct Process*)0) return;
-
-    SpinLock_Acquire(&Process_lock);
-
-    if (proc->life_cycle != PROCESS_ZOMBIE && proc->life_cycle != PROCESS_KILLED) proc->life_cycle = PROCESS_RUNNABLE;
-    Scheduler_Return();
-
-    SpinLock_Release(&Process_lock);
-}
-
 
 uint32_t Process_ID() {
 
@@ -133,6 +119,7 @@ uint32_t Process_Fork() {
 
 	forked_proc->parent = STATE_CURRENT->process;
 	forked_proc->exit_status = -1;
+	forked_proc->signaled_change = PROCESS_UNDEFINED;
 	forked_proc->run_time = STATE_CURRENT->process->run_time;
 	forked_proc->memory_endpoint = STATE_CURRENT->process->memory_endpoint;
 	*(forked_proc->interrupt_frame) = *(STATE_CURRENT->process->interrupt_frame);
@@ -180,11 +167,11 @@ uint32_t Process_Wait() {
 	uint32_t retval = -1;
 	struct Process* proc = STATE_CURRENT->process;
 	while (true) {
-		if (!Scheduler_ProcessHasKids(proc) || proc->life_cycle == PROCESS_KILLED) {
+		struct Process* zombie_kid = Scheduler_GetProcessKid(proc, PROCESS_ZOMBIE);
+		if (zombie_kid == (struct Process*)(-1) || proc->signaled_change == PROCESS_KILLED) {
 			retval = -1;
 			break;
 		}
-		struct Process* zombie_kid = Scheduler_GetProcessKid(proc, PROCESS_ZOMBIE);
 		if (zombie_kid != (struct Process*)0) {
 			retval = zombie_kid->id;
 			zombie_kid->life_cycle = PROCESS_IDLE;
@@ -205,10 +192,14 @@ void Process_Exit(int status) {
 
     SpinLock_Acquire(&Process_lock);
 
-	Scheduler_TerminateProcess(proc);
+    Scheduler_ChangeParent(proc, (struct Process*)0);
+    proc->life_cycle = PROCESS_ZOMBIE;
+    Memory_UnmakePageDirectory(proc->page_directory);
+    Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+    Scheduler_Wakeup(proc->parent);
     proc->exit_status = status;
 
-    Scheduler_Return();
+	SCHEDULER_RETURN;
 }
 
 

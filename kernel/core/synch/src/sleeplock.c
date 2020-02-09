@@ -32,7 +32,7 @@ void SleepLock_Release(struct SleepLock* lock) {
 	lock->locked_process = 0;
 
 	SpinLock_Acquire(&Process_lock);
-	Scheduler_WakeupFromSleepLock(lock);
+	Scheduler_Wakeup(lock);
 	SpinLock_Release(&Process_lock);
 
 	SpinLock_Release(&(lock->access_lock));

@@ -1,5 +1,6 @@
 #include <kernel/arch/i386/include/cpu.h>
 #include <kernel/arch/i386/include/controlregs.h>
+#include <kernel/arch/initial/include/initialize.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/process/include/state.h>
 #include <kernel/core/process/include/process.h>
@@ -17,3 +18,9 @@ void CPU_SetupProcess(struct Process* proc) {
     X86_CR3_Write((uintptr_t)proc->page_directory - KERNEL_HIGHER_HALF_OFFSET);
     proc->start_time = STATE_CURRENT->cpu->timer_ticks;
 }
+
+void CPU_CleanupProcess(__attribute__((unused))struct Process* proc) {
+
+	X86_CR3_Write((uintptr_t)Kernel_pagedirectory);
+}
+

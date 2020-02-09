@@ -24,5 +24,6 @@ struct CPU {
 }__attribute__((packed));
 
 extern void CPU_SetupProcess(struct Process* proc);
+extern void CPU_CleanupProcess(struct Process* proc);
 
 #endif
