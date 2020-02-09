@@ -19,7 +19,8 @@ extern struct Process* Scheduler_Book();
 extern void            Scheduler_ChangeParent(struct Process* old_parent, struct Process* new_parent);
 extern void            Scheduler_Wakeup(void* alarm);
 extern struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeCycle cycle);
-extern void            Scheduler_KillProcess(uint32_t process_id);
+extern void            Scheduler_TerminateProcess(struct Process* proc);
+extern void            Scheduler_LifeCycleChangeSignal(uint32_t process_id, enum Process_LifeCycle requested_cycle);
 
 extern void            Schedule()__attribute__ ((noreturn));
 

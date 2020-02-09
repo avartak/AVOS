@@ -193,11 +193,7 @@ void Process_Exit(int status) {
 
     SpinLock_Acquire(&Process_lock);
 
-    Scheduler_ChangeParent(proc, (struct Process*)0);
-    proc->life_cycle = PROCESS_ZOMBIE;
-    Memory_UnmakePageDirectory(proc->page_directory);
-    Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-    Scheduler_Wakeup(proc->parent);
+	Scheduler_TerminateProcess(proc);
     proc->exit_status = status;
 
 	SCHEDULER_RETURN;

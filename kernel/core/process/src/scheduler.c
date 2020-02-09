@@ -27,6 +27,10 @@ void Schedule() {
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
 
+		if (Scheduler_processes[iproc].life_cycle == PROCESS_ASLEEP && Scheduler_processes[iproc].signaled_change == PROCESS_RUNNABLE) {
+			Scheduler_processes[iproc].signaled_change = PROCESS_UNDEFINED;
+			Scheduler_processes[iproc].life_cycle = PROCESS_RUNNABLE;
+		}
 		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) {
 			CPU_SetupProcess(&Scheduler_processes[iproc]);
 			Scheduler_processes[iproc].life_cycle = PROCESS_RUNNING;
@@ -48,24 +52,32 @@ void Scheduler_HandleInterruptReturn() {
 
     if (STATE_CURRENT->preemption_vetos != 0) return;
 
+	SpinLock_Acquire(&Process_lock);
+
 	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
-		if (proc->signaled_change == PROCESS_KILLED) Process_Exit(-1);
-		if (proc->signaled_change == PROCESS_ASLEEP) Process_Sleep();
+		if (proc->signaled_change == PROCESS_KILLED) Scheduler_TerminateProcess(proc);
+		if (proc->signaled_change == PROCESS_ASLEEP) {
+			proc->signaled_change = PROCESS_UNDEFINED;
+			Process_Sleep();
+		}
 	}
 
     if (proc->life_cycle == PROCESS_RUNNING && proc->interrupt_frame->vector == 0x30) {
 		if (STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) {
-			SpinLock_Acquire(&Process_lock);
 			proc->life_cycle = PROCESS_RUNNABLE;
 			SCHEDULER_RETURN;
-			SpinLock_Release(&Process_lock);
 		}
 	}
 
 	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
-		if (proc->signaled_change == PROCESS_KILLED) Process_Exit(-1);
-		if (proc->signaled_change == PROCESS_ASLEEP) Process_Sleep();
+		if (proc->signaled_change == PROCESS_KILLED) Scheduler_TerminateProcess(proc);
+		if (proc->signaled_change == PROCESS_ASLEEP) {
+			proc->signaled_change = PROCESS_UNDEFINED;
+			Process_Sleep();
+		}
 	}
+
+	SpinLock_Release(&Process_lock);
 }
 
 // Must run under the process lock
@@ -122,11 +134,23 @@ struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeC
 }
 
 // Must run under the process lock
-void Scheduler_KillProcess(uint32_t process_id) {
+void Scheduler_LifeCycleChangeSignal(uint32_t process_id, enum Process_LifeCycle requested_cycle) {
+
+	if (requested_cycle != PROCESS_KILLED && requested_cycle != PROCESS_ASLEEP && requested_cycle != PROCESS_RUNNABLE) return;
 
     for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
         if (Scheduler_processes[i].id == process_id && Scheduler_processes[i].life_cycle != PROCESS_IDLE && Scheduler_processes[i].life_cycle != PROCESS_ZOMBIE) {
-			Scheduler_processes[i].signaled_change = PROCESS_KILLED;
-		}
+            Scheduler_processes[i].signaled_change = requested_cycle;
+        }
     }
+}
+
+// Must run under the process lock
+void Scheduler_TerminateProcess(struct Process* proc) {
+
+    Scheduler_ChangeParent(proc, (struct Process*)0);
+    proc->life_cycle = PROCESS_ZOMBIE;
+    Memory_UnmakePageDirectory(proc->page_directory);
+    Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+    Scheduler_Wakeup(proc->parent);
 }
