@@ -1,11 +1,10 @@
 #include <kernel/core/memory/include/physmem.h>
-#include <kernel/core/memory/include/virtmem.h>
 #include <kernel/core/setup/include/setup.h>
+#include <kernel/core/arch/include/arch.h>
 #include <kernel/clib/include/string.h>
 #include <kernel/arch/i386/include/paging.h>
-#include <kernel/arch/initial/include/initialize.h>
 
-bool Memory_IsPageMapped(uintptr_t* page_dir, uintptr_t virt_addr) {
+bool Paging_IsPageMapped(uintptr_t* page_dir, uintptr_t virt_addr) {
 
     uintptr_t* page_table;
     uintptr_t* page_dir_entry = &page_dir[X86_PAGING_PGDIR_IDX(virt_addr)];
@@ -17,7 +16,7 @@ bool Memory_IsPageMapped(uintptr_t* page_dir, uintptr_t virt_addr) {
 	return true;
 }
 
-bool Memory_MapPage(uintptr_t* page_dir, uintptr_t virt_addr, uintptr_t phys_addr, uint16_t flags, bool create) {
+bool Paging_MapPage(uintptr_t* page_dir, uintptr_t virt_addr, uintptr_t phys_addr, bool create) {
 
 	uintptr_t* page_table;
 	uintptr_t* page_dir_entry = &page_dir[X86_PAGING_PGDIR_IDX(virt_addr)];
@@ -37,11 +36,11 @@ bool Memory_MapPage(uintptr_t* page_dir, uintptr_t virt_addr, uintptr_t phys_add
 		if (page_table[X86_PAGING_PGTAB_IDX(virt_addr)] != 0) return false;
 	}
 
-	page_table[X86_PAGING_PGTAB_IDX(virt_addr)] = phys_addr | X86_PAGING_PTE_PRESENT | flags;
+	page_table[X86_PAGING_PGTAB_IDX(virt_addr)] = phys_addr | X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
 	return true;
 }
 
-bool Memory_UnmapPage(uintptr_t* page_dir, uintptr_t virt_addr) {
+bool Paging_UnmapPage(uintptr_t* page_dir, uintptr_t virt_addr) {
 
     uintptr_t* page_dir_entry = &page_dir[X86_PAGING_PGDIR_IDX(virt_addr)];
 
@@ -57,7 +56,7 @@ bool Memory_UnmapPage(uintptr_t* page_dir, uintptr_t virt_addr) {
     return true;
 }
 
-size_t Memory_MapPages(uintptr_t* page_dir, void* virt_addr, size_t size, uint16_t flags) {
+size_t Paging_MapPages(uintptr_t* page_dir, void* virt_addr, size_t size) {
 	
 	uintptr_t va = (uintptr_t)virt_addr & ~(X86_PAGING_PAGESIZE-1);
 	uintptr_t va_end = (uintptr_t)(virt_addr + size - 1) & ~(X86_PAGING_PAGESIZE-1);
@@ -69,7 +68,7 @@ size_t Memory_MapPages(uintptr_t* page_dir, void* virt_addr, size_t size, uint16
 		if (page_ptr == PAGE_LIST_NULL) break;
 		uintptr_t pa = (uintptr_t)page_ptr - KERNEL_HIGHER_HALF_OFFSET;
 
-		if (!Memory_MapPage(page_dir, va, pa, flags, true)) {
+		if (!Paging_MapPage(page_dir, va, pa, true)) {
 			Page_Release(page_ptr, 0);
 			break;
 		}
@@ -84,7 +83,7 @@ size_t Memory_MapPages(uintptr_t* page_dir, void* virt_addr, size_t size, uint16
 	return sz;
 }
 
-bool Memory_UnmapPages(uintptr_t* page_dir, void* virt_addr, size_t size) {
+bool Paging_UnmapPages(uintptr_t* page_dir, void* virt_addr, size_t size) {
     
     uintptr_t va = (uintptr_t)(virt_addr + X86_PAGING_PAGESIZE - 1) & ~(X86_PAGING_PAGESIZE-1);
     uintptr_t va_end = (uintptr_t)(virt_addr + size - 1) & ~(X86_PAGING_PAGESIZE-1);
@@ -97,14 +96,14 @@ bool Memory_UnmapPages(uintptr_t* page_dir, void* virt_addr, size_t size) {
 			break;
 		}
         if (va > va_end) break;
-        if (!Memory_UnmapPage(page_dir, va)) unmapping_failed = true;
+        if (!Paging_UnmapPage(page_dir, va)) unmapping_failed = true;
         va += X86_PAGING_PAGESIZE;
     }
 
     return unmapping_failed;
 }
 
-bool Memory_MakePageDirectory(uintptr_t* page_dir) {
+bool Paging_MakePageDirectory(uintptr_t* page_dir) {
 
     uintptr_t* pgd = Page_Acquire(0);
     if (pgd == (uintptr_t*)PAGE_LIST_NULL) return false;
@@ -117,9 +116,9 @@ bool Memory_MakePageDirectory(uintptr_t* page_dir) {
     return true;
 }
 
-void Memory_UnmakePageDirectory(uintptr_t* page_dir) {
+void Paging_UnmakePageDirectory(uintptr_t* page_dir) {
 
-	Memory_UnmapPages(page_dir, (void*)0, KERNEL_MMAP_VIRTUAL_START);
+	Paging_UnmapPages(page_dir, (void*)0, KERNEL_MMAP_VIRTUAL_START);
 	for (size_t i = 0; i < KERNEL_MMAP_VIRTUAL_START; i+=X86_PAGING_EXTPAGESIZE) {
 		uintptr_t page_table = (page_dir[X86_PAGING_PGDIR_IDX(i)] & ~(X86_PAGING_PAGESIZE-1) ) + KERNEL_HIGHER_HALF_OFFSET;
 		Page_Release((void*)page_table, 0);
@@ -129,27 +128,29 @@ void Memory_UnmakePageDirectory(uintptr_t* page_dir) {
 	Page_Release(page_dir, 0);
 }
 
-bool Memory_EnablePageFlags(uintptr_t* page_dir, void* virt_addr, uint16_t flags) {
+/*
+bool Paging_SetPageFlags(uintptr_t* page_dir, void* virt_addr, uint16_t flags) {
 
-	if (!Memory_IsPageMapped(page_dir, (uintptr_t)virt_addr)) return false;
+	if (!Paging_IsPageMapped(page_dir, (uintptr_t)virt_addr)) return false;
 
 	uintptr_t* page_table = (uintptr_t*)( (page_dir[X86_PAGING_PGDIR_IDX(virt_addr)] & ~(X86_PAGING_PAGESIZE-1)) + KERNEL_HIGHER_HALF_OFFSET );
 	page_table[X86_PAGING_PGTAB_IDX(virt_addr)] |= flags;
 	return true;
 }
 
-bool Memory_DisablePageFlags(uintptr_t* page_dir, void* virt_addr, uint16_t flags) {
+bool Paging_UnsetPageFlags(uintptr_t* page_dir, void* virt_addr, uint16_t flags) {
 
-    if (!Memory_IsPageMapped(page_dir, (uintptr_t)virt_addr)) return false;
+    if (!Paging_IsPageMapped(page_dir, (uintptr_t)virt_addr)) return false;
 
     uintptr_t* page_table = (uintptr_t*)( (page_dir[X86_PAGING_PGDIR_IDX(virt_addr)] & ~(X86_PAGING_PAGESIZE-1)) + KERNEL_HIGHER_HALF_OFFSET );
     page_table[X86_PAGING_PGTAB_IDX(virt_addr)] &= ~flags;
 	return true;
 }
+*/
 
-bool Memory_ClonePageDirectory(uintptr_t* page_dir, uintptr_t* clone) {
+bool Paging_ClonePageDirectory(uintptr_t* page_dir, uintptr_t* clone) {
 
-	if (!Memory_MakePageDirectory(page_dir)) return false;
+	if (!Paging_MakePageDirectory(page_dir)) return false;
 
 	bool cloning_failed = false;
 	for (size_t i = 0; i < X86_PAGING_PGDIR_NENTRIES; i++) {
@@ -181,17 +182,17 @@ bool Memory_ClonePageDirectory(uintptr_t* page_dir, uintptr_t* clone) {
 	}
 
 	if (cloning_failed) {
-		Memory_UnmakePageDirectory(clone);
+		Paging_UnmakePageDirectory(clone);
 		return false;
 	}
 
 	return true;
 }
 
-uintptr_t Memory_GetHigherHalfAddress(uintptr_t* page_dir, uintptr_t user_addr) {
+uintptr_t Paging_GetHigherHalfAddress(uintptr_t* page_dir, uintptr_t user_addr) {
 
 	if (user_addr > KERNEL_MMAP_VIRTUAL_START)
-	if (!Memory_IsPageMapped(page_dir, user_addr)) return 0;
+	if (!Paging_IsPageMapped(page_dir, user_addr)) return 0;
 
     uintptr_t* page_table = (uintptr_t*)( (page_dir[X86_PAGING_PGDIR_IDX(user_addr)] & ~(X86_PAGING_PAGESIZE-1)) + KERNEL_HIGHER_HALF_OFFSET );
 	if ((page_table[X86_PAGING_PGTAB_IDX(user_addr)] & X86_PAGING_PTE_USER) == 0) return 0;
@@ -199,12 +200,12 @@ uintptr_t Memory_GetHigherHalfAddress(uintptr_t* page_dir, uintptr_t user_addr) 
     return (page_table[X86_PAGING_PGTAB_IDX(user_addr)] & ~(X86_PAGING_PAGESIZE-1)) + KERNEL_HIGHER_HALF_OFFSET + (user_addr & (X86_PAGING_PAGESIZE-1));
 }
 
-bool Memory_Copy(uintptr_t* dest_page_dir, uintptr_t dest_addr, uintptr_t src_addr, size_t nbytes) {
+bool Paging_Copy(uintptr_t* dest_page_dir, uintptr_t dest_addr, uintptr_t src_addr, size_t nbytes) {
 
 	bool success = true;
 
 	while (nbytes > 0) {
-		uintptr_t dest_hhalf_addr = Memory_GetHigherHalfAddress(dest_page_dir, dest_addr);
+		uintptr_t dest_hhalf_addr = Paging_GetHigherHalfAddress(dest_page_dir, dest_addr);
 		if (dest_hhalf_addr == 0) {
 			success = false;
 			break;
@@ -222,3 +223,7 @@ bool Memory_Copy(uintptr_t* dest_page_dir, uintptr_t dest_addr, uintptr_t src_ad
 	return success;
 }
 
+uint16_t Paging_StandardUserPageFlags() {
+
+	return X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
+}

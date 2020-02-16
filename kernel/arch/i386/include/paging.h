@@ -2,6 +2,8 @@
 #define KERNEL_X86_PAGING_H
 
 #include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #define X86_PAGING_PAGESIZE           0x1000
 #define X86_PAGING_EXTPAGESIZE        0x400000
@@ -30,5 +32,17 @@
 
 #define X86_PAGING_ROUNDUPPAGE(x)     (((uint32_t)(x)+X86_PAGING_PAGESIZE−1) & ~(X86_PAGING_PAGESIZE−1))
 #define X86_PAGING_ROUNDDOWNPAGE(x)   ( (uint32_t)(x)                        & ~(X86_PAGING_PAGESIZE−1))
+
+
+extern bool      Paging_IsPageMapped(uintptr_t* page_dir, uintptr_t virt_addr);
+extern bool      Paging_MapPage(uintptr_t* page_dir, uintptr_t virt_addr, uintptr_t phys_addr, bool create);
+extern bool      Paging_UnmapPage(uintptr_t* page_dir, uintptr_t virt_addr);
+extern size_t    Paging_MapPages(uintptr_t* page_dir, void* virt_addr, size_t size);
+extern bool      Paging_UnmapPages(uintptr_t* page_dir, void* virt_addr, size_t size);
+extern bool      Paging_MakePageDirectory(uintptr_t* page_dir);
+extern void      Paging_UnmakePageDirectory(uintptr_t* page_dir);
+extern bool      Paging_ClonePageDirectory(uintptr_t* page_dir, uintptr_t* clone);
+extern uintptr_t Paging_GetHigherHalfAddress(uintptr_t* page_dir, uintptr_t user_addr);
+extern bool      Paging_Copy(uintptr_t* dest_page_dir, uintptr_t dest_addr, uintptr_t src_addr, size_t nbytes);
 
 #endif

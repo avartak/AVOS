@@ -1,7 +1,7 @@
 #ifndef KERNEL_CORE_SYSCALL_H
 #define KERNEL_CORE_SYSCALL_H
 
-#include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/core/arch/include/arch.h>
 
 extern uint32_t (*SysCall_Handlers[])(void);
 

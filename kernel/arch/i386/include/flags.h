@@ -2,6 +2,7 @@
 #define KERNEL_X86_FLAGS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define X86_EFLAGS_CF               1
 #define X86_EFLAGS_PF               4
@@ -23,5 +24,7 @@
 
 extern uint16_t X86_ReadFlags();
 extern uint32_t X86_ReadEFlags();
+
+extern bool InterruptsEnabled();
 
 #endif

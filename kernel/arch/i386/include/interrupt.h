@@ -44,10 +44,14 @@ extern void Interrupt_0x80();
 
 extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
 
-extern void Interrupt_Return();
-extern void Interrupt_BaseHandler(struct Interrupt_Frame* frame);
-extern void Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
-extern void Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value);
-extern bool Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame);
+extern size_t Interrupt_Frame_GetStructSize();
+extern void   Interrupt_Return();
+extern void   Interrupt_BaseHandler(struct Interrupt_Frame* frame);
+extern void   Interrupt_AddEntry(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
+extern size_t Interrupt_GetReturnRegister(struct Interrupt_Frame* frame);
+extern void   Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value);
+extern size_t Interrupt_GetVector(struct Interrupt_Frame* frame);
+extern bool   Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame);
+extern void   Interrupt_CopyFrame(struct Interrupt_Frame* dst, struct Interrupt_Frame* src);
 
 #endif

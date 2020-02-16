@@ -1,6 +1,7 @@
 #include <kernel/arch/apic/include/apic.h>
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/pit/include/pit.h>
+#include <kernel/arch/cpu/include/cpu.h>
 #include <kernel/arch/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/process/include/state.h>

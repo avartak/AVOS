@@ -3,5 +3,5 @@
 struct SpinLock State_lock;
 
 size_t State_CPUBlockSize() {
-	return sizeof(struct State) + sizeof(struct CPU);
+	return sizeof(struct State) + CPU_GetStructSize();
 }

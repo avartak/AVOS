@@ -27,7 +27,7 @@
 #define TRAP_ADDENTRY(num)          X86_IDT_SetupEntry(&(STATE_CURRENT->cpu->idt[num]), (uintptr_t)Interrupt_##num, X86_GDT_SEG_KERN_CODE, X86_IDT_FLAGS_PRESENT | X86_IDT_FLAGS_DPL3 | X86_IDT_TYPE_TRAP32);
 
 extern size_t      Kernel_numcpus_online; 
-extern uint32_t    Kernel_pagedirectory[]__attribute__((aligned(X86_PAGING_PAGESIZE)));
+extern uint32_t    Kernel_pagedirectory[];
 extern struct CPU* Kernel_cpus[];
 
 extern void Initialize_Memory();

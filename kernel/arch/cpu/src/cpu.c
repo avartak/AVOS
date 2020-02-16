@@ -1,4 +1,4 @@
-#include <kernel/arch/i386/include/cpu.h>
+#include <kernel/arch/cpu/include/cpu.h>
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/initial/include/initialize.h>
 #include <kernel/core/setup/include/setup.h>
@@ -22,5 +22,25 @@ void CPU_SetupProcess(struct Process* proc) {
 void CPU_CleanupProcess(__attribute__((unused))struct Process* proc) {
 
 	X86_CR3_Write((uintptr_t)Kernel_pagedirectory);
+}
+
+size_t CPU_GetStructSize() {
+
+	return sizeof(struct CPU);
+}
+
+uint64_t CPU_GetTimerTicks(struct CPU* cpu) {
+	
+	return cpu->timer_ticks;
+}
+
+struct Context* CPU_GetScheduler(struct CPU* cpu) {
+
+	return cpu->scheduler;
+}
+
+struct Context** CPU_GetSchedulerPtr(struct CPU* cpu) {
+
+    return &(cpu->scheduler);
 }
 

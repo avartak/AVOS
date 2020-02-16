@@ -3,13 +3,7 @@
 #include <kernel/core/process/include/scheduler.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
-#include <kernel/core/memory/include/virtmem.h>
 #include <kernel/clib/include/string.h>
-#include <kernel/arch/i386/include/paging.h>
-#include <kernel/arch/i386/include/controlregs.h>
-#include <kernel/arch/i386/include/flags.h>
-#include <kernel/arch/i386/include/functions.h>
-#include <kernel/arch/initial/include/initialize.h>
 
 struct SpinLock Process_lock;
 size_t Process_next_pid = 1;
@@ -42,7 +36,7 @@ bool Process_Initialize(struct Process* proc) {
 	((struct State*)stack_ptr)->interrupt_priority = 0;
 
 	// Next comes the interrupt frame
-	stack_ptr -= sizeof(struct Interrupt_Frame);
+	stack_ptr -= Interrupt_Frame_GetStructSize();
 	proc->interrupt_frame = (struct Interrupt_Frame*)stack_ptr;
 	
 	// Then, there is space for the pointer to the interrupt frame (which gets passed to the interrupt handler)
@@ -51,9 +45,9 @@ bool Process_Initialize(struct Process* proc) {
 	*((uintptr_t*)stack_ptr) = (uintptr_t)Interrupt_Return;
 
 	// The process context comes next	
-	stack_ptr -= sizeof(struct Context);
+	stack_ptr -= Context_GetStructSize();
 	proc->context = (struct Context*)stack_ptr;
-	memset(proc->context, 0, sizeof(struct Context));
+	memset(proc->context, 0, Context_GetStructSize());
 	Context_SetProgramCounter(proc->context, (uintptr_t)Process_FirstEntryToUserSpace);
 
 	return true;
@@ -108,7 +102,7 @@ uint32_t Process_Fork() {
 
 	if (!Process_Initialize(forked_proc)) return -1;
 
-	if (!Memory_MakePageDirectory(forked_proc->page_directory)) {
+	if (!Paging_MakePageDirectory(forked_proc->page_directory)) {
 		Page_Release(forked_proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
 
 		SpinLock_Acquire(&Process_lock);
@@ -123,7 +117,7 @@ uint32_t Process_Fork() {
 	forked_proc->signaled_change = PROCESS_UNDEFINED;
 	forked_proc->run_time = STATE_CURRENT->process->run_time;
 	forked_proc->memory_endpoint = STATE_CURRENT->process->memory_endpoint;
-	*(forked_proc->interrupt_frame) = *(STATE_CURRENT->process->interrupt_frame);
+	Interrupt_CopyFrame(forked_proc->interrupt_frame, STATE_CURRENT->process->interrupt_frame);
 	Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
 
 	SpinLock_Acquire(&Process_lock);
@@ -145,14 +139,13 @@ void Process_ChangeMemoryEndPoint(int32_t shift) {
     if (new_end == old_end) return;
 
     else if (new_end < old_end) {
-        Memory_UnmapPages(proc->page_directory, (void*)new_end, old_end - new_end);
+        Paging_UnmapPages(proc->page_directory, (void*)new_end, old_end - new_end);
         proc->memory_endpoint = new_end;
     }
 
     else {
-        uint16_t flags = X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
-        size_t size_alloc = Memory_MapPages(proc->page_directory, (void*)old_end, new_end - old_end, flags);
-        uintptr_t old_page = old_end & ~(X86_PAGING_PAGESIZE-1);
+        size_t size_alloc = Paging_MapPages(proc->page_directory, (void*)old_end, new_end - old_end);
+        uintptr_t old_page = old_end & ~(KERNEL_PAGE_SIZE_IN_BYTES-1);
 
         if (old_page + size_alloc < new_end) proc->memory_endpoint = old_page + size_alloc;
         else proc->memory_endpoint = new_end;

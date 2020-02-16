@@ -2,6 +2,7 @@
 #include <kernel/arch/i386/include/controlregs.h>
 #include <kernel/arch/i386/include/ioports.h>
 #include <kernel/arch/i386/include/functions.h>
+#include <kernel/arch/cpu/include/cpu.h>
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/apic/include/ioapic.h>
 #include <kernel/arch/acpi/include/madt.h>

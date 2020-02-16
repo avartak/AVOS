@@ -170,41 +170,16 @@ void Console_VPrint(const char* format, va_list args) {
 		}
 		c = *(++format);
 		if (c == '\0') break;
-		else if (c == 'c') {
-			char ch = va_arg(args, int);
-			Console_PrintChar(ch);
-		}
-		else if (c == 'd' || c == 'i') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_DECIMAL, true);
-		}
-		else if (c == 'u') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_DECIMAL, false);
-		}
-		else if (c == 'o') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_OCTAL, false);
-		}
-		else if (c == 'x') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXLOW, false);
-		}
-		else if (c == 'X') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXCAP, false);
-		}
-		else if (c == 'p') {
-			uint32_t num = va_arg(args, uint32_t);
-			Console_PrintNum(num, CONSOLE_NUMTYPE_HEXLOW, false);
-		}
-		else if (c == 's') {
-			char* str = va_arg(args, char*);
-			Console_PrintString(str);
-		}
-		else if (c == '%') {
-			Console_PrintChar(c);
-		}
+		else if (c == 'c') Console_PrintChar(va_arg(args, int));
+		else if (c == 'd') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_DECIMAL, true );
+		else if (c == 'i') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_DECIMAL, true );
+		else if (c == 'u') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_DECIMAL, false);
+		else if (c == 'o') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_OCTAL  , false);
+		else if (c == 'x') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_HEXLOW , false);
+		else if (c == 'X') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_HEXCAP , false);
+		else if (c == 'p') Console_PrintNum(va_arg(args, uint32_t), CONSOLE_NUMTYPE_HEXLOW , false);
+		else if (c == 's') Console_PrintString(va_arg(args, char*));
+		else if (c == '%') Console_PrintChar(c);
 		else {
 			Console_PrintChar('%');
 			Console_PrintChar(c);

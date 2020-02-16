@@ -3,11 +3,7 @@
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
-#include <kernel/core/memory/include/virtmem.h>
 #include <kernel/core/syscall/include/syscall.h>
-#include <kernel/arch/i386/include/context.h>
-#include <kernel/arch/i386/include/interrupt.h>
-#include <kernel/arch/initial/include/initialize.h>
 
 struct Process Scheduler_processes[KERNEL_MAX_PROCS];
 
@@ -62,8 +58,8 @@ void Scheduler_HandleInterruptReturn() {
 		}
 	}
 
-    if (proc->life_cycle == PROCESS_RUNNING && proc->interrupt_frame->vector == 0x30) {
-		if (STATE_CURRENT->cpu->timer_ticks > proc->start_time + proc->run_time) {
+    if (proc->life_cycle == PROCESS_RUNNING && Interrupt_GetVector(proc->interrupt_frame) == 0x30) {
+		if (CPU_GetTimerTicks(STATE_CURRENT->cpu) > proc->start_time + proc->run_time) {
 			proc->life_cycle = PROCESS_RUNNABLE;
 			SCHEDULER_RETURN;
 		}
@@ -150,7 +146,7 @@ void Scheduler_TerminateProcess(struct Process* proc) {
 
     Scheduler_ChangeParent(proc, (struct Process*)0);
     proc->life_cycle = PROCESS_ZOMBIE;
-    Memory_UnmakePageDirectory(proc->page_directory);
+    Paging_UnmakePageDirectory(proc->page_directory);
     Page_Release(proc->kernel_thread, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
     Scheduler_Wakeup(proc->parent);
 }

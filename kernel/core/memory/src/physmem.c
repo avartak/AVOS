@@ -1,5 +1,6 @@
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/core/multiboot/include/multiboot.h>
+#include <kernel/core/synch/include/irqlock.h>
 
 struct IRQLock Page_operation_lock;
 

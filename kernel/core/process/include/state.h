@@ -5,12 +5,7 @@
 #include <stddef.h>
 #include <stdatomic.h>
 
-#include <kernel/arch/i386/include/gdt.h>
-#include <kernel/arch/i386/include/idt.h>
-#include <kernel/arch/i386/include/interrupt.h>
-#include <kernel/arch/i386/include/functions.h>
-#include <kernel/arch/i386/include/cpu.h>
-#include <kernel/arch/console/include/console.h>
+#include <kernel/core/arch/include/arch.h>
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/synch/include/spinlock.h>
 
@@ -21,7 +16,7 @@ struct State {
 	struct CPU*     cpu;
 }__attribute__((packed));
 
-#define STATE_CURRENT ((struct State*)(X86_GetStackBase() - sizeof(struct State)))
+#define STATE_CURRENT ((struct State*)(GetStackBase() - sizeof(struct State)))
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
     do { \

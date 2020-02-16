@@ -3,13 +3,14 @@
 
 #include <stdint.h>
 
+#include <kernel/core/arch/include/arch.h>
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/synch/include/irqlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
 
-#define SCHEDULER_RETURN       Context_Switch(&(STATE_CURRENT->process->context), STATE_CURRENT->cpu->scheduler)
-#define SCHEDULER_SWITCH(proc) Context_Switch(&(STATE_CURRENT->cpu->scheduler)  , (proc)->context)
+#define SCHEDULER_RETURN       Context_Switch(&(STATE_CURRENT->process->context), CPU_GetScheduler(STATE_CURRENT->cpu))
+#define SCHEDULER_SWITCH(proc) Context_Switch(CPU_GetSchedulerPtr(STATE_CURRENT->cpu), (proc)->context)
 
 extern struct Process  Scheduler_processes[];
 

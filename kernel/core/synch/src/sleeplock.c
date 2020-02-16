@@ -38,16 +38,3 @@ void SleepLock_Release(struct SleepLock* lock) {
 	SpinLock_Release(&(lock->access_lock));
 }
 
-// Process lock can be held when running this function
-void SleepLock_SilentRelease(struct SleepLock* lock) {
-
-    struct Process* proc = STATE_CURRENT->process;
-    if (proc == (struct Process*)0) return;
-
-    SpinLock_Acquire(&(lock->access_lock));
-    lock->locked = false;
-    lock->locked_process = 0;
-
-    SpinLock_Release(&(lock->access_lock));
-}
-

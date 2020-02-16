@@ -14,6 +14,5 @@ struct SleepLock {
 extern void SleepLock_Initialize(struct SleepLock* lock);
 extern void SleepLock_Acquire(struct SleepLock* lock);
 extern void SleepLock_Release(struct SleepLock* lock);
-extern void SleepLock_SilentRelease(struct SleepLock* lock);
 
 #endif

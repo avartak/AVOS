@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 #include <kernel/core/setup/include/setup.h>
-#include <kernel/core/synch/include/irqlock.h>
 
 #define PAGE_MAP_IDX(addr, order)         (  addr >> (KERNEL_PAGE_SIZE_IN_BITS+1+KERNEL_BYTE_IN_BITS+order) )
 #define PAGE_MAP_BIT(addr, order)         ( (addr >> (KERNEL_PAGE_SIZE_IN_BITS+1+order))  & ((1 << KERNEL_BYTE_IN_BITS)-1) )

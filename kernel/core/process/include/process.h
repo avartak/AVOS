@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <kernel/arch/i386/include/interrupt.h>
-#include <kernel/arch/i386/include/context.h>
+#include <kernel/core/arch/include/arch.h>
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
 

@@ -42,12 +42,14 @@ $(KERNEL)/arch/i386/src/gdt.c.o \
 $(KERNEL)/arch/i386/src/idt.s.o \
 $(KERNEL)/arch/i386/src/idt.c.o \
 $(KERNEL)/arch/i386/src/flags.s.o \
+$(KERNEL)/arch/i386/src/flags.c.o \
 $(KERNEL)/arch/i386/src/ioports.s.o \
 $(KERNEL)/arch/i386/src/interrupt.s.o \
 $(KERNEL)/arch/i386/src/interrupt.c.o \
-$(KERNEL)/arch/i386/src/context.c.o \
-$(KERNEL)/arch/i386/src/context.s.o \
-$(KERNEL)/arch/i386/src/cpu.c.o \
+$(KERNEL)/arch/i386/src/paging.c.o \
+$(KERNEL)/arch/cpu/src/context.c.o \
+$(KERNEL)/arch/cpu/src/context.s.o \
+$(KERNEL)/arch/cpu/src/cpu.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
@@ -64,8 +66,7 @@ $(KERNEL)/core/syscall/src/syscall.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
 $(KERNEL)/core/synch/src/sleeplock.c.o \
-$(KERNEL)/core/memory/src/physmem.c.o \
-$(KERNEL)/core/memory/src/virtmem.c.o
+$(KERNEL)/core/memory/src/physmem.c.o
 
 CRTB=$(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
 CRTE=$(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
@@ -106,6 +107,7 @@ modulelist.bin: kernel/arch/initial/src/modulelist.asm
 clean:
 	rm kernel/arch/initial/src/*.o
 	rm kernel/arch/i386/src/*.o
+	rm kernel/arch/cpu/src/*.o
 	rm kernel/arch/apic/src/*.o
 	rm kernel/arch/pit/src/*.o
 	rm kernel/arch/keyboard/src/*.o

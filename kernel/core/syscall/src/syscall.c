@@ -8,9 +8,9 @@ void SysCall_Initialize(uint8_t vector) {
     Interrupt_AddEntry(vector, SysCall);
 }
 
-void SysCall(__attribute__((unused))struct Interrupt_Frame* frame) {
+void SysCall(struct Interrupt_Frame* frame) {
 
-	uint32_t isys = frame->eax;
+	uint32_t isys = Interrupt_GetReturnRegister(frame);
 	if (isys >= KERNEL_NUM_SYSCALLS) return;
 
 	struct Process* proc = STATE_CURRENT->process;
