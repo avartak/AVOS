@@ -1,7 +1,7 @@
 #include <kernel/core/process/include/state.h>
 #include <kernel/core/process/include/process.h>
 #include <kernel/core/process/include/scheduler.h>
-#include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/arch/cpu/include/interrupt.h>
 #include <kernel/arch/i386/include/gdt.h>
 #include <kernel/arch/i386/include/idt.h>
 

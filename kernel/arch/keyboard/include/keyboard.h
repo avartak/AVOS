@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/arch/cpu/include/interrupt.h>
 
 #define KEYBOARD_PS2_IRQLINE 1
 

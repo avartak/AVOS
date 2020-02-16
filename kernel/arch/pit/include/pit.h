@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/arch/cpu/include/interrupt.h>
 #include <kernel/core/synch/include/spinlock.h>
 
 

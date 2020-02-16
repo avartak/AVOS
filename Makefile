@@ -44,12 +44,12 @@ $(KERNEL)/arch/i386/src/idt.c.o \
 $(KERNEL)/arch/i386/src/flags.s.o \
 $(KERNEL)/arch/i386/src/flags.c.o \
 $(KERNEL)/arch/i386/src/ioports.s.o \
-$(KERNEL)/arch/i386/src/interrupt.s.o \
-$(KERNEL)/arch/i386/src/interrupt.c.o \
 $(KERNEL)/arch/i386/src/paging.c.o \
 $(KERNEL)/arch/cpu/src/context.c.o \
 $(KERNEL)/arch/cpu/src/context.s.o \
 $(KERNEL)/arch/cpu/src/cpu.c.o \
+$(KERNEL)/arch/cpu/src/interrupt.s.o \
+$(KERNEL)/arch/cpu/src/interrupt.c.o \
 $(KERNEL)/arch/acpi/src/madt.c.o \
 $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \

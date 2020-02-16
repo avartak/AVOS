@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include <kernel/arch/i386/include/interrupt.h>
+#include <kernel/arch/cpu/include/interrupt.h>
 
 #define LAPIC_REG_ID                  (0x0020/4)   // ID
 #define LAPIC_REG_VERSION             (0x0030/4)   // Version
