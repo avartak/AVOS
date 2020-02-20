@@ -3,7 +3,7 @@
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/apic/include/pic.h>
 #include <kernel/arch/acpi/include/madt.h>
-#include <kernel/arch/i386/include/functions.h>
+#include <kernel/arch/processor/include/functions.h>
 #include <kernel/core/setup/include/setup.h>
 
 uintptr_t IOAPIC_InfoPtrs[MACHINE_MAX_IOAPICS];

@@ -1,5 +1,5 @@
 #include <kernel/core/synch/include/irqlock.h>
-#include <kernel/core/process/include/state.h>
+#include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/arch/include/arch.h>
 
 void IRQLock_Initialize(struct IRQLock* lock) {

@@ -1,7 +1,7 @@
 #include <kernel/core/synch/include/sleeplock.h>
-#include <kernel/core/process/include/state.h>
-#include <kernel/core/process/include/process.h>
-#include <kernel/core/process/include/scheduler.h>
+#include <kernel/core/taskmaster/include/state.h>
+#include <kernel/core/taskmaster/include/process.h>
+#include <kernel/core/taskmaster/include/scheduler.h>
 
 void SleepLock_Initialize(struct SleepLock* lock) {
 	SpinLock_Initialize(&(lock->access_lock));

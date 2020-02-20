@@ -1,5 +1,5 @@
 #include <kernel/arch/apic/include/pic.h>
-#include <kernel/arch/i386/include/ioports.h>
+#include <kernel/arch/processor/include/ioports.h>
 
 bool    PIC_exists;
 uint8_t PIC_InitialMask1;

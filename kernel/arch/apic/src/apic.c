@@ -15,10 +15,10 @@ bool APIC_SaveInfo() {
 
 	struct RSDPv1* rsdp = (struct RSDPv1*)0;
 
-	extern struct Multiboot_Info_Start* BootInfo_Ptr;
+	extern struct Multiboot_Info_Start* BootInfo;
 
 	struct Multiboot_Info_Tag* mbi_tag;
-	uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
+	uintptr_t mbi_addr = (uintptr_t)BootInfo;
 	for (mbi_tag = (struct Multiboot_Info_Tag*)(mbi_addr + 8); mbi_tag->type != 0; mbi_tag = (struct Multiboot_Info_Tag*)((uint8_t*)mbi_tag + ((mbi_tag->size + 7) & ~7))) {
 		if (mbi_tag->type == MULTIBOOT_TAG_TYPE_ACPI_OLD || mbi_tag->type == MULTIBOOT_TAG_TYPE_ACPI_NEW) {
 			struct Multiboot_Info_ACPIv1* mbi_tag_rsdp = (struct Multiboot_Info_ACPIv1*)mbi_tag;
@@ -33,7 +33,6 @@ bool APIC_SaveInfo() {
 	for (size_t i = 0; i < (rsdt->header).length; i++) checksum += ((uint8_t*)(rsdt))[i];
 	if (checksum != 0) return false;
 
-	MADT_ptr = (struct MADT*)0;
 	for (size_t i = 0; i < ((rsdt->header).length - sizeof(struct SDTHeader))/4; i++) {
 		struct SDTHeader* sdt = (struct SDTHeader*)(rsdt->entry[i] + KERNEL_HIGHER_HALF_OFFSET);
 		if (sdt->signature[0] == 'A' && sdt->signature[1] == 'P' && sdt->signature[2] == 'I' && sdt->signature[3] == 'C') MADT_ptr = (struct MADT*)sdt;

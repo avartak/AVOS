@@ -25,4 +25,7 @@
 #define MACHINE_MAX_CPUS          0xFF
 #define MACHINE_MAX_IOAPICS       0xFF
 
+#define PHYSADDR(x)               ((uintptr_t)x-KERNEL_HIGHER_HALF_OFFSET)
+#define KERNADDR(x)               ((uintptr_t)x+KERNEL_HIGHER_HALF_OFFSET)
+
 #endif

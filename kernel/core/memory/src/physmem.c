@@ -152,10 +152,10 @@ void Page_BuddyMaps_Initialize() {
 		}
 	}
 
-	extern struct Multiboot_Info_Start* BootInfo_Ptr;
+	extern struct Multiboot_Info_Start* BootInfo;
 	
 	struct Multiboot_Info_Tag* mbi_tag;
-	uintptr_t mbi_addr = (uintptr_t)BootInfo_Ptr;
+	uintptr_t mbi_addr = (uintptr_t)BootInfo;
 	struct Multiboot_RAMInfo_Entry* mmap = (struct Multiboot_RAMInfo_Entry*)0;
 	size_t mmap_nentries = 0;
 	

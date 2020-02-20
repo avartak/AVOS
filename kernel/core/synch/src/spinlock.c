@@ -1,5 +1,5 @@
 #include <kernel/core/synch/include/spinlock.h>
-#include <kernel/core/process/include/state.h>
+#include <kernel/core/taskmaster/include/state.h>
 
 #include <stdatomic.h>
 
@@ -9,7 +9,9 @@ void SpinLock_Initialize(struct SpinLock* lock) {
 
 void SpinLock_Acquire(struct SpinLock* lock) {
     STATE_INCREMENT_PREEMPTION_VETO();
-    while (atomic_flag_test_and_set_explicit(&(lock->flag), memory_order_acquire));
+    while (atomic_flag_test_and_set_explicit(&(lock->flag), memory_order_acquire)) {
+		__asm__("pause");
+	}
 }
 
 void SpinLock_Release(struct SpinLock* lock) {
