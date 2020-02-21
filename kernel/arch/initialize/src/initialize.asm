@@ -26,7 +26,7 @@ Initialize_HigherHalf:
 global Initialize_Stack
 Initialize_Stack:
     extern Page_Acquire
-	extern Initialize_KernelStackOffset
+	extern Kernel_stack_offset
 
 	push (KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS)
 	call Page_Acquire
@@ -35,8 +35,7 @@ Initialize_Stack:
 	mov  edx, [esp]
     mov  esp,  eax
 	add  esp, KERNEL_STACK_SIZE
-	call Initialize_KernelStackOffset
-	sub  esp, eax
+	sub  esp, [Kernel_stack_offset]
 	and  esp, ~(KERNEL_STACK_ALIGNMENT-1)
     push edx
     ret

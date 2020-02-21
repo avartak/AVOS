@@ -22,16 +22,12 @@
 #include <kernel/clib/include/string.h>
 
 size_t   Kernel_numcpus_online = 0; 
+size_t   Kernel_stack_offset   = sizeof(struct State) + sizeof(struct CPU) + sizeof(struct KProc);
+
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE))) = {
 	[0]                                               = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE,
 	[X86_PAGING_PGDIR_IDX(KERNEL_MMAP_VIRTUAL_START)] = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE
 };
-struct CPU* Kernel_cpus[MACHINE_MAX_CPUS];
-
-size_t Initialize_KernelStackOffset() {
-
-    return sizeof(struct State) + sizeof(struct CPU) + sizeof(struct KProc);
-}
 
 void Initialize_Memory() {
 
@@ -57,7 +53,7 @@ void Initialize_Memory() {
 bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 
 	size_t inumcpus = Kernel_numcpus_online;
-	
+
 	/* Here we try to follow the exact procedure given in the Intel MP specification (1997) */
 	
 	/* Make sure the INIT IPI causes a warm reset */
@@ -90,9 +86,9 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 	PIT_Delay(2);
 
 	PIT_Reset();
-	
-	while (Kernel_numcpus_online == inumcpus);
 
+	while (Kernel_numcpus_online == inumcpus);
+	
 	return true;
 }
 
@@ -119,7 +115,6 @@ void Initialize_ThisProcessor() {
 	struct CPU* cpu = state->kernel_task->cpu;
 	cpu->apic_id    = LocalAPIC_ID();
 	cpu->acpi_id    = 0;
-	Kernel_cpus[Kernel_numcpus_online] = cpu;
 	
 	/* GDT */
 	
@@ -188,7 +183,8 @@ void Initialize_System() {
 	Scheduler_Initialize();
 
 	extern uintptr_t StartAP;
-	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, KERNEL_AP_BOOT_START_SIZE);
+	extern uintptr_t EndAP;
+	memmove((void*)(KERNEL_AP_BOOT_START_ADDR+KERNEL_HIGHER_HALF_OFFSET), &StartAP, (uintptr_t)(&EndAP) - (uintptr_t)(&StartAP));
 	for (size_t i = 0; i < LocalAPIC_Num; i++) {
 		struct MADT_Entry_LocalAPIC* lapic_id = (struct MADT_Entry_LocalAPIC*)(LocalAPIC_InfoPtrs[i]);
 		if (LocalAPIC_ID() == lapic_id->apic_id) continue;
@@ -196,14 +192,14 @@ void Initialize_System() {
 	}
 	
 	Kernel_pagedirectory[0] = 0;
+
 }
 
 void GetToWork() {
 
-	LocalAPIC_Initialize_Timer(0x30, 200);
-
 	Console_Print("CPU %u starting work\n", LocalAPIC_ID());
 
-	Schedule();
+	LocalAPIC_Initialize_Timer(0x30, 200);
 
+	Schedule();
 }

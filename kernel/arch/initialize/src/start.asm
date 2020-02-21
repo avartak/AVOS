@@ -32,7 +32,8 @@ Start:
 	call  Initialize_Stack
 	call  Initialize_ThisProcessor
 	call  Initialize_System
-	call  GetToWork
+
+	jmp   GetToWork
 
 	Halt:
     hlt

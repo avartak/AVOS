@@ -67,11 +67,8 @@ BITS 32
 	call  Initialize_HigherHalf
 	call  Initialize_Stack
 	call  Initialize_ThisProcessor
-	call  GetToWork
 
-	Halt:
-    hlt
-    jmp  Halt
+	jmp   GetToWork
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,6 +85,8 @@ GDT:
 	dw $-GDT-1
 	dd GDT
 
-	times KERNEL_AP_BOOT_START_SIZE-($-$$) db 0
+global EndAP
+EndAP:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+

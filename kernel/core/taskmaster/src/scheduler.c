@@ -10,11 +10,11 @@ struct Process Scheduler_processes[KERNEL_MAX_PROCS];
 // Initialized the processes and related locks 
 void Scheduler_Initialize() {
 
-	SpinLock_Initialize(&Process_lock);
-	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_IDLE;
 	SpinLock_Initialize(&State_lock);
-
+	SpinLock_Initialize(&Process_lock);
 	SysCall_Initialize(0x80);
+
+	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_IDLE;
 }
 
 void Schedule() {
@@ -23,10 +23,6 @@ void Schedule() {
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
 
-		if (Scheduler_processes[iproc].life_cycle == PROCESS_ASLEEP && Scheduler_processes[iproc].signaled_change == PROCESS_RUNNABLE) {
-			Scheduler_processes[iproc].signaled_change = PROCESS_UNDEFINED;
-			Scheduler_processes[iproc].life_cycle = PROCESS_RUNNABLE;
-		}
 		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) {
 			Scheduler_processes[iproc].life_cycle = PROCESS_RUNNING;
 			Context_SetupProcess(&Scheduler_processes[iproc]);
@@ -49,26 +45,10 @@ void Scheduler_HandleInterruptReturn() {
 
 	SpinLock_Acquire(&Process_lock);
 
-	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
-		if (proc->signaled_change == PROCESS_KILLED) Scheduler_TerminateProcess(proc);
-		if (proc->signaled_change == PROCESS_ASLEEP) {
-			proc->signaled_change = PROCESS_UNDEFINED;
-			Process_Sleep();
-		}
-	}
-
     if (proc->life_cycle == PROCESS_RUNNING && Interrupt_GetVector(proc->interrupt_frame) == 0x30) {
 		if (STATE_CURRENT->kernel_task->timer_ticks > proc->start_time + proc->run_time) {
 			proc->life_cycle = PROCESS_RUNNABLE;
 			SCHEDULER_RETURN;
-		}
-	}
-
-	if (Interrupt_ReturningToUserMode(proc->interrupt_frame)) {
-		if (proc->signaled_change == PROCESS_KILLED) Scheduler_TerminateProcess(proc);
-		if (proc->signaled_change == PROCESS_ASLEEP) {
-			proc->signaled_change = PROCESS_UNDEFINED;
-			Process_Sleep();
 		}
 	}
 
@@ -86,6 +66,7 @@ struct Process* Scheduler_Book() {
 			if (Scheduler_processes[i].life_cycle == PROCESS_IDLE) {
 				Scheduler_processes[i].life_cycle = PROCESS_BOOKED;
 				Scheduler_processes[i].id = Process_next_pid++;
+				SpinLock_Release(&Process_lock);
 				return &Scheduler_processes[i];
 			}
 		}
@@ -100,10 +81,7 @@ struct Process* Scheduler_Book() {
 void Scheduler_ChangeParent(struct Process* old_parent, struct Process* new_parent) {
 
     for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-        if (Scheduler_processes[i].parent == old_parent) {
-			Scheduler_processes[i].parent = new_parent;
-            if (Scheduler_processes[i].life_cycle == PROCESS_ZOMBIE) Scheduler_Wakeup(new_parent);
-        }
+        if (Scheduler_processes[i].parent == old_parent) Scheduler_processes[i].parent = new_parent;
     }
 
 }
@@ -136,23 +114,14 @@ struct Process* Scheduler_GetProcessKid(struct Process* proc, enum Process_LifeC
 }
 
 // Must run under the process lock
-void Scheduler_LifeCycleChangeSignal(uint32_t process_id, enum Process_LifeCycle requested_cycle) {
-
-	if (requested_cycle != PROCESS_KILLED && requested_cycle != PROCESS_ASLEEP && requested_cycle != PROCESS_RUNNABLE) return;
-
-    for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-        if (Scheduler_processes[i].id == process_id && Scheduler_processes[i].life_cycle != PROCESS_IDLE && Scheduler_processes[i].life_cycle != PROCESS_ZOMBIE) {
-            Scheduler_processes[i].signaled_change = requested_cycle;
-        }
-    }
-}
-
-// Must run under the process lock
-void Scheduler_TerminateProcess(struct Process* proc) {
+void Scheduler_TerminateProcess(struct Process* proc, int exit_status) {
 
     Scheduler_ChangeParent(proc, (struct Process*)0);
-    proc->life_cycle = PROCESS_ZOMBIE;
+
     Paging_UnmakePageDirectory(proc);
     Page_Release(proc->kstack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-    Scheduler_Wakeup(proc->parent);
+    proc->exit_status = exit_status;
+    proc->life_cycle = PROCESS_DEAD;
+
+	if (proc->parent->life_cycle == PROCESS_WAITING) proc->parent->life_cycle = PROCESS_RUNNABLE;
 }

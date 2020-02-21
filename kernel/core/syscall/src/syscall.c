@@ -10,13 +10,5 @@ void SysCall_Initialize(uint8_t vector) {
 
 void SysCall(struct Interrupt_Frame* frame) {
 
-	uint32_t isys = Interrupt_GetReturnRegister(frame);
-	if (isys >= KERNEL_NUM_SYSCALLS) return;
-
-	struct Process* proc = STATE_CURRENT->process;
-	if (proc == (struct Process*)0) return;
-	if (proc->signaled_change == PROCESS_KILLED) return;
-	if (proc->signaled_change == PROCESS_ASLEEP) return;
-
-	SysCall_Handlers[isys]();
+	SysCall_Handlers[Interrupt_GetReturnRegister(frame)]();
 }

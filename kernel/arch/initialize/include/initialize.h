@@ -17,11 +17,10 @@
 
 #define SMP_STARTUP_TRIES          2
 
-extern size_t      Kernel_numcpus_online; 
-extern uint32_t    Kernel_pagedirectory[];
-extern struct CPU* Kernel_cpus[];
+extern size_t   Kernel_numcpus_online; 
+extern uint32_t Kernel_pagedirectory[];
+extern size_t   Kernel_stack_offset;
 
-extern size_t Initialize_KernelStackOffset();
 extern void   Initialize_Memory();
 extern bool   Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address);
 extern void   Initialize_ThisProcessor();
