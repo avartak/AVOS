@@ -8,7 +8,7 @@
 
 void Context_Initialize(struct Process* proc) {
 
-    uintptr_t stack_ptr = (uintptr_t)proc->kstack + KERNEL_STACK_SIZE;
+    uintptr_t stack_ptr = (uintptr_t)proc->kern_stack + KERNEL_STACK_SIZE;
     stack_ptr -= sizeof(struct State) + sizeof(struct Interrupt_Frame) + sizeof(uintptr_t) + sizeof(struct Context);
 
     proc->context = (struct Context*)stack_ptr;
@@ -18,10 +18,8 @@ void Context_Initialize(struct Process* proc) {
 
 void Context_SetupProcess(struct Process* proc) {
 
-    struct State* proc_state = (struct State*)(proc->kstack + KERNEL_STACK_SIZE - sizeof(struct State));
-    proc_state->kernel_task = STATE_CURRENT->kernel_task;
-
-    STATE_CURRENT->kernel_task->cpu->task_state.esp0 = (uintptr_t)proc_state;
+    STATE_FROM_PROC(proc)->kernel_task = STATE_CURRENT->kernel_task;
+    STATE_FROM_PROC(proc)->kernel_task->cpu->task_state.esp0 = (uintptr_t)STATE_FROM_PROC(proc);
     proc->start_time = STATE_CURRENT->kernel_task->timer_ticks;
 }
 

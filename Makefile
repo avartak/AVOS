@@ -61,7 +61,6 @@ $(KERNEL)/core/multiboot/src/multiboot.s.o \
 $(KERNEL)/core/taskmaster/src/process.c.o \
 $(KERNEL)/core/taskmaster/src/state.c.o \
 $(KERNEL)/core/taskmaster/src/scheduler.c.o \
-$(KERNEL)/core/taskmaster/src/dispatcher.c.o \
 $(KERNEL)/core/syscall/src/syscall.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \

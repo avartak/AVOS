@@ -28,7 +28,7 @@ struct Process {
 	uintptr_t               endpoint;
 	// Execution
 	struct Context*         context;
-	uint8_t*                kstack;
+	uint8_t*                kern_stack;
 	struct Interrupt_Frame* interrupt_frame;
 	// Signal
 	void*                   wakeup_on;
@@ -53,7 +53,7 @@ extern void     Process_SleepOn(struct SleepLock* lock);
 extern void     Process_Preempt();
 
 extern uint32_t Process_Fork();
-extern void     Process_ChangeMemoryEndPoint(int32_t shift);
+extern void     Process_ShiftEndPoint(int32_t shift);
 extern void     Process_Exit(int status);
 extern uint32_t Process_Wait();
 

@@ -1,7 +1,6 @@
 #include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/scheduler.h>
-#include <kernel/core/taskmaster/include/dispatcher.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/clib/include/string.h>
@@ -18,8 +17,8 @@ void Process_FirstEntryToUserSpace() {
 
 bool Process_Initialize(struct Process* proc) {
 
-	proc->kstack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-	if (proc->kstack == (uint8_t*)PAGE_LIST_NULL) return false;
+	proc->kern_stack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+	if (proc->kern_stack == (uint8_t*)PAGE_LIST_NULL) return false;
 
 	State_Initialize(proc);
 	Interrupt_Frame_Initialize(proc);
@@ -72,7 +71,7 @@ uint32_t Process_Fork() {
 	struct Process* forked_proc = Scheduler_Book();
 
 	if (!Process_Initialize(forked_proc) || !Paging_Clone(parent_proc, forked_proc)) {
-		Page_Release(forked_proc->kstack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+		Page_Release(forked_proc->kern_stack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
 		SpinLock_Acquire(&Process_lock);
 		forked_proc->life_cycle = PROCESS_IDLE;
 		SpinLock_Release(&Process_lock);
@@ -86,8 +85,8 @@ uint32_t Process_Fork() {
 	forked_proc->exit_status = -1;
 	forked_proc->run_time = parent_proc->run_time;
 	forked_proc->endpoint = parent_proc->endpoint;
-	Interrupt_CopyFrame(forked_proc->interrupt_frame, parent_proc->interrupt_frame);
-	Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
+	Interrupt_Frame_Fork(forked_proc->interrupt_frame, parent_proc->interrupt_frame);
+	//Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
 
 	parent_proc->num_children++;
 	parent_proc->child = forked_proc;
@@ -165,7 +164,19 @@ void Process_Exit(int status) {
 
     SpinLock_Acquire(&Process_lock);
 
-	Dispatcher_TerminateProcess(proc, status);
+    struct Process* kid = proc->child;
+    while (kid != PROCESS_NULL) {
+        kid->parent = Process_primordial;
+        if (kid->life_cycle == PROCESS_DEAD && Process_primordial->life_cycle == PROCESS_WAITING) Process_primordial->life_cycle = PROCESS_RUNNABLE;
+        kid = kid->sibling;
+    }
+
+    Paging_Terminate(proc);
+    Page_Release(proc->kern_stack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+    proc->exit_status = status;
+    proc->life_cycle = PROCESS_DEAD;
+
+    if (proc->parent->life_cycle == PROCESS_WAITING) proc->parent->life_cycle = PROCESS_RUNNABLE;
 
 	SCHEDULER_RETURN;
 }

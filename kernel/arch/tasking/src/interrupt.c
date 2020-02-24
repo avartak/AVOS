@@ -10,7 +10,7 @@ void (*Interrupt_Handlers[X86_IDT_NENTRIES])(struct Interrupt_Frame*);
 
 void Interrupt_Frame_Initialize(struct Process* proc) {
 
-    uintptr_t stack_ptr = (uintptr_t)proc->kstack + KERNEL_STACK_SIZE;
+    uintptr_t stack_ptr = (uintptr_t)proc->kern_stack + KERNEL_STACK_SIZE;
    
     stack_ptr -= sizeof(struct State) + sizeof(struct Interrupt_Frame);
     proc->interrupt_frame = (struct Interrupt_Frame*)stack_ptr;
@@ -36,11 +36,6 @@ size_t Interrupt_GetReturnRegister(struct Interrupt_Frame* frame) {
 	return frame->eax;
 }
 
-void Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value) {
-
-	frame->eax = value;
-}
-
 extern size_t Interrupt_GetVector(struct Interrupt_Frame* frame) {
 
 	return frame->vector;
@@ -48,11 +43,11 @@ extern size_t Interrupt_GetVector(struct Interrupt_Frame* frame) {
 
 bool Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame) {
 
-	if (frame->cs == X86_GDT_SEG_USER_CODE) return true;
-    else return false;
+	return (frame->cs == X86_GDT_SEG_USER_CODE);
 }
 
-void Interrupt_CopyFrame(struct Interrupt_Frame* dst, struct Interrupt_Frame* src) {
+void Interrupt_Frame_Fork(struct Interrupt_Frame* dst, struct Interrupt_Frame* src) {
 
-	*dst = *src;
+    *dst = *src;
+	dst->eax = 0;
 }

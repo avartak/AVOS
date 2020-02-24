@@ -27,9 +27,8 @@ extern void            Context_Switch(struct Context** old_context, struct Conte
 extern void            Interrupt_Frame_Initialize(struct Process* proc);
 extern void            Interrupt_AddHandler(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
 extern size_t          Interrupt_GetReturnRegister(struct Interrupt_Frame* frame);
-extern void            Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value);
 extern size_t          Interrupt_GetVector(struct Interrupt_Frame* frame);
-extern void            Interrupt_CopyFrame(struct Interrupt_Frame* dst, struct Interrupt_Frame* src);
+extern void            Interrupt_Frame_Fork(struct Interrupt_Frame* dst, struct Interrupt_Frame* src);
 
 extern void            Console_Print(const char* format, ...);
 extern void            Console_Panic(const char* format, ...);

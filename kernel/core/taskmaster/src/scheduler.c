@@ -1,5 +1,4 @@
 #include <kernel/core/taskmaster/include/scheduler.h>
-#include <kernel/core/taskmaster/include/dispatcher.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/setup/include/setup.h>
@@ -23,7 +22,9 @@ void Schedule() {
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
 		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) {
-			Dispatch(&Scheduler_processes[iproc]);
+			Scheduler_processes[iproc].life_cycle =  PROCESS_RUNNING;
+			Context_SetupProcess(&Scheduler_processes[iproc]);
+			SCHEDULER_SWITCH(&Scheduler_processes[iproc]);
 		}
 		SpinLock_Release(&Process_lock);
 
@@ -72,4 +73,3 @@ void Scheduler_RaiseAlarm(void* alarm) {
 		}
     }
 }
-
