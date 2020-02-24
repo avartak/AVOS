@@ -86,7 +86,6 @@ uint32_t Process_Fork() {
 	forked_proc->run_time = parent_proc->run_time;
 	forked_proc->endpoint = parent_proc->endpoint;
 	Interrupt_Frame_Fork(forked_proc->interrupt_frame, parent_proc->interrupt_frame);
-	//Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
 
 	parent_proc->num_children++;
 	parent_proc->child = forked_proc;

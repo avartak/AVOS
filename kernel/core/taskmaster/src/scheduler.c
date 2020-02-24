@@ -36,9 +36,7 @@ void Schedule() {
 // Must run under the process lock
 bool Scheduler_Preempt(struct Process* proc) {
 
-    if (proc->life_cycle == PROCESS_RUNNING && STATE_FROM_PROC(proc)->kernel_task->timer_ticks > proc->start_time + proc->run_time) return true;
-
-	return false;
+    return (proc->life_cycle == PROCESS_RUNNING && STATE_FROM_PROC(proc)->kernel_task->timer_ticks > proc->start_time + proc->run_time);
 }
 
 // Must run under the process lock
@@ -66,10 +64,10 @@ struct Process* Scheduler_Book() {
 // Must run under the process lock
 void Scheduler_RaiseAlarm(void* alarm) {
 
-    for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-        if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
+	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
+		if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
 			Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
 			Scheduler_processes[i].wakeup_on  = (void*)0;
 		}
-    }
+	}
 }
