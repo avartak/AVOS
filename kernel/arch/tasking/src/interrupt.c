@@ -19,6 +19,12 @@ void Interrupt_Frame_Initialize(struct Process* proc) {
 	*((uintptr_t*)stack_ptr) = (uintptr_t)Interrupt_Return;
 }
 
+void Interrupt_Frame_Fork(struct Interrupt_Frame* dst, struct Interrupt_Frame* src) {
+
+    *dst = *src;
+	dst->eax = 0;
+}
+
 void Interrupt_Handle(struct Interrupt_Frame* frame) {
 
 	Interrupt_Handlers[frame->vector](frame);
@@ -46,8 +52,3 @@ bool Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame) {
 	return (frame->cs == X86_GDT_SEG_USER_CODE);
 }
 
-void Interrupt_Frame_Fork(struct Interrupt_Frame* dst, struct Interrupt_Frame* src) {
-
-    *dst = *src;
-	dst->eax = 0;
-}
