@@ -42,11 +42,11 @@ extern bool       Paging_MapPage(struct Process* proc, uintptr_t virt_addr, uint
 extern bool       Paging_UnmapPage(struct Process* proc, uintptr_t virt_addr);
 extern size_t     Paging_MapPages(struct Process* proc, void* virt_addr, size_t size);
 extern bool       Paging_UnmapPages(struct Process* proc, void* virt_addr, size_t size);
-extern bool       Paging_MakePageDirectory(struct Process* proc);
-extern void       Paging_UnmakePageDirectory(struct Process* proc);
-extern bool       Paging_SetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags);
-extern bool       Paging_UnsetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags);
-extern bool       Paging_ClonePageDirectory(struct Process* proc, struct Process* clone_proc);
+extern bool       Paging_Initialize(struct Process* proc);
+extern void       Paging_Terminate(struct Process* proc);
+extern bool       Paging_SetFlags(struct Process* proc, void* virt_addr, uint16_t flags);
+extern bool       Paging_UnsetFlags(struct Process* proc, void* virt_addr, uint16_t flags);
+extern bool       Paging_Clone(struct Process* proc, struct Process* clone_proc);
 extern uintptr_t  Paging_GetHigherHalfAddress(struct Process* proc, uintptr_t user_addr);
 extern bool       Paging_Copy(struct Process* proc, uintptr_t dest_addr, uintptr_t src_addr, size_t nbytes);
 

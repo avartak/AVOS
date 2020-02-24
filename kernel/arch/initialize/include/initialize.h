@@ -17,6 +17,8 @@
 
 #define SMP_STARTUP_TRIES          2
 
+struct Process;
+
 extern size_t   Kernel_numcpus_online; 
 extern uint32_t Kernel_pagedirectory[];
 extern size_t   Kernel_stack_offset;

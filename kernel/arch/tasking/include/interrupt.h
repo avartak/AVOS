@@ -37,11 +37,13 @@ struct Interrupt_Frame {
 	uint16_t padding6;
 };
 
+struct Process;
+
 extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
 
-extern size_t Interrupt_Frame_GetStructSize();
+extern void   Interrupt_Frame_Initialize(struct Process* proc);
 extern void   Interrupt_Return();
-extern void   Interrupt_BaseHandler(struct Interrupt_Frame* frame);
+extern void   Interrupt_Handle(struct Interrupt_Frame* frame);
 extern void   Interrupt_AddHandler(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
 extern size_t Interrupt_GetReturnRegister(struct Interrupt_Frame* frame);
 extern void   Interrupt_SetReturnRegister(struct Interrupt_Frame* frame, size_t value);

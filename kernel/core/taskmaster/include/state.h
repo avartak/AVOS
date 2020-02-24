@@ -6,7 +6,6 @@
 #include <stdatomic.h>
 
 #include <kernel/core/arch/include/arch.h>
-#include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/synch/include/spinlock.h>
 
 struct State {
@@ -16,7 +15,8 @@ struct State {
 	struct KProc*   kernel_task;
 }__attribute__((packed));
 
-#define STATE_CURRENT ((struct State*)(GetStackBase() - sizeof(struct State)))
+#define STATE_CURRENT           ((struct State*)(GetStackBase() - sizeof(struct State)))
+#define STATE_FROM_PROC(proc)   ((struct State*)((uintptr_t)proc->kstack + KERNEL_STACK_SIZE - sizeof(struct State)))
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
     do { \
@@ -32,5 +32,7 @@ struct State {
     } while (0)
 
 extern struct SpinLock State_lock;
+
+extern void State_Initialize(struct Process* proc);
 
 #endif

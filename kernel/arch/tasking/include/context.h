@@ -15,9 +15,8 @@ struct Context {
 	uintptr_t  eip;
 }__attribute__((packed));
 
-extern size_t Context_GetStructSize();
+extern void   Context_Initialize(struct Process* proc);
 extern void   Context_SetupProcess(struct Process* proc);
 extern void   Context_Switch(struct Context** old_context, struct Context* new_context);
-extern void   Context_SetProgramCounter(struct Context* context, uintptr_t  ptr);
 
 #endif

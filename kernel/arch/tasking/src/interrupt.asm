@@ -17,8 +17,7 @@ section .text
 
 global Interrupt_DoCommonHandling
 	Interrupt_DoCommonHandling:
-	extern Interrupt_BaseHandler
-	extern LocalAPIC_EOI
+	extern Interrupt_Handle
 	push ds
 	push es
 	push fs
@@ -26,9 +25,8 @@ global Interrupt_DoCommonHandling
 	pushad
 	
 	push esp
-	call Interrupt_BaseHandler
+	call Interrupt_Handle
 	add  esp, 4
-	call LocalAPIC_EOI
 
 global Interrupt_Return
 	Interrupt_Return:

@@ -1,22 +1,29 @@
+#include <kernel/core/setup/include/setup.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/process.h>
-#include <kernel/core/taskmaster/include/scheduler.h>
 #include <kernel/arch/tasking/include/interrupt.h>
 #include <kernel/arch/processor/include/gdt.h>
 #include <kernel/arch/processor/include/idt.h>
+#include <kernel/arch/apic/include/lapic.h>
 
 void (*Interrupt_Handlers[X86_IDT_NENTRIES])(struct Interrupt_Frame*);
 
-extern size_t Interrupt_Frame_GetStructSize() {
+void Interrupt_Frame_Initialize(struct Process* proc) {
 
-	return sizeof(struct Interrupt_Frame);
+    uintptr_t stack_ptr = (uintptr_t)proc->kstack + KERNEL_STACK_SIZE;
+   
+    stack_ptr -= sizeof(struct State) + sizeof(struct Interrupt_Frame);
+    proc->interrupt_frame = (struct Interrupt_Frame*)stack_ptr;
+
+	stack_ptr -= sizeof(uintptr_t);
+	*((uintptr_t*)stack_ptr) = (uintptr_t)Interrupt_Return;
 }
 
-void Interrupt_BaseHandler(struct Interrupt_Frame* frame) {
+void Interrupt_Handle(struct Interrupt_Frame* frame) {
 
 	Interrupt_Handlers[frame->vector](frame);
-
-	Scheduler_HandleInterruptReturn();
+	LocalAPIC_EOI();
+	Process_Preempt();
 }
 
 void Interrupt_AddHandler(uint8_t entry, void (*handler)(struct Interrupt_Frame*)) {

@@ -1,11 +1,13 @@
 #include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/scheduler.h>
+#include <kernel/core/taskmaster/include/dispatcher.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 #include <kernel/clib/include/string.h>
 
 struct SpinLock Process_lock;
+struct Process* Process_primordial = PROCESS_NULL;
 size_t Process_next_pid = 1;
 
 // The process lock will be held from Schedule()
@@ -16,41 +18,14 @@ void Process_FirstEntryToUserSpace() {
 
 bool Process_Initialize(struct Process* proc) {
 
-	// Allocate stack for the kernel thread
-	void* kstack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-	if (kstack == PAGE_LIST_NULL) return false;
+	proc->kstack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+	if (proc->kstack == (uint8_t*)PAGE_LIST_NULL) return false;
 
-	// Now we go about initializing the process
-	proc->kstack = (uint8_t*)kstack;
-	uintptr_t stack_ptr = (uintptr_t)proc->kstack + KERNEL_STACK_SIZE;
-	
-	// State goes at the very base of the stack 
-	stack_ptr -= sizeof(struct State);
-	((struct State*)stack_ptr)->process = proc;
-	((struct State*)stack_ptr)->preemption_vetos = 0;
-	((struct State*)stack_ptr)->interrupt_priority = 0;
+	State_Initialize(proc);
+	Interrupt_Frame_Initialize(proc);
+	Context_Initialize(proc);
 
-	// Next comes the interrupt frame
-	stack_ptr -= Interrupt_Frame_GetStructSize();
-	proc->interrupt_frame = (struct Interrupt_Frame*)stack_ptr;
-	
-	// Then, there is space for the pointer to the interrupt frame (which gets passed to the interrupt handler)
-	// Optionally it can also hold the address of the part of the interrupt handling code that handles return from the interrupt (to enter user space)
-	stack_ptr -= sizeof(uintptr_t);
-	*((uintptr_t*)stack_ptr) = (uintptr_t)Interrupt_Return;
-
-	// The process context comes next
-	size_t context_size = Context_GetStructSize();
-	stack_ptr -= context_size;
-	proc->context = (struct Context*)stack_ptr;
-	memset(proc->context, 0, context_size);
-	Context_SetProgramCounter(proc->context, (uintptr_t)Process_FirstEntryToUserSpace);
-
-	// Setup process memory
-	if (!Paging_MakePageDirectory(proc)) {
-		Page_Release(kstack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-		return false;
-	}
+	if (!Paging_Initialize(proc)) return false;
 
 	return true;
 }
@@ -58,7 +33,7 @@ bool Process_Initialize(struct Process* proc) {
 void Process_SleepOn(struct SleepLock* lock) {
 
     struct Process* proc = STATE_CURRENT->process;
-    if (proc == (struct Process*)0) return;
+    if (proc == PROCESS_NULL) return;
     if (STATE_CURRENT->preemption_vetos != 0) return;
 
     SpinLock_Acquire(&Process_lock);
@@ -73,9 +48,22 @@ void Process_SleepOn(struct SleepLock* lock) {
     SpinLock_Acquire(&lock->access_lock);
 }
 
-uint32_t Process_ID() {
+void Process_Preempt() {
 
-	return STATE_CURRENT->process->id;
+    struct Process* proc = STATE_CURRENT->process;
+
+    if (proc == PROCESS_NULL) return;
+
+    if (STATE_CURRENT->preemption_vetos != 0) return;
+
+    SpinLock_Acquire(&Process_lock);
+
+    if (Interrupt_GetVector(proc->interrupt_frame) == 0x30 && Scheduler_Preempt(proc)) {
+        proc->life_cycle = PROCESS_RUNNABLE;
+        SCHEDULER_RETURN;
+    }
+
+    SpinLock_Release(&Process_lock);
 }
 
 uint32_t Process_Fork() {
@@ -83,25 +71,26 @@ uint32_t Process_Fork() {
 	struct Process* parent_proc = STATE_CURRENT->process;
 	struct Process* forked_proc = Scheduler_Book();
 
-	bool release_proc = false;
-	if (!Process_Initialize(forked_proc)) release_proc = true;
-	if (!Paging_ClonePageDirectory(parent_proc, forked_proc)) {
+	if (!Process_Initialize(forked_proc) || !Paging_Clone(parent_proc, forked_proc)) {
 		Page_Release(forked_proc->kstack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-		release_proc = true;
-	}
-	if (release_proc) {
 		SpinLock_Acquire(&Process_lock);
 		forked_proc->life_cycle = PROCESS_IDLE;
 		SpinLock_Release(&Process_lock);
 		return -1;
 	}
 
-	forked_proc->parent = parent_proc;
+	forked_proc->parent  = parent_proc;
+	forked_proc->child   = PROCESS_NULL;
+	forked_proc->sibling = parent_proc->child;
+	forked_proc->num_children = 0;
 	forked_proc->exit_status = -1;
 	forked_proc->run_time = parent_proc->run_time;
 	forked_proc->endpoint = parent_proc->endpoint;
 	Interrupt_CopyFrame(forked_proc->interrupt_frame, parent_proc->interrupt_frame);
 	Interrupt_SetReturnRegister(forked_proc->interrupt_frame, 0);
+
+	parent_proc->num_children++;
+	parent_proc->child = forked_proc;
 
 	SpinLock_Acquire(&Process_lock);
 	forked_proc->life_cycle = PROCESS_RUNNABLE;
@@ -137,16 +126,30 @@ uint32_t Process_Wait() {
 	uint32_t retval = -1;
 	struct Process* proc = STATE_CURRENT->process;
 	while (true) {
-		struct Process* zombie_kid = Scheduler_GetProcessKid(proc, PROCESS_DEAD);
-		if (zombie_kid == (struct Process*)(-1)) {
+		if (proc->num_children == 0) {
 			retval = -1;
 			break;
 		}
-		if (zombie_kid != (struct Process*)0) {
-			retval = zombie_kid->id;
-			zombie_kid->life_cycle = PROCESS_IDLE;
+
+		struct Process* kid = proc->child;
+		if (kid->life_cycle == PROCESS_DEAD) {
+			retval = kid->id;
+			kid->life_cycle = PROCESS_IDLE;
+			proc->num_children--;
+			proc->child = kid->sibling;
 			break;
 		}
+		while (kid->sibling != PROCESS_NULL) {
+			if (kid->sibling->life_cycle == PROCESS_DEAD) {
+				retval = kid->sibling->id;
+				kid->sibling->life_cycle = PROCESS_IDLE;
+				proc->num_children--;
+				kid->sibling = kid->sibling->sibling;
+				break;
+			}
+			kid = kid->sibling;
+		}
+
 		proc->life_cycle = PROCESS_WAITING;
 		SCHEDULER_RETURN;
 	}
@@ -162,7 +165,8 @@ void Process_Exit(int status) {
 
     SpinLock_Acquire(&Process_lock);
 
-	Scheduler_TerminateProcess(proc, status);
+	Dispatcher_TerminateProcess(proc, status);
 
 	SCHEDULER_RETURN;
 }
+

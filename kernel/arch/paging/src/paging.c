@@ -114,7 +114,7 @@ bool Paging_UnmapPages(struct Process* proc, void* virt_addr, size_t size) {
     return unmapping_failed;
 }
 
-bool Paging_MakePageDirectory(struct Process* proc) {
+bool Paging_Initialize(struct Process* proc) {
 
     uintptr_t* pgd = Page_Acquire(0);
     if (pgd == (uintptr_t*)PAGE_LIST_NULL) return false;
@@ -127,7 +127,7 @@ bool Paging_MakePageDirectory(struct Process* proc) {
     return true;
 }
 
-void Paging_UnmakePageDirectory(struct Process* proc) {
+void Paging_Terminate(struct Process* proc) {
 
 	Paging_UnmapPages(proc, (void*)0, KERNEL_MMAP_VIRTUAL_START);
 	for (size_t i = 0; i < KERNEL_MMAP_VIRTUAL_START; i+=X86_PAGING_EXTPAGESIZE) {
@@ -139,7 +139,7 @@ void Paging_UnmakePageDirectory(struct Process* proc) {
 	Page_Release(proc->context->cr3, 0);
 }
 
-bool Paging_SetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
+bool Paging_SetFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
 
 	if (!Paging_IsPageMapped(proc, (uintptr_t)virt_addr)) return false;
 
@@ -148,7 +148,7 @@ bool Paging_SetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags) 
 	return true;
 }
 
-bool Paging_UnsetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
+bool Paging_UnsetFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
 
     if (!Paging_IsPageMapped(proc, (uintptr_t)virt_addr)) return false;
 
@@ -157,7 +157,7 @@ bool Paging_UnsetPageFlags(struct Process* proc, void* virt_addr, uint16_t flags
 	return true;
 }
 
-bool Paging_ClonePageDirectory(struct Process* proc, struct Process* clone_proc) {
+bool Paging_Clone(struct Process* proc, struct Process* clone_proc) {
 
 	uintptr_t* page_dir = proc->context->cr3;
 	uintptr_t* clone    = clone_proc->context->cr3;
@@ -191,7 +191,7 @@ bool Paging_ClonePageDirectory(struct Process* proc, struct Process* clone_proc)
 	}
 
 	if (cloning_failed) {
-		Paging_UnmakePageDirectory(clone_proc);
+		Paging_Terminate(clone_proc);
 		return false;
 	}
 

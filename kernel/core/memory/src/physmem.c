@@ -48,6 +48,8 @@ struct Page_List* Page_lists[] = {
 
 void Page_Release(void* pointer, uint8_t order) {
 
+	if (pointer == PAGE_LIST_NULL) return;
+
 	IRQLock_Acquire(&Page_operation_lock);
 
 	uintptr_t addr = (uintptr_t)pointer - KERNEL_HIGHER_HALF_OFFSET;

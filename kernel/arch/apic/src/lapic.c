@@ -5,6 +5,7 @@
 #include <kernel/devices/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/taskmaster/include/state.h>
+#include <kernel/core/taskmaster/include/process.h>
 
 uintptr_t LocalAPIC_address = 0;
 size_t    LocalAPIC_Num = 0;
