@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <kernel/arch/tasking/include/interrupt.h>
+#include <kernel/arch/tasking/include/context.h>
 #include <kernel/core/synch/include/spinlock.h>
 
 
@@ -44,7 +44,7 @@ extern void     PIT_Initialize(uint8_t irq, uint8_t vector);
 extern void     PIT_Set(size_t freq);
 extern void     PIT_Reset();
 extern uint16_t PIT_ReadCounter();
-extern void     PIT_HandleInterrupt(struct Interrupt_Frame* frame);
+extern void     PIT_HandleInterrupt(struct IContext* frame);
 extern void     PIT_Delay(uint32_t delay);
 
 #endif

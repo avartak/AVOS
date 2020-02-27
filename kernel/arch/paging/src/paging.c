@@ -15,7 +15,7 @@
 bool Paging_IsPageMapped(struct Process* proc, uintptr_t virt_addr) {
 
     uintptr_t* page_table;
-    uintptr_t  page_dir_entry = proc->context->cr3[PAGEDIRIDX(virt_addr)];
+    uintptr_t  page_dir_entry = proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
     if ( !(page_dir_entry & X86_PAGING_PDE_PRESENT) ) return false;
     page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(page_dir_entry));
@@ -28,7 +28,7 @@ bool Paging_IsPageMapped(struct Process* proc, uintptr_t virt_addr) {
 bool Paging_MapPage(struct Process* proc, uintptr_t virt_addr, uintptr_t phys_addr, bool create) {
 
 	uintptr_t* page_table;
-	uintptr_t* page_dir_entry = &proc->context->cr3[PAGEDIRIDX(virt_addr)];
+	uintptr_t* page_dir_entry = &proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
 	if ( !(*page_dir_entry & X86_PAGING_PDE_PRESENT) ) {
 
@@ -51,7 +51,7 @@ bool Paging_MapPage(struct Process* proc, uintptr_t virt_addr, uintptr_t phys_ad
 
 bool Paging_UnmapPage(struct Process* proc, uintptr_t virt_addr) {
 
-    uintptr_t* page_dir_entry = &proc->context->cr3[PAGEDIRIDX(virt_addr)];
+    uintptr_t* page_dir_entry = &proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
     if ( !(*page_dir_entry & X86_PAGING_PDE_PRESENT) ) return false;
 
@@ -123,7 +123,7 @@ bool Paging_Initialize(struct Process* proc) {
 
     for (size_t i = KERNEL_MMAP_VIRTUAL_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) pgd[PAGEDIRIDX(i)] = Kernel_pagedirectory[PAGEDIRIDX(i)];
 
-	proc->context->cr3 = pgd;
+	proc->task_context->cr3 = pgd;
     return true;
 }
 
@@ -131,19 +131,19 @@ void Paging_Terminate(struct Process* proc) {
 
 	Paging_UnmapPages(proc, (void*)0, KERNEL_MMAP_VIRTUAL_START);
 	for (size_t i = 0; i < KERNEL_MMAP_VIRTUAL_START; i+=X86_PAGING_EXTPAGESIZE) {
-		uintptr_t page_table = KERNADDR(PAGEADDRESS(proc->context->cr3[PAGEDIRIDX(i)]));
+		uintptr_t page_table = KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(i)]));
 		Page_Release((void*)page_table, 0);
-		proc->context->cr3[PAGEDIRIDX(i)] = 0;
+		proc->task_context->cr3[PAGEDIRIDX(i)] = 0;
 	}
 
-	Page_Release(proc->context->cr3, 0);
+	Page_Release(proc->task_context->cr3, 0);
 }
 
 bool Paging_SetFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
 
 	if (!Paging_IsPageMapped(proc, (uintptr_t)virt_addr)) return false;
 
-	uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->context->cr3[PAGEDIRIDX(virt_addr)]));
+	uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(virt_addr)]));
 	page_table[PAGETABIDX(virt_addr)] |= flags;
 	return true;
 }
@@ -152,15 +152,15 @@ bool Paging_UnsetFlags(struct Process* proc, void* virt_addr, uint16_t flags) {
 
     if (!Paging_IsPageMapped(proc, (uintptr_t)virt_addr)) return false;
 
-	uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->context->cr3[PAGEDIRIDX(virt_addr)]));
+	uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(virt_addr)]));
     page_table[PAGETABIDX(virt_addr)] &= ~flags;
 	return true;
 }
 
 bool Paging_Clone(struct Process* proc, struct Process* clone_proc) {
 
-	uintptr_t* page_dir = proc->context->cr3;
-	uintptr_t* clone    = clone_proc->context->cr3;
+	uintptr_t* page_dir = proc->task_context->cr3;
+	uintptr_t* clone    = clone_proc->task_context->cr3;
 
 	bool cloning_failed = false;
 
@@ -203,7 +203,7 @@ uintptr_t Paging_GetHigherHalfAddress(struct Process* proc, uintptr_t user_addr)
 	if (user_addr > KERNEL_MMAP_VIRTUAL_START) return 0;
 	if (!Paging_IsPageMapped(proc, user_addr)) return 0;
 
-    uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->context->cr3[PAGEDIRIDX(user_addr)]));
+    uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(user_addr)]));
 	if ((page_table[PAGETABIDX(user_addr)] & X86_PAGING_PTE_USER) == 0) return 0;
 
     return KERNADDR(PAGEADDRESS(page_table[PAGETABIDX(user_addr)])) + PAGEOFFSET(user_addr);

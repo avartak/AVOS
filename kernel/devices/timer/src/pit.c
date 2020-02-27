@@ -1,4 +1,5 @@
 #include <kernel/devices/timer/include/pit.h>
+#include <kernel/arch/tasking/include/interrupt.h>
 #include <kernel/arch/processor/include/ioports.h>
 #include <kernel/arch/apic/include/apic.h>
 #include <kernel/arch/apic/include/ioapic.h>
@@ -47,8 +48,9 @@ uint16_t PIT_ReadCounter() {
     return counter;
 }
 
-void PIT_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
+void PIT_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
 	PIT_ticks++;
+	LocalAPIC_EOI();
 }
 
 void PIT_Delay(uint32_t delay) {

@@ -26,10 +26,13 @@ global Interrupt_DoCommonHandling
 	
 	push esp
 	call Interrupt_Handle
-	add  esp, 4
+	call Interrupt_Return
 
 global Interrupt_Return
 	Interrupt_Return:
+	extern Process_Preempt
+	call Process_Preempt
+	mov  esp, [esp+4]
 	popad
 	pop  gs
 	pop  fs

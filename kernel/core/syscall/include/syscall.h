@@ -3,9 +3,15 @@
 
 #include <kernel/core/arch/include/arch.h>
 
-extern uint32_t (*SysCall_Handlers[])(void);
+struct SysCall {
 
-extern void SysCall_Initialize(uint8_t vector);
-extern void SysCall(struct Interrupt_Frame* frame);
+	uint32_t id;
+	uint32_t flags;
+	uint32_t (*handler)(struct IContext* frame);
+};
+
+extern struct SysCall SysCall_vector[];
+
+extern void   SysCall(uint32_t id, struct IContext* frame);
 
 #endif

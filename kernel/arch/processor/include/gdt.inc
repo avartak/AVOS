@@ -1,2 +1,7 @@
+%ifndef KERNEL_X86_GDT_H
+%define KERNEL_X86_GDT_H
+
 X86_GDT_SEG_KERN_CODE  equ 8
 X86_GDT_SEG_KERN_DATA  equ 0x10
+
+%endif

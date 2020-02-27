@@ -10,8 +10,8 @@
 #include <kernel/core/synch/include/irqlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
 
-#define SCHEDULER_RETURN       Context_Switch(&(STATE_CURRENT->process->context), STATE_CURRENT->kernel_task->scheduler)
-#define SCHEDULER_SWITCH(proc) Context_Switch(&(STATE_CURRENT->kernel_task->scheduler), (proc)->context)
+#define SCHEDULER_RETURN       KContext_Switch(&(STATE_CURRENT->process->task_context) , STATE_CURRENT->kernel_task->scheduler)
+#define SCHEDULER_SWITCH(proc) KContext_Switch(&(STATE_CURRENT->kernel_task->scheduler), (proc)->task_context)
 
 extern struct Process  Scheduler_processes[];
 

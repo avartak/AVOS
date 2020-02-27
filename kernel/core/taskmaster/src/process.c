@@ -17,11 +17,12 @@ void Process_FirstEntryToUserSpace() {
 
 bool Process_Initialize(struct Process* proc) {
 
-	proc->kern_stack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-	if (proc->kern_stack == (uint8_t*)PAGE_LIST_NULL) return false;
+	void* stack = Page_Acquire(KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+	if (stack == PAGE_LIST_NULL) return false;
+	(proc->kernel_stack).base = stack;
+	(proc->kernel_stack).size = KERNEL_STACK_SIZE;
 
 	State_Initialize(proc);
-	Interrupt_Frame_Initialize(proc);
 	Context_Initialize(proc);
 
 	if (!Paging_Initialize(proc)) return false;
@@ -39,7 +40,7 @@ void Process_SleepOn(struct SleepLock* lock) {
     SpinLock_Release(&lock->access_lock);
 
     proc->wakeup_on = lock;
-    proc->life_cycle = PROCESS_ASLEEP;
+    proc->status = PROCESS_ASLEEP;
     SCHEDULER_RETURN;
     proc->wakeup_on = (void*)0;
 
@@ -57,8 +58,8 @@ void Process_Preempt() {
 
     SpinLock_Acquire(&Process_lock);
 
-    if (Interrupt_GetVector(proc->interrupt_frame) == 0x30 && Scheduler_Preempt(proc)) {
-        proc->life_cycle = PROCESS_RUNNABLE;
+    if (Scheduler_Preempt(proc)) {
+        proc->status = PROCESS_RUNNABLE;
         SCHEDULER_RETURN;
     }
 
@@ -71,9 +72,9 @@ uint32_t Process_Fork() {
 	struct Process* forked_proc = Scheduler_Book();
 
 	if (!Process_Initialize(forked_proc) || !Paging_Clone(parent_proc, forked_proc)) {
-		Page_Release(forked_proc->kern_stack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+		Page_Release((forked_proc->kernel_stack).base, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
 		SpinLock_Acquire(&Process_lock);
-		forked_proc->life_cycle = PROCESS_IDLE;
+		forked_proc->status = PROCESS_IDLE;
 		SpinLock_Release(&Process_lock);
 		return -1;
 	}
@@ -82,16 +83,16 @@ uint32_t Process_Fork() {
 	forked_proc->child   = PROCESS_NULL;
 	forked_proc->sibling = parent_proc->child;
 	forked_proc->num_children = 0;
-	forked_proc->exit_status = -1;
+	forked_proc->exit_code = -1;
 	forked_proc->run_time = parent_proc->run_time;
 	forked_proc->endpoint = parent_proc->endpoint;
-	Interrupt_Frame_Fork(forked_proc->interrupt_frame, parent_proc->interrupt_frame);
+	IContext_Fork(forked_proc->intr_context, parent_proc->intr_context);
 
 	parent_proc->num_children++;
 	parent_proc->child = forked_proc;
 
 	SpinLock_Acquire(&Process_lock);
-	forked_proc->life_cycle = PROCESS_RUNNABLE;
+	forked_proc->status = PROCESS_RUNNABLE;
 	SpinLock_Release(&Process_lock);
 
 	return STATE_CURRENT->process->id;
@@ -130,17 +131,17 @@ uint32_t Process_Wait() {
 		}
 
 		struct Process* kid = proc->child;
-		if (kid->life_cycle == PROCESS_DEAD) {
+		if (kid->status == PROCESS_DEAD) {
 			retval = kid->id;
-			kid->life_cycle = PROCESS_IDLE;
+			kid->status = PROCESS_IDLE;
 			proc->num_children--;
 			proc->child = kid->sibling;
 			break;
 		}
 		while (kid->sibling != PROCESS_NULL) {
-			if (kid->sibling->life_cycle == PROCESS_DEAD) {
+			if (kid->sibling->status == PROCESS_DEAD) {
 				retval = kid->sibling->id;
-				kid->sibling->life_cycle = PROCESS_IDLE;
+				kid->sibling->status = PROCESS_IDLE;
 				proc->num_children--;
 				kid->sibling = kid->sibling->sibling;
 				break;
@@ -148,7 +149,7 @@ uint32_t Process_Wait() {
 			kid = kid->sibling;
 		}
 
-		proc->life_cycle = PROCESS_WAITING;
+		proc->status = PROCESS_WAITING;
 		SCHEDULER_RETURN;
 	}
 	
@@ -166,16 +167,16 @@ void Process_Exit(int status) {
     struct Process* kid = proc->child;
     while (kid != PROCESS_NULL) {
         kid->parent = Process_primordial;
-        if (kid->life_cycle == PROCESS_DEAD && Process_primordial->life_cycle == PROCESS_WAITING) Process_primordial->life_cycle = PROCESS_RUNNABLE;
+        if (kid->status == PROCESS_DEAD && Process_primordial->status == PROCESS_WAITING) Process_primordial->status = PROCESS_RUNNABLE;
         kid = kid->sibling;
     }
 
     Paging_Terminate(proc);
-    Page_Release(proc->kern_stack, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
-    proc->exit_status = status;
-    proc->life_cycle = PROCESS_DEAD;
+    Page_Release((proc->kernel_stack).base, KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS);
+    proc->exit_code = status;
+    proc->status = PROCESS_DEAD;
 
-    if (proc->parent->life_cycle == PROCESS_WAITING) proc->parent->life_cycle = PROCESS_RUNNABLE;
+    if (proc->parent->status == PROCESS_WAITING) proc->parent->status = PROCESS_RUNNABLE;
 
 	SCHEDULER_RETURN;
 }

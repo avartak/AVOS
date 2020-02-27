@@ -1,6 +1,7 @@
 #include <kernel/devices/keyboard/include/keyboard.h>
 #include <kernel/devices/console/include/console.h>
 #include <kernel/arch/processor/include/ioports.h>
+#include <kernel/arch/tasking/include/interrupt.h>
 #include <kernel/arch/apic/include/ioapic.h>
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/core/setup/include/setup.h>
@@ -125,9 +126,10 @@ uint8_t Keyboard_GetChar() {
 	return c;
 }
 
-void Keyboard_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
+void Keyboard_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
 
 	Console_PrintChar(Keyboard_GetChar());
+	LocalAPIC_EOI();
 }
 
 

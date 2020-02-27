@@ -30,13 +30,9 @@ Initialize_Stack:
 
 	push (KERNEL_STACK_SIZE >> KERNEL_PAGE_SIZE_IN_BITS)
 	call Page_Acquire
-	add  esp, 4
-
-	mov  edx, [esp]
+	mov  edx, [esp+4]
     mov  esp,  eax
-	add  esp, KERNEL_STACK_SIZE
-	sub  esp, [Kernel_stack_offset]
-	and  esp, ~(KERNEL_STACK_ALIGNMENT-1)
+	add  esp, [Kernel_stack_offset]
     push edx
     ret
 

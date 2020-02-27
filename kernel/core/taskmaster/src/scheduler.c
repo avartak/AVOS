@@ -3,7 +3,6 @@
 #include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
-#include <kernel/core/syscall/include/syscall.h>
 
 struct Process Scheduler_processes[KERNEL_MAX_PROCS];
 
@@ -11,9 +10,8 @@ void Scheduler_Initialize() {
 
 	SpinLock_Initialize(&State_lock);
 	SpinLock_Initialize(&Process_lock);
-	SysCall_Initialize(0x80);
 
-	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].life_cycle = PROCESS_IDLE;
+	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) Scheduler_processes[i].status = PROCESS_IDLE;
 }
 
 void Schedule() {
@@ -21,8 +19,8 @@ void Schedule() {
 	size_t iproc = 0;
 	while (true) {
 		SpinLock_Acquire(&Process_lock);
-		if (Scheduler_processes[iproc].life_cycle == PROCESS_RUNNABLE) {
-			Scheduler_processes[iproc].life_cycle =  PROCESS_RUNNING;
+		if (Scheduler_processes[iproc].status == PROCESS_RUNNABLE) {
+			Scheduler_processes[iproc].status =  PROCESS_RUNNING;
 			Context_SetupProcess(&Scheduler_processes[iproc]);
 			SCHEDULER_SWITCH(&Scheduler_processes[iproc]);
 		}
@@ -36,7 +34,7 @@ void Schedule() {
 // Must run under the process lock
 bool Scheduler_Preempt(struct Process* proc) {
 
-    return (proc->life_cycle == PROCESS_RUNNING && STATE_FROM_PROC(proc)->kernel_task->timer_ticks > proc->start_time + proc->run_time);
+    return (proc->status == PROCESS_RUNNING && STATE_FROM_PROC(proc)->kernel_task->timer_ticks > proc->start_time + proc->run_time);
 }
 
 // Must run under the process lock
@@ -47,8 +45,8 @@ struct Process* Scheduler_Book() {
 		SpinLock_Acquire(&Process_lock);
 		
 		for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-			if (Scheduler_processes[i].life_cycle == PROCESS_IDLE) {
-				Scheduler_processes[i].life_cycle = PROCESS_BOOKED;
+			if (Scheduler_processes[i].status == PROCESS_IDLE) {
+				Scheduler_processes[i].status = PROCESS_BOOKED;
 				Scheduler_processes[i].id = Process_next_pid++;
 				SpinLock_Release(&Process_lock);
 				return &Scheduler_processes[i];
@@ -65,8 +63,8 @@ struct Process* Scheduler_Book() {
 void Scheduler_RaiseAlarm(void* alarm) {
 
 	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-		if (Scheduler_processes[i].life_cycle == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
-			Scheduler_processes[i].life_cycle = PROCESS_RUNNABLE;
+		if (Scheduler_processes[i].status == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
+			Scheduler_processes[i].status = PROCESS_RUNNABLE;
 			Scheduler_processes[i].wakeup_on  = (void*)0;
 		}
 	}

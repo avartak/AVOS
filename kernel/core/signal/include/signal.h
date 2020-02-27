@@ -1,0 +1,27 @@
+#ifndef KERNEL_CORE_SIGNAL_H
+#define KERNEL_CORE_SIGNAL_H
+
+#include <stdint.h>
+
+typedef uint32_t sigset_t;
+
+struct Signal {
+	int32_t   id;             // I would have preferred a uint32_t but POSIX says int, and (at least for now) it does not matter so int it is  
+	sigset_t  mask;
+	uintptr_t handler_1arg;
+	uintptr_t handler_3arg3;
+}__attribute__((packed));
+
+struct SignalInfo {
+	int32_t   id;
+	uint32_t  process;
+	uint32_t  user;
+	int32_t   code;
+	int32_t   error;
+	int32_t   status;
+	long      band;           // Will worry about this later
+	void*     address;
+}__attribute__((packed));
+
+
+#endif

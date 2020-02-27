@@ -5,54 +5,18 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-struct Interrupt_Frame {
-	uint32_t edi;
-	uint32_t esi;
-	uint32_t ebp;
-	uint32_t oesp;
-	uint32_t ebx;
-	uint32_t edx;
-	uint32_t ecx;
-	uint32_t eax;
-	
-	uint16_t gs;
-	uint16_t padding1;
-	uint16_t fs;
-	uint16_t padding2;
-	uint16_t es;
-	uint16_t padding3;
-	uint16_t ds;
-	uint16_t padding4;
-
-	uint32_t vector;
-	
-	uint32_t err;
-	uint32_t eip;
-	uint16_t cs;
-	uint16_t padding5;
-	uint32_t eflags;
-	
-	uint32_t esp;
-	uint16_t ss;
-	uint16_t padding6;
-};
-
 struct Process;
+struct IContext;
 
-extern void (*Interrupt_Handlers[])(struct Interrupt_Frame*);
+extern void (*Interrupt_Handlers[])(struct IContext*);
 
-extern void   Interrupt_Frame_Initialize(struct Process* proc);
-extern void   Interrupt_Return();
-extern void   Interrupt_Handle(struct Interrupt_Frame* frame);
-extern void   Interrupt_AddHandler(uint8_t entry, void (*handler)(struct Interrupt_Frame*));
-extern size_t Interrupt_GetReturnRegister(struct Interrupt_Frame* frame);
-extern size_t Interrupt_GetVector(struct Interrupt_Frame* frame);
-extern bool   Interrupt_ReturningToUserMode(struct Interrupt_Frame* frame);
-extern void   Interrupt_Frame_Fork(struct Interrupt_Frame* dst, struct Interrupt_Frame* src);
+extern void      Interrupt_Return();
+extern void      Interrupt_Handle(struct IContext* frame);
+extern void      Interrupt_AddHandler(uint8_t entry, void (*handler)(struct IContext*));
 
-extern void Interrupt_0x20();
-extern void Interrupt_0x21();
-extern void Interrupt_0x30();
-extern void Interrupt_0x80();
+extern void      Interrupt_0x20();
+extern void      Interrupt_0x21();
+extern void      Interrupt_0x30();
+extern void      Interrupt_0x80();
 
 #endif

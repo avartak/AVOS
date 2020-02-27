@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <kernel/arch/tasking/include/interrupt.h>
+#include <kernel/arch/tasking/include/context.h>
 
 #define KEYBOARD_PS2_IRQLINE 1
 
@@ -41,7 +41,7 @@
 
 extern uint32_t Keyboard_screen_pos;
 extern uint8_t  Keyboard_GetChar();
-extern void     Keyboard_HandleInterrupt(struct Interrupt_Frame* frame);
+extern void     Keyboard_HandleInterrupt(struct IContext* frame);
 extern void     Keyboard_Initialize(uint8_t irq, uint8_t vector);
 
 #endif

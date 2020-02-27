@@ -3,8 +3,8 @@ section .text
 
 ; void Context_Switch(struct Context** old_context, struct Context* new_context);
 
-global Context_Switch
-Context_Switch:
+global KContext_Switch
+KContext_Switch:
 	mov  eax, [esp+4]
 	mov  edx, [esp+8]
 	mov  ecx, cr3	
@@ -27,3 +27,4 @@ Context_Switch:
 	mov  cr3, ecx
 
 	ret
+

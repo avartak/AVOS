@@ -2,13 +2,11 @@
 #include <kernel/core/syscall/include/syscall.h>
 #include <kernel/core/taskmaster/include/state.h>
 
-uint32_t (*SysCall_Handlers[KERNEL_NUM_SYSCALLS])(void) = {};
+struct SysCall SysCall_vector[KERNEL_NUM_SYSCALLS];
 
-void SysCall_Initialize(uint8_t vector) {
-    Interrupt_AddHandler(vector, SysCall);
+void SysCall(uint32_t id, struct IContext* frame) {
+
+	if (id >= KERNEL_NUM_SYSCALLS) return;
+	SysCall_vector[id].handler(frame);
 }
 
-void SysCall(struct Interrupt_Frame* frame) {
-
-	SysCall_Handlers[Interrupt_GetReturnRegister(frame)]();
-}

@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include <kernel/arch/tasking/include/interrupt.h>
-
 #define LAPIC_REG_ID                  (0x0020/4)   // ID
 #define LAPIC_REG_VERSION             (0x0030/4)   // Version
 #define LAPIC_REG_TPR                 (0x0080/4)   // Task Priority
@@ -96,6 +94,8 @@
 #define LAPIC_SIVR_INTR_SPURIOUS      0xFF
 #define LAPIC_SIVR_SOFT_ENABLE        0x100
 
+struct IContext;
+
 extern uintptr_t LocalAPIC_address;
 extern size_t    LocalAPIC_Num;
 extern uintptr_t LocalAPIC_InfoPtrs[];
@@ -107,7 +107,7 @@ extern void      LocalAPIC_EOI();
 extern uint8_t   LocalAPIC_ID();
 
 extern size_t    LocalAPIC_GetTimerFrequency(size_t iterations);
-extern void      LocalAPIC_Timer_HandleInterrupt(struct Interrupt_Frame* frame);
+extern void      LocalAPIC_Timer_HandleInterrupt(struct IContext* frame);
 extern void      LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq);
 
 #endif

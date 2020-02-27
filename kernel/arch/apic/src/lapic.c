@@ -1,6 +1,8 @@
 #include <kernel/arch/apic/include/apic.h>
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/tasking/include/cpu.h>
+#include <kernel/arch/tasking/include/context.h>
+#include <kernel/arch/tasking/include/interrupt.h>
 #include <kernel/devices/timer/include/pit.h>
 #include <kernel/devices/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
@@ -132,7 +134,8 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
     LocalAPIC_WriteTo(LAPIC_REG_TICR, lapic_freq/freq);
 }
 
-void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct Interrupt_Frame* frame) {
+void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
 	(STATE_CURRENT->kernel_task->timer_ticks)++;
+	LocalAPIC_EOI();
 }
 

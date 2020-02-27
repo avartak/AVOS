@@ -16,7 +16,7 @@ struct State {
 }__attribute__((packed));
 
 #define STATE_CURRENT           ((struct State*)(GetStackBase() - sizeof(struct State)))
-#define STATE_FROM_PROC(proc)   ((struct State*)((uintptr_t)proc->kern_stack + KERNEL_STACK_SIZE - sizeof(struct State)))
+#define STATE_FROM_PROC(proc)   ((struct State*)((uintptr_t)((proc->kernel_stack).base) + (proc->kernel_stack).size - sizeof(struct State)))
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
     do { \

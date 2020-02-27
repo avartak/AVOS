@@ -22,7 +22,8 @@
 #include <kernel/clib/include/string.h>
 
 size_t   Kernel_numcpus_online = 0; 
-size_t   Kernel_stack_offset   = sizeof(struct State) + sizeof(struct CPU) + sizeof(struct KProc);
+//size_t   Kernel_stack_offset   = sizeof(struct State) + sizeof(struct CPU) + sizeof(struct KProc);
+size_t   Kernel_stack_offset   = (KERNEL_STACK_SIZE - (sizeof(struct State) + sizeof(struct CPU) + sizeof(struct KProc))) & ~(KERNEL_STACK_ALIGNMENT-1);
 
 uint32_t Kernel_pagedirectory[X86_PAGING_PGDIR_NENTRIES]__attribute__((aligned(X86_PAGING_PAGESIZE))) = {
 	[0]                                               = (0) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_PSE,

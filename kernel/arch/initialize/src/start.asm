@@ -18,13 +18,13 @@ Start:
 	cli
 	cld 
 
-	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
-
 	cmp   eax, 0x36d76289
 	jne   Halt
 
 	add   ebx, KERNEL_HIGHER_HALF_OFFSET
 	mov   [PHYSADDR(BootInfo)], ebx
+
+	mov   esp, KERNEL_AP_BOOT_START_ADDR+KERNEL_AP_BOOT_START_SIZE
 
 	call  Initialize_HigherHalf
 	call  Initialize_CRT
