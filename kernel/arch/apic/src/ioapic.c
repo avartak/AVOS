@@ -45,7 +45,7 @@ bool IOAPIC_Initialize() {
 	}	
 
 	// Enable interrupts on this CPU
-	X86_EnableInterrupts();
+	EnableInterrupts();
 
     return true;
 }

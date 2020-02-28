@@ -1,6 +1,6 @@
 #include <kernel/arch/processor/include/gdt.h>
 
-void X86_GDT_SetupEntry(struct X86_GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
+void GDT_SetupEntry(struct GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
 
     entry->limit_low      = (uint16_t)  (limit & 0x0000FFFF);
     entry->base_low       = (uint16_t)  (base  & 0x0000FFFF);

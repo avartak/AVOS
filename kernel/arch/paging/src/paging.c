@@ -6,18 +6,18 @@
 #include <kernel/arch/tasking/include/context.h>
 #include <kernel/arch/paging/include/paging.h>
 
-#define PAGESIZE                X86_PAGING_PAGESIZE
+#define PAGESIZE                PAGING_PAGESIZE
 #define PAGEADDRESS(x)          ((uintptr_t)(x) & ~(PAGESIZE-1))
 #define PAGEOFFSET(x)           ((uintptr_t)(x) &  (PAGESIZE-1))
-#define PAGETABIDX(x)           X86_PAGING_PGTAB_IDX(x) 
-#define PAGEDIRIDX(x)           X86_PAGING_PGDIR_IDX(x) 
+#define PAGETABIDX(x)           PAGING_PGTAB_IDX(x) 
+#define PAGEDIRIDX(x)           PAGING_PGDIR_IDX(x) 
 
 bool Paging_IsPageMapped(struct Process* proc, uintptr_t virt_addr) {
 
     uintptr_t* page_table;
     uintptr_t  page_dir_entry = proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
-    if ( !(page_dir_entry & X86_PAGING_PDE_PRESENT) ) return false;
+    if ( !(page_dir_entry & PAGING_PDE_PRESENT) ) return false;
     page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(page_dir_entry));
     if (page_table[PAGETABIDX(virt_addr)] == 0) return false;
 
@@ -30,14 +30,14 @@ bool Paging_MapPage(struct Process* proc, uintptr_t virt_addr, uintptr_t phys_ad
 	uintptr_t* page_table;
 	uintptr_t* page_dir_entry = &proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
-	if ( !(*page_dir_entry & X86_PAGING_PDE_PRESENT) ) {
+	if ( !(*page_dir_entry & PAGING_PDE_PRESENT) ) {
 
 		if (!create) return false;
 
 		page_table = Page_Acquire(0);
 		if (page_table == (uintptr_t*)PAGE_LIST_NULL) return false;
 		memset(page_table, 0, PAGESIZE);
-		*page_dir_entry = PHYSADDR(page_table) | X86_PAGING_PDE_PRESENT | X86_PAGING_PDE_READWRITE | X86_PAGING_PDE_USER;
+		*page_dir_entry = PHYSADDR(page_table) | PAGING_PDE_PRESENT | PAGING_PDE_READWRITE | PAGING_PDE_USER;
 	}
 
 	else {
@@ -45,7 +45,7 @@ bool Paging_MapPage(struct Process* proc, uintptr_t virt_addr, uintptr_t phys_ad
 		if (page_table[PAGETABIDX(virt_addr)] != 0) return false;
 	}
 
-	page_table[PAGETABIDX(virt_addr)] = phys_addr | X86_PAGING_PTE_PRESENT | X86_PAGING_PTE_READWRITE | X86_PAGING_PTE_USER;
+	page_table[PAGETABIDX(virt_addr)] = phys_addr | PAGING_PTE_PRESENT | PAGING_PTE_READWRITE | PAGING_PTE_USER;
 	return true;
 }
 
@@ -53,11 +53,11 @@ bool Paging_UnmapPage(struct Process* proc, uintptr_t virt_addr) {
 
     uintptr_t* page_dir_entry = &proc->task_context->cr3[PAGEDIRIDX(virt_addr)];
 
-    if ( !(*page_dir_entry & X86_PAGING_PDE_PRESENT) ) return false;
+    if ( !(*page_dir_entry & PAGING_PDE_PRESENT) ) return false;
 
 	uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(*page_dir_entry));
 	uintptr_t* page_table_entry = &page_table[PAGETABIDX(virt_addr)];
-	if ( !(*page_table_entry & X86_PAGING_PTE_PRESENT) ) return false;
+	if ( !(*page_table_entry & PAGING_PTE_PRESENT) ) return false;
 
 	uint8_t* page = (uint8_t*)KERNADDR(PAGEADDRESS(*page_table_entry));
 	Page_Release(page, 0);
@@ -121,7 +121,7 @@ bool Paging_Initialize(struct Process* proc) {
 
     memset(pgd, 0, PAGESIZE);
 
-    for (size_t i = KERNEL_MMAP_VIRTUAL_START; i > 0; i+=X86_PAGING_EXTPAGESIZE) pgd[PAGEDIRIDX(i)] = Kernel_pagedirectory[PAGEDIRIDX(i)];
+    for (size_t i = KERNEL_MMAP_VIRTUAL_START; i > 0; i+=PAGING_EXTPAGESIZE) pgd[PAGEDIRIDX(i)] = Kernel_pagedirectory[PAGEDIRIDX(i)];
 
 	proc->task_context->cr3 = pgd;
     return true;
@@ -130,7 +130,7 @@ bool Paging_Initialize(struct Process* proc) {
 void Paging_Terminate(struct Process* proc) {
 
 	Paging_UnmapPages(proc, (void*)0, KERNEL_MMAP_VIRTUAL_START);
-	for (size_t i = 0; i < KERNEL_MMAP_VIRTUAL_START; i+=X86_PAGING_EXTPAGESIZE) {
+	for (size_t i = 0; i < KERNEL_MMAP_VIRTUAL_START; i+=PAGING_EXTPAGESIZE) {
 		uintptr_t page_table = KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(i)]));
 		Page_Release((void*)page_table, 0);
 		proc->task_context->cr3[PAGEDIRIDX(i)] = 0;
@@ -175,7 +175,7 @@ bool Paging_Clone(struct Process* proc, struct Process* clone_proc) {
 		clone[i] = PHYSADDR(page_table) + PAGEOFFSET(page_dir[i]);
 
 		uintptr_t* ptab = (uintptr_t*)KERNADDR(PAGEADDRESS(page_dir[i]));
-		for (size_t j = 0; j < X86_PAGING_PGTAB_NENTRIES; j++) {
+		for (size_t j = 0; j < PAGING_PGTAB_NENTRIES; j++) {
 			if (ptab[j] == 0) continue;
 
 			void* page = Page_Acquire(0);
@@ -204,7 +204,7 @@ uintptr_t Paging_GetHigherHalfAddress(struct Process* proc, uintptr_t user_addr)
 	if (!Paging_IsPageMapped(proc, user_addr)) return 0;
 
     uintptr_t* page_table = (uintptr_t*)KERNADDR(PAGEADDRESS(proc->task_context->cr3[PAGEDIRIDX(user_addr)]));
-	if ((page_table[PAGETABIDX(user_addr)] & X86_PAGING_PTE_USER) == 0) return 0;
+	if ((page_table[PAGETABIDX(user_addr)] & PAGING_PTE_USER) == 0) return 0;
 
     return KERNADDR(PAGEADDRESS(page_table[PAGETABIDX(user_addr)])) + PAGEOFFSET(user_addr);
 }

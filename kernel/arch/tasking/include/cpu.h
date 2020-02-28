@@ -14,11 +14,11 @@ struct Process;
 struct CPU {
     uint32_t apic_id;
     uint32_t acpi_id;
-    struct X86_TSS task_state;
-    struct X86_GDT_Entry gdt[X86_GDT_NENTRIES];
-    struct X86_GDT_Descriptor gdt_desc;
-    struct X86_IDT_Entry idt[X86_IDT_NENTRIES];
-    struct X86_IDT_Descriptor idt_desc;
+    struct TSS task_state;
+    struct GDT_Entry gdt[GDT_NENTRIES];
+    struct GDT_Descriptor gdt_desc;
+    struct IDT_Entry idt[IDT_NENTRIES];
+    struct IDT_Descriptor idt_desc;
 }__attribute__((packed));
 
 #endif

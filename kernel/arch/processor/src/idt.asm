@@ -1,7 +1,7 @@
 section .text
 
-global X86_IDT_Load
-X86_IDT_Load:
+global IDT_Load
+IDT_Load:
     mov   edx, [esp+4]
     lidt [edx]
 

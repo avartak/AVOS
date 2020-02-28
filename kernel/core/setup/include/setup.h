@@ -1,6 +1,8 @@
 #ifndef KERNEL_INITIAL_SETUP_H
 #define KERNEL_INITIAL_SETUP_H
 
+#include <stdint.h>
+
 #define KERNEL_HIGHER_HALF_OFFSET 0x80000000
 #define KERNEL_MMAP_VIRTUAL_START 0x80000000
 #define KERNEL_MMAP_VIRTUAL_END   0xF0000000
@@ -29,5 +31,9 @@
 
 #define PHYSADDR(x)               ((uintptr_t)x-KERNEL_HIGHER_HALF_OFFSET)
 #define KERNADDR(x)               ((uintptr_t)x+KERNEL_HIGHER_HALF_OFFSET)
+
+typedef uint32_t pid_t;
+typedef uint32_t sigset_t;
+
 
 #endif

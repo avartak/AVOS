@@ -97,9 +97,9 @@ uint8_t Keyboard_GetChar() {
 	static uint32_t shift;
 	static uint8_t *charcode[4] = {Keyboard_normalmap, Keyboard_shiftmap, Keyboard_ctlmap, Keyboard_ctlmap};
 	
-	if ((X86_Inb(KEYBOARD_STAT_PORT) & KEYBOARD_DATA_IN_BUFFER) == 0) return -1;
+	if ((Inb(KEYBOARD_STAT_PORT) & KEYBOARD_DATA_IN_BUFFER) == 0) return -1;
 	
-	uint32_t data = X86_Inb(KEYBOARD_DATA_PORT);
+	uint32_t data = Inb(KEYBOARD_DATA_PORT);
 	if (data == 0xE0) {
 		shift |= KEY_E0ESC;
 		return 0;

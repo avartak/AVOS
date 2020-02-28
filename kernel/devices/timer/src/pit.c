@@ -27,24 +27,24 @@ void PIT_Set(size_t freq) {
 	PIT_ticks = 0;
     uint32_t pit_counter = PIT_BASE_FREQUENCY/freq;
 
-    X86_Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_RATE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
-    X86_Outb(PIT_IOPORT_CHAN0, (uint8_t) (pit_counter & 0x00FF));
-    X86_Outb(PIT_IOPORT_CHAN0, (uint8_t)((pit_counter & 0xFF00) >> 8));
+    Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_RATE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
+    Outb(PIT_IOPORT_CHAN0, (uint8_t) (pit_counter & 0x00FF));
+    Outb(PIT_IOPORT_CHAN0, (uint8_t)((pit_counter & 0xFF00) >> 8));
 }
 
 void PIT_Reset() {
-    X86_Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_RATE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
-    X86_Outb(PIT_IOPORT_CHAN0, 0);
-    X86_Outb(PIT_IOPORT_CHAN0, 0);
+    Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_RATE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
+    Outb(PIT_IOPORT_CHAN0, 0);
+    Outb(PIT_IOPORT_CHAN0, 0);
 
 	SpinLock_Release(&PIT_lock);
 }
 
 uint16_t PIT_ReadCounter() {
     uint16_t counter = 0;
-    X86_Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_INT_TERM_COUNT | PIT_ACCESS_LATCH | PIT_CHANNEL_0);
-    counter  =  X86_Inb(PIT_IOPORT_CHAN0);
-    counter |= (X86_Inb(PIT_IOPORT_CHAN0) << 8);
+    Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_INT_TERM_COUNT | PIT_ACCESS_LATCH | PIT_CHANNEL_0);
+    counter  =  Inb(PIT_IOPORT_CHAN0);
+    counter |= (Inb(PIT_IOPORT_CHAN0) << 8);
     return counter;
 }
 

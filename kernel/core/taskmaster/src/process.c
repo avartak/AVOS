@@ -66,7 +66,7 @@ void Process_Preempt() {
     SpinLock_Release(&Process_lock);
 }
 
-uint32_t Process_Fork() {
+pid_t Process_Fork() {
 
 	struct Process* parent_proc = STATE_CURRENT->process;
 	struct Process* forked_proc = Scheduler_Book();
@@ -118,7 +118,7 @@ void Process_ShiftEndPoint(int32_t shift) {
 }
 
 // No locks should be held by the process when waiting
-uint32_t Process_Wait() {
+pid_t Process_Wait() {
 
 	SpinLock_Acquire(&Process_lock);
 	

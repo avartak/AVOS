@@ -19,7 +19,7 @@ enum Process_Status {PROCESS_IDLE, PROCESS_BOOKED, PROCESS_RUNNABLE, PROCESS_RUN
 
 struct Process {
 	// Provenance
-	uint32_t                id;
+	pid_t                   id;
 	uint32_t                user;
 	struct Process*         parent;
 	struct Process*         child;
@@ -60,9 +60,9 @@ extern void            Process_FirstEntryToUserSpace();
 extern void            Process_SleepOn(struct SleepLock* lock);
 extern void            Process_Preempt();
 
-extern uint32_t        Process_Fork();
+extern pid_t           Process_Fork();
 extern void            Process_ShiftEndPoint(int32_t shift);
 extern void            Process_Exit(int status);
-extern uint32_t        Process_Wait();
+extern pid_t           Process_Wait();
 
 #endif

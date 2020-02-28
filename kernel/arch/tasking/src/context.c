@@ -35,7 +35,7 @@ void Context_SetupProcess(struct Process* proc) {
 
 bool IContext_IsUserMode(struct IContext* frame) {
 
-	return (frame->cs == X86_GDT_SEG_USER_CODE);
+	return (frame->cs == GDT_SEG_USER_CODE);
 }
 
 void IContext_Copy(struct IContext* dst, struct IContext* src) {

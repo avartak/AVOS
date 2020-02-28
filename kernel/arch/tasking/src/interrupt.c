@@ -8,7 +8,7 @@
 #include <kernel/arch/processor/include/idt.h>
 #include <kernel/arch/apic/include/lapic.h>
 
-void (*Interrupt_Handlers[X86_IDT_NENTRIES])(struct IContext*);
+void (*Interrupt_Handlers[IDT_NENTRIES])(struct IContext*);
 
 void Interrupt_Handle(struct IContext* frame) {
 

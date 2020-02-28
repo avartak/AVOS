@@ -1,45 +1,45 @@
-#ifndef KERNEL_X86_GDT_H
-#define KERNEL_X86_GDT_H
+#ifndef KERNEL_GDT_H
+#define KERNEL_GDT_H
 
 #include <stdint.h>
 
-#define X86_GDT_FLAGS_PMODE32       4
-#define X86_GDT_FLAGS_4GB           8
+#define GDT_FLAGS_PMODE32       4
+#define GDT_FLAGS_4GB           8
 
-#define X86_GDT_FLAGS_ACCESSED      1
-#define X86_GDT_FLAGS_READWRITE     2
-#define X86_GDT_FLAGS_DIRCONFORMING 4
-#define X86_GDT_FLAGS_EXECUTABLE    8
-#define X86_GDT_FLAGS_CODEORDATA    0x10
-#define X86_GDT_FLAGS_PRIV_RING0    0
-#define X86_GDT_FLAGS_PRIV_RING1    0x20
-#define X86_GDT_FLAGS_PRIV_RING2    0x40
-#define X86_GDT_FLAGS_PRIV_RING3    0x60
-#define X86_GDT_FLAGS_PRESENT       0x80
+#define GDT_FLAGS_ACCESSED      1
+#define GDT_FLAGS_READWRITE     2
+#define GDT_FLAGS_DIRCONFORMING 4
+#define GDT_FLAGS_EXECUTABLE    8
+#define GDT_FLAGS_CODEORDATA    0x10
+#define GDT_FLAGS_PRIV_RING0    0
+#define GDT_FLAGS_PRIV_RING1    0x20
+#define GDT_FLAGS_PRIV_RING2    0x40
+#define GDT_FLAGS_PRIV_RING3    0x60
+#define GDT_FLAGS_PRESENT       0x80
 
-#define X86_GDT_SEGLIMIT_4GB        0xFFFFF
+#define GDT_SEGLIMIT_4GB        0xFFFFF
 
-#define X86_GDT_NENTRIES            6
-#define X86_GDT_ENTRY_NULL          0
-#define X86_GDT_ENTRY_KERN_CODE     1
-#define X86_GDT_ENTRY_KERN_DATA     2
-#define X86_GDT_ENTRY_USER_CODE     3
-#define X86_GDT_ENTRY_USER_DATA     4
-#define X86_GDT_ENTRY_TSS           5
+#define GDT_NENTRIES            6
+#define GDT_ENTRY_NULL          0
+#define GDT_ENTRY_KERN_CODE     1
+#define GDT_ENTRY_KERN_DATA     2
+#define GDT_ENTRY_USER_CODE     3
+#define GDT_ENTRY_USER_DATA     4
+#define GDT_ENTRY_TSS           5
 
-#define X86_GDT_SEG_NULL            (X86_GDT_ENTRY_NULL*8)
-#define X86_GDT_SEG_KERN_CODE       (X86_GDT_ENTRY_KERN_CODE*8)
-#define X86_GDT_SEG_KERN_DATA       (X86_GDT_ENTRY_KERN_DATA*8)
-#define X86_GDT_SEG_USER_CODE       (X86_GDT_ENTRY_USER_CODE*8)
-#define X86_GDT_SEG_USER_DATA       (X86_GDT_ENTRY_USER_DATA*8)
-#define X86_GDT_SEG_TSS             (X86_GDT_ENTRY_TSS*8)
+#define GDT_SEG_NULL            (GDT_ENTRY_NULL*8)
+#define GDT_SEG_KERN_CODE       (GDT_ENTRY_KERN_CODE*8)
+#define GDT_SEG_KERN_DATA       (GDT_ENTRY_KERN_DATA*8)
+#define GDT_SEG_USER_CODE       (GDT_ENTRY_USER_CODE*8)
+#define GDT_SEG_USER_DATA       (GDT_ENTRY_USER_DATA*8)
+#define GDT_SEG_TSS             (GDT_ENTRY_TSS*8)
 
-#define X86_GDT_RPL0                0
-#define X86_GDT_RPL1                1
-#define X86_GDT_RPL2                2
-#define X86_GDT_RPL3                3
+#define GDT_RPL0                0
+#define GDT_RPL1                1
+#define GDT_RPL2                2
+#define GDT_RPL3                3
 
-struct X86_GDT_Entry {
+struct GDT_Entry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t  base_middle;
@@ -48,12 +48,12 @@ struct X86_GDT_Entry {
     uint8_t  base_high;
 }__attribute__((packed));
 
-struct X86_GDT_Descriptor {
+struct GDT_Descriptor {
     uint16_t  limit;
     uintptr_t base;
 }__attribute__((packed));
 
-struct X86_TSS {
+struct TSS {
     uint16_t previous_task_link;
     uint16_t reserved0;
     uint32_t esp0;
@@ -94,9 +94,9 @@ struct X86_TSS {
     uint16_t iomap_base_address;
 }__attribute__((packed));
 
-extern void X86_GDT_Load(void* descriptor);
-extern void X86_GDT_LoadTaskRegister(uint16_t selector);
-extern void X86_GDT_LoadKernelSegments();
-extern void X86_GDT_SetupEntry(struct X86_GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+extern void GDT_Load(void* descriptor);
+extern void GDT_LoadKernelSegments();
+extern void GDT_SetupEntry(struct GDT_Entry* entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+extern void TSS_LoadTaskRegister(uint16_t selector);
 
 #endif

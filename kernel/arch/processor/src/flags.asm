@@ -1,13 +1,13 @@
 section .text
 
-global X86_ReadFlags
-X86_ReadFlags:
+global ReadFlags
+ReadFlags:
 	pushfd 
     pop eax
     ret
 
-global X86_ReadEFlags
-X86_ReadEFlags:
+global ReadEFlags
+ReadEFlags:
 	pushfd 
     pop eax
     ret

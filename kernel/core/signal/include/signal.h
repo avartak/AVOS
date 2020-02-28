@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef uint32_t sigset_t;
+#include <kernel/core/setup/include/setup.h>
 
 struct Signal {
 	int32_t   id;             // I would have preferred a uint32_t but POSIX says int, and (at least for now) it does not matter so int it is  
@@ -12,9 +12,9 @@ struct Signal {
 	uintptr_t handler_3arg3;
 }__attribute__((packed));
 
-struct SignalInfo {
+struct Signal_Info {
 	int32_t   id;
-	uint32_t  process;
+	pid_t     process;
 	uint32_t  user;
 	int32_t   code;
 	int32_t   error;

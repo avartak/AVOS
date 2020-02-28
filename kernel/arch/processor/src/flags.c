@@ -2,5 +2,5 @@
 
 bool InterruptsEnabled() {
 
-	return ( (X86_ReadEFlags() & X86_EFLAGS_IF) > 0 );
+	return ( (ReadEFlags() & EFLAGS_IF) > 0 );
 }
