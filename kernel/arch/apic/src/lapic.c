@@ -3,11 +3,12 @@
 #include <kernel/arch/tasking/include/cpu.h>
 #include <kernel/arch/tasking/include/context.h>
 #include <kernel/arch/tasking/include/interrupt.h>
-#include <kernel/devices/timer/include/pit.h>
+#include <kernel/devices/pit/include/pit.h>
 #include <kernel/devices/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/process.h>
+#include <kernel/core/timer/include/timer.h>
 
 uintptr_t LocalAPIC_address = 0;
 size_t    LocalAPIC_Num = 0;
@@ -125,7 +126,8 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 	if (lapic_freq == 0) return;
 
 	SpinLock_Acquire(&State_lock);
-	STATE_CURRENT->kernel_task->timer_ticks = 0;
+	STATE_CURRENT->kernel_task->timer.ticks = 0;
+	STATE_CURRENT->kernel_task->timer.seq_counter = 0;
 	SpinLock_Release(&State_lock);
 	Interrupt_AddHandler(vector, LocalAPIC_Timer_HandleInterrupt);
 
@@ -135,7 +137,7 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 }
 
 void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
-	(STATE_CURRENT->kernel_task->timer_ticks)++;
+	Timer_Increment(&(STATE_CURRENT->kernel_task->timer));
 	LocalAPIC_EOI();
 }
 

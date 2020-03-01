@@ -9,7 +9,7 @@
 #include <kernel/arch/apic/include/lapic.h>
 #include <kernel/arch/apic/include/ioapic.h>
 #include <kernel/arch/acpi/include/madt.h>
-#include <kernel/devices/timer/include/pit.h>
+#include <kernel/devices/pit/include/pit.h>
 #include <kernel/devices/keyboard/include/keyboard.h>
 #include <kernel/devices/console/include/console.h>
 #include <kernel/core/setup/include/setup.h>

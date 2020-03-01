@@ -54,7 +54,7 @@ $(KERNEL)/arch/apic/src/pic.c.o \
 $(KERNEL)/arch/apic/src/apic.c.o \
 $(KERNEL)/arch/apic/src/ioapic.c.o \
 $(KERNEL)/arch/apic/src/lapic.c.o \
-$(KERNEL)/devices/timer/src/pit.c.o \
+$(KERNEL)/devices/pit/src/pit.c.o \
 $(KERNEL)/devices/keyboard/src/keyboard.c.o \
 $(KERNEL)/devices/console/src/console.c.o \
 $(KERNEL)/core/multiboot/src/multiboot.s.o \
@@ -62,6 +62,8 @@ $(KERNEL)/core/taskmaster/src/process.c.o \
 $(KERNEL)/core/taskmaster/src/state.c.o \
 $(KERNEL)/core/taskmaster/src/scheduler.c.o \
 $(KERNEL)/core/syscall/src/syscall.c.o \
+$(KERNEL)/core/signal/src/signal.c.o \
+$(KERNEL)/core/timer/src/timer.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
 $(KERNEL)/core/synch/src/sleeplock.c.o \
@@ -110,15 +112,17 @@ clean:
 	rm kernel/arch/acpi/src/*.o
 	rm kernel/arch/tasking/src/*.o
 	rm kernel/arch/paging/src/*.o
-	rm kernel/devices/timer/src/*.o
+	rm kernel/devices/pit/src/*.o
 	rm kernel/devices/keyboard/src/*.o
 	rm kernel/devices/console/src/*.o
 	rm kernel/core/abi/src/*.o
 	rm kernel/core/multiboot/src/*.o
+	rm kernel/core/timer/src/*.o
 	rm kernel/core/taskmaster/src/*.o
 	rm kernel/core/synch/src/*.o
 	rm kernel/core/memory/src/*.o
 	rm kernel/core/syscall/src/*.o
+	rm kernel/core/signal/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

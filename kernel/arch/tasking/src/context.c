@@ -5,6 +5,7 @@
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/process.h>
+#include <kernel/core/timer/include/timer.h>
 #include <kernel/clib/include/string.h>
 
 void Context_Initialize(struct Process* proc) {
@@ -29,7 +30,7 @@ void Context_SetupProcess(struct Process* proc) {
 
     STATE_FROM_PROC(proc)->kernel_task = STATE_CURRENT->kernel_task;
     STATE_FROM_PROC(proc)->kernel_task->cpu->task_state.esp0 = (uintptr_t)STATE_FROM_PROC(proc);
-    proc->start_time = STATE_CURRENT->kernel_task->timer_ticks;
+    proc->start_time = Timer_GetTicks(&(STATE_CURRENT->kernel_task->timer));
 }
 
 

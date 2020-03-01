@@ -2,6 +2,7 @@
 #define KERNEL_INITIAL_SETUP_H
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #define KERNEL_HIGHER_HALF_OFFSET 0x80000000
 #define KERNEL_MMAP_VIRTUAL_START 0x80000000
@@ -34,6 +35,7 @@
 
 typedef uint32_t pid_t;
 typedef uint32_t sigset_t;
-
+typedef uint64_t clock_t;
+typedef _Atomic uint64_t atomic_clock_t;
 
 #endif

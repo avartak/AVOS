@@ -6,30 +6,32 @@
 void SleepLock_Initialize(struct SleepLock* lock) {
 	SpinLock_Initialize(&(lock->access_lock));
 	lock->locked = false;	
-	lock->locked_process = 0;
 }
 
 void SleepLock_Acquire(struct SleepLock* lock) {
 
 	struct Process* proc = STATE_CURRENT->process;
-	if (proc == (struct Process*)0) return;
+	if (proc == PROCESS_NULL) return;
 
 	SpinLock_Acquire(&(lock->access_lock));
-	while (lock->locked) Process_SleepOn(lock);
+	while (lock->locked) {
+		if (proc != PROCESS_NULL) {
+    		SpinLock_Release(&lock->access_lock);
+    		SpinLock_Acquire(&Process_lock);
+			Process_SleepOn(lock);
+    		SpinLock_Release(&Process_lock);
+    		SpinLock_Acquire(&lock->access_lock);
+		}
+	}
 	lock->locked = true;
-	lock->locked_process = proc->id;
 	SpinLock_Release(&(lock->access_lock));
 }
 
 // Process lock should not be held when running this function
 void SleepLock_Release(struct SleepLock* lock) {
 
-    struct Process* proc = STATE_CURRENT->process;
-    if (proc == (struct Process*)0) return;
-
 	SpinLock_Acquire(&(lock->access_lock));
 	lock->locked = false;
-	lock->locked_process = 0;
 
 	SpinLock_Acquire(&Process_lock);
 	Scheduler_RaiseAlarm(lock);

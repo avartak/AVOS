@@ -1,6 +1,7 @@
 #include <kernel/core/taskmaster/include/scheduler.h>
 #include <kernel/core/taskmaster/include/state.h>
 #include <kernel/core/taskmaster/include/process.h>
+#include <kernel/core/timer/include/timer.h>
 #include <kernel/core/setup/include/setup.h>
 #include <kernel/core/memory/include/physmem.h>
 
@@ -31,32 +32,32 @@ void Schedule() {
 
 }
 
+struct Process* Scheduler_Book() {
+
+    while (true) {
+
+        SpinLock_Acquire(&Process_lock);
+   
+        for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
+            if (Scheduler_processes[i].status == PROCESS_IDLE) {
+                Scheduler_processes[i].status = PROCESS_BOOKED;
+                Scheduler_processes[i].id = Process_next_pid++;
+                SpinLock_Release(&Process_lock);
+                return &Scheduler_processes[i];
+            }
+        }
+
+        SpinLock_Release(&Process_lock);
+
+    }
+
+}
+
+
 // Must run under the process lock
 bool Scheduler_Preempt(struct Process* proc) {
 
-    return (proc->status == PROCESS_RUNNING && STATE_FROM_PROC(proc)->kernel_task->timer_ticks > proc->start_time + proc->run_time);
-}
-
-// Must run under the process lock
-struct Process* Scheduler_Book() {
-
-	while (true) {
-
-		SpinLock_Acquire(&Process_lock);
-		
-		for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
-			if (Scheduler_processes[i].status == PROCESS_IDLE) {
-				Scheduler_processes[i].status = PROCESS_BOOKED;
-				Scheduler_processes[i].id = Process_next_pid++;
-				SpinLock_Release(&Process_lock);
-				return &Scheduler_processes[i];
-			}
-		}
-		
-		SpinLock_Release(&Process_lock);
-
-	}
-	
+    return (proc->status == PROCESS_RUNNING && Timer_GetTicks(&(STATE_FROM_PROC(proc)->kernel_task->timer)) > proc->start_time + proc->run_time);
 }
 
 // Must run under the process lock
@@ -65,7 +66,8 @@ void Scheduler_RaiseAlarm(void* alarm) {
 	for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
 		if (Scheduler_processes[i].status == PROCESS_ASLEEP && Scheduler_processes[i].wakeup_on == alarm) {
 			Scheduler_processes[i].status = PROCESS_RUNNABLE;
-			Scheduler_processes[i].wakeup_on  = (void*)0;
+			Scheduler_processes[i].wakeup_on = (void*)0;
 		}
 	}
 }
+

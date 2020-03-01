@@ -10,12 +10,13 @@
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
 #include <kernel/core/signal/include/signal.h>
+#include <kernel/core/timer/include/timer.h>
 
-#define PROCESS_NULL  (struct Process*)0
+#define PROCESS_NULL         (struct Process*)0
 
-#define PROCESS_ID()  (STATE_CURRENT->process->id)
+#define PROCESS_ID()         (STATE_CURRENT->process->id)
 
-enum Process_Status {PROCESS_IDLE, PROCESS_BOOKED, PROCESS_RUNNABLE, PROCESS_RUNNING, PROCESS_ASLEEP, PROCESS_WAITING, PROCESS_DEAD};
+enum Process_Status {PROCESS_IDLE, PROCESS_BOOKED, PROCESS_RUNNABLE, PROCESS_RUNNING, PROCESS_ASLEEP, PROCESS_DEAD};
 
 struct Process {
 	// Provenance
@@ -34,6 +35,7 @@ struct Process {
 	struct Stack            kernel_stack;
 	struct KContext*        task_context;
 	struct IContext*        intr_context;
+	// Sleep
 	void*                   wakeup_on;
 	// Signal
 	struct Stack            signal_stack;
@@ -41,14 +43,14 @@ struct Process {
 	sigset_t                signal_bitmask;
 	struct Signal           signal_queue[KERNEL_NUM_SIGNALS];
 	// Preemption
-	uint64_t                start_time;
+	clock_t                 start_time;
 	size_t                  run_time;
 }__attribute__((packed));
 
 struct KProc {
 	struct CPU* cpu;
     struct KContext* scheduler;
-    uint64_t timer_ticks;
+	struct Timer timer;
 }__attribute__((packed));
 
 extern struct SpinLock Process_lock;

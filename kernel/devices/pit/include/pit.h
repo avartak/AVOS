@@ -6,6 +6,7 @@
 
 #include <kernel/arch/tasking/include/context.h>
 #include <kernel/core/synch/include/spinlock.h>
+#include <kernel/core/timer/include/timer.h>
 
 
 #define PIT_IOPORT_CHAN0                 0x40
@@ -36,15 +37,15 @@
 
 #define PIT_IRQLINE                       0
 
-extern uint64_t PIT_ticks;
-extern bool     PIT_enabled;
+extern struct Timer    PIT_timer;
+extern bool            PIT_enabled;
 extern struct SpinLock PIT_lock;
 
-extern void     PIT_Initialize(uint8_t irq, uint8_t vector);
-extern void     PIT_Set(size_t freq);
-extern void     PIT_Reset();
-extern uint16_t PIT_ReadCounter();
-extern void     PIT_HandleInterrupt(struct IContext* frame);
-extern void     PIT_Delay(uint32_t delay);
+extern void            PIT_Initialize(uint8_t irq, uint8_t vector);
+extern void            PIT_Set(size_t freq);
+extern void            PIT_Reset();
+extern uint16_t        PIT_ReadCounter();
+extern void            PIT_HandleInterrupt(struct IContext* frame);
+extern void            PIT_Delay(uint32_t delay);
 
 #endif

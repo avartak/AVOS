@@ -30,28 +30,20 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
+// Must be run under thr process lock
 void Process_SleepOn(struct SleepLock* lock) {
 
     struct Process* proc = STATE_CURRENT->process;
-    if (proc == PROCESS_NULL) return;
-    if (STATE_CURRENT->preemption_vetos != 0) return;
-
-    SpinLock_Acquire(&Process_lock);
-    SpinLock_Release(&lock->access_lock);
 
     proc->wakeup_on = lock;
     proc->status = PROCESS_ASLEEP;
     SCHEDULER_RETURN;
     proc->wakeup_on = (void*)0;
-
-    SpinLock_Release(&Process_lock);
-    SpinLock_Acquire(&lock->access_lock);
 }
 
 void Process_Preempt() {
 
     struct Process* proc = STATE_CURRENT->process;
-
     if (proc == PROCESS_NULL) return;
 
     if (STATE_CURRENT->preemption_vetos != 0) return;
@@ -149,7 +141,7 @@ pid_t Process_Wait() {
 			kid = kid->sibling;
 		}
 
-		proc->status = PROCESS_WAITING;
+		proc->status = PROCESS_ASLEEP;
 		SCHEDULER_RETURN;
 	}
 	
@@ -167,7 +159,7 @@ void Process_Exit(int status) {
     struct Process* kid = proc->child;
     while (kid != PROCESS_NULL) {
         kid->parent = Process_primordial;
-        if (kid->status == PROCESS_DEAD && Process_primordial->status == PROCESS_WAITING) Process_primordial->status = PROCESS_RUNNABLE;
+		// Send SIGCHLD to the primordial process here
         kid = kid->sibling;
     }
 
@@ -176,7 +168,7 @@ void Process_Exit(int status) {
     proc->exit_code = status;
     proc->status = PROCESS_DEAD;
 
-    if (proc->parent->status == PROCESS_WAITING) proc->parent->status = PROCESS_RUNNABLE;
+	// Send the SIGCHLD signal here
 
 	SCHEDULER_RETURN;
 }

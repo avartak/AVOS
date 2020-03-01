@@ -1,4 +1,4 @@
-#include <kernel/devices/timer/include/pit.h>
+#include <kernel/devices/pit/include/pit.h>
 #include <kernel/arch/tasking/include/interrupt.h>
 #include <kernel/arch/processor/include/ioports.h>
 #include <kernel/arch/apic/include/apic.h>
@@ -6,9 +6,8 @@
 #include <kernel/arch/apic/include/lapic.h>
 #include <stdatomic.h>
 
-uint64_t PIT_ticks = 0;
-bool     PIT_enabled = false;
-
+struct Timer    PIT_timer = {0, 0};
+bool            PIT_enabled = false;
 struct SpinLock PIT_lock;
 
 void PIT_Initialize(uint8_t irq, uint8_t vector) {
@@ -24,7 +23,8 @@ void PIT_Set(size_t freq) {
 
 	SpinLock_Acquire(&PIT_lock);
 
-	PIT_ticks = 0;
+	PIT_timer.seq_counter = 0;
+	PIT_timer.ticks = 0;
     uint32_t pit_counter = PIT_BASE_FREQUENCY/freq;
 
     Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_RATE_GENERATOR | PIT_ACCESS_LOHIBYTE | PIT_CHANNEL_0);
@@ -49,15 +49,13 @@ uint16_t PIT_ReadCounter() {
 }
 
 void PIT_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
-	PIT_ticks++;
+
+	Timer_Increment(&PIT_timer);
 	LocalAPIC_EOI();
 }
 
 void PIT_Delay(uint32_t delay) {
 
-	uint64_t iticks = PIT_ticks;
-
-	atomic_signal_fence(memory_order_seq_cst);
-
-	while (PIT_ticks - iticks <= delay);
+	clock_t iticks = Timer_GetTicks(&PIT_timer);
+	while (Timer_GetTicks(&PIT_timer) - iticks <= delay);
 }

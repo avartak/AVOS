@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <kernel/core/setup/include/setup.h>
 #include <kernel/core/arch/include/arch.h>
 #include <kernel/core/taskmaster/include/process.h>
 #include <kernel/core/taskmaster/include/state.h>

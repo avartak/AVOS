@@ -8,7 +8,6 @@
 struct SleepLock {
 	struct SpinLock access_lock;
 	bool locked;
-	uint32_t locked_process;		
 };
 
 extern void SleepLock_Initialize(struct SleepLock* lock);

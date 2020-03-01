@@ -2,6 +2,7 @@
 #define KERNEL_CORE_SIGNAL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <kernel/core/setup/include/setup.h>
 
@@ -23,5 +24,8 @@ struct Signal_Info {
 	void*     address;
 }__attribute__((packed));
 
+struct Process;
+
+extern bool Signal_Transmit(pid_t proc_id);
 
 #endif
