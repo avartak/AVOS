@@ -114,6 +114,8 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 	freq /= iterations;
 	freq *= 1600;
 
+	Console_Print("CPU %d timer frequency: %u\n", LocalAPIC_ID(), freq);
+
 	return freq;
 
 }

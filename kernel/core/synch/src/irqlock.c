@@ -8,9 +8,10 @@ void IRQLock_Initialize(struct IRQLock* lock) {
 }
 
 void IRQLock_Acquire(struct IRQLock* lock) {
-	lock->previous_interrupt_priority = (InterruptsEnabled() > 0 ? 0 : 0xFF);
+	uint8_t intr_prio = (InterruptsEnabled() > 0 ? 0 : 0xFF);
 	DisableInterrupts();
 	SpinLock_Acquire(&(lock->lock));
+	lock->previous_interrupt_priority = intr_prio;
 	STATE_CURRENT->interrupt_priority = 0xFF; 
 }
 
@@ -20,3 +21,8 @@ void IRQLock_Release(struct IRQLock* lock) {
 	if (STATE_CURRENT->interrupt_priority != 0xFF) EnableInterrupts();
 }
 
+bool IRQLock_Locked(struct IRQLock* lock) {
+    bool flag = true;
+    atomic_compare_exchange_strong(&(lock->lock.flag), &flag, flag);
+    return flag;
+}

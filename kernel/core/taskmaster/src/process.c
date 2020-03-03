@@ -43,10 +43,10 @@ void Process_SleepOn(struct SleepLock* lock) {
 
 void Process_Preempt() {
 
+    if (!STATE_PREEMPTIBLE()) return;
+
     struct Process* proc = STATE_CURRENT->process;
     if (proc == PROCESS_NULL) return;
-
-    if (STATE_CURRENT->preemption_vetos != 0) return;
 
     SpinLock_Acquire(&Process_lock);
 

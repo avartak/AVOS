@@ -44,7 +44,6 @@ extern struct SpinLock PIT_lock;
 extern void            PIT_Initialize(uint8_t irq, uint8_t vector);
 extern void            PIT_Set(size_t freq);
 extern void            PIT_Reset();
-extern uint16_t        PIT_ReadCounter();
 extern void            PIT_HandleInterrupt(struct IContext* frame);
 extern void            PIT_Delay(uint32_t delay);
 

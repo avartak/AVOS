@@ -13,5 +13,6 @@ struct IRQLock {
 extern void IRQLock_Initialize(struct IRQLock* lock);
 extern void IRQLock_Acquire(struct IRQLock* lock);
 extern void IRQLock_Release(struct IRQLock* lock);
+extern bool IRQLock_Locked(struct IRQLock* lock);
 
 #endif

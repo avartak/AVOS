@@ -192,7 +192,6 @@ void Initialize_System() {
 	}
 	
 	Kernel_pagedirectory[0] = 0;
-
 }
 
 void GetToWork() {

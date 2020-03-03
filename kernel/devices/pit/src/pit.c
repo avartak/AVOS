@@ -40,14 +40,6 @@ void PIT_Reset() {
 	SpinLock_Release(&PIT_lock);
 }
 
-uint16_t PIT_ReadCounter() {
-    uint16_t counter = 0;
-    Outb(PIT_IOPORT_COMD , PIT_COUNTMODE_BIN | PIT_OPERMODE_INT_TERM_COUNT | PIT_ACCESS_LATCH | PIT_CHANNEL_0);
-    counter  =  Inb(PIT_IOPORT_CHAN0);
-    counter |= (Inb(PIT_IOPORT_CHAN0) << 8);
-    return counter;
-}
-
 void PIT_HandleInterrupt(__attribute__((unused))struct IContext* frame) {
 
 	Timer_Increment(&PIT_timer);

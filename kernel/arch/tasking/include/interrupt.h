@@ -10,7 +10,7 @@ struct IContext;
 
 extern void (*Interrupt_Handlers[])(struct IContext*);
 
-extern void      Interrupt_Return();
+extern void      Interrupt_Return(struct IContext* frame);
 extern void      Interrupt_Handle(struct IContext* frame);
 extern void      Interrupt_AddHandler(uint8_t entry, void (*handler)(struct IContext*));
 

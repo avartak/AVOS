@@ -9,7 +9,7 @@
 #include <kernel/core/synch/include/spinlock.h>
 
 struct State {
-	size_t          preemption_vetos;
+	atomic_size_t   preemption_vetos;
 	uint8_t         interrupt_priority;
 	struct Process* process;
 	struct KProc*   kernel_task;
@@ -20,16 +20,17 @@ struct State {
 
 #define STATE_INCREMENT_PREEMPTION_VETO() \
     do { \
-        STATE_CURRENT->preemption_vetos++; \
+		atomic_fetch_add_explicit(&(STATE_CURRENT->preemption_vetos), 1, memory_order_relaxed); \
         atomic_signal_fence(memory_order_seq_cst); \
     } while (0)
 
 #define STATE_DECREMENT_PREEMPTION_VETO() \
     do { \
-        if (STATE_CURRENT->preemption_vetos == 0) Console_Panic("Panic(STATE_DECREMENT_PREEMPTION_VETO): No existing veto on preemption\n"); \
         atomic_signal_fence(memory_order_seq_cst); \
-        STATE_CURRENT->preemption_vetos--; \
+		atomic_fetch_sub_explicit(&(STATE_CURRENT->preemption_vetos), 1, memory_order_relaxed); \
     } while (0)
+
+#define STATE_PREEMPTIBLE() (STATE_CURRENT->preemption_vetos == 0)
 
 extern struct SpinLock State_lock;
 

@@ -1,8 +1,6 @@
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/taskmaster/include/state.h>
 
-#include <stdatomic.h>
-
 void SpinLock_Initialize(struct SpinLock* lock) {
     atomic_flag_clear_explicit(&(lock->flag), memory_order_relaxed);
 }
@@ -20,7 +18,7 @@ void SpinLock_Release(struct SpinLock* lock) {
 }
 
 bool SpinLock_Locked(struct SpinLock* lock) {
-	bool retval = atomic_flag_test_and_set_explicit(&lock->flag, memory_order_relaxed);
-	if (!retval) atomic_flag_clear_explicit(&lock->flag, memory_order_relaxed);
-	return retval;
+	bool flag = true;
+	atomic_compare_exchange_strong(&lock->flag, &flag, flag);
+	return flag;
 }

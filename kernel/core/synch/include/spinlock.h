@@ -5,7 +5,7 @@
 #include <stdatomic.h>
 
 struct SpinLock {
-	atomic_size_t flag;
+	atomic_bool flag;
 };
 
 extern void SpinLock_Initialize(struct SpinLock* lock);
