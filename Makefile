@@ -62,7 +62,6 @@ $(KERNEL)/core/taskmaster/src/process.c.o \
 $(KERNEL)/core/taskmaster/src/state.c.o \
 $(KERNEL)/core/taskmaster/src/scheduler.c.o \
 $(KERNEL)/core/syscall/src/syscall.c.o \
-$(KERNEL)/core/signal/src/signal.c.o \
 $(KERNEL)/core/timer/src/timer.c.o \
 $(KERNEL)/core/synch/src/spinlock.c.o \
 $(KERNEL)/core/synch/src/irqlock.c.o \
@@ -122,7 +121,6 @@ clean:
 	rm kernel/core/synch/src/*.o
 	rm kernel/core/memory/src/*.o
 	rm kernel/core/syscall/src/*.o
-	rm kernel/core/signal/src/*.o
 	rm kernel/clib/src/*.o
 	rm bootloader/initial/src/*.o
 	rm bootloader/multiboot/src/*.o

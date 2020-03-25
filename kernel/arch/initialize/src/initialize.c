@@ -67,15 +67,13 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 	warm_reset_vector[0] = SMP_WARM_RESET_BOOT_OFF(boot_address);
 	warm_reset_vector[1] = SMP_WARM_RESET_BOOT_SEG(boot_address);
 
-	PIT_Set(10000);
-
 	// Issue an INIT-LEVEL-ASSERT followed by INIT-LEVEL-DEASSERT (with a 200 microsecond delay)
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_INIT | LAPIC_ICR_TRIGGER_LEVEL | LAPIC_ICR_LEVEL_ASSERT);
 	PIT_Delay(2);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_INIT | LAPIC_ICR_TRIGGER_LEVEL | LAPIC_ICR_LEVEL_DEASSERT);
 	PIT_Delay(2);
-	
+
 	// Issue the STARTUP IPI twice (second one should be ignored if the first one succeeds)
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_STARTUP | LAPIC_STARTUP_VECTOR(boot_address));
@@ -84,8 +82,6 @@ bool Initialize_CPU(uint8_t local_apic_id, uint32_t boot_address) {
 	LocalAPIC_WriteTo(LAPIC_REG_ICRHI, local_apic_id << 24);
 	LocalAPIC_WriteTo(LAPIC_REG_ICRLO, LAPIC_ICR_DELIVERY_STARTUP | LAPIC_STARTUP_VECTOR(boot_address));
 	PIT_Delay(2);
-
-	PIT_Reset();
 
 	while (Kernel_numcpus_online == inumcpus);
 	

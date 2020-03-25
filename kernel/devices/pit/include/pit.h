@@ -38,8 +38,6 @@
 #define PIT_IRQLINE                       0
 
 extern struct Timer    PIT_timer;
-extern bool            PIT_enabled;
-extern struct SpinLock PIT_lock;
 
 extern void            PIT_Initialize(uint8_t irq, uint8_t vector);
 extern void            PIT_Set(size_t freq);

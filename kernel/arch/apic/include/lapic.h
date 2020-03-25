@@ -106,7 +106,7 @@ extern uint32_t  LocalAPIC_ReadFrom(size_t index);
 extern void      LocalAPIC_EOI();
 extern uint8_t   LocalAPIC_ID();
 
-extern size_t    LocalAPIC_GetTimerFrequency(size_t iterations);
+extern size_t    LocalAPIC_GetTimerFrequency();
 extern void      LocalAPIC_Timer_HandleInterrupt(struct IContext* frame);
 extern void      LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq);
 

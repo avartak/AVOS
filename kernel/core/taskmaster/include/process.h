@@ -9,12 +9,14 @@
 #include <kernel/core/taskmaster/include/stack.h>
 #include <kernel/core/synch/include/spinlock.h>
 #include <kernel/core/synch/include/sleeplock.h>
-#include <kernel/core/signal/include/signal.h>
 #include <kernel/core/timer/include/timer.h>
 
 #define PROCESS_NULL         (struct Process*)0
 
 #define PROCESS_ID()         (STATE_CURRENT->process->id)
+
+#define PROCESS_ALARM_OFF    ((void*)0)
+#define PROCESS_ALARM_WAIT   ((void*)1)
 
 enum Process_Status {PROCESS_IDLE, PROCESS_BOOKED, PROCESS_RUNNABLE, PROCESS_RUNNING, PROCESS_ASLEEP, PROCESS_DEAD};
 
@@ -37,11 +39,6 @@ struct Process {
 	struct IContext*        intr_context;
 	// Sleep
 	void*                   wakeup_on;
-	// Signal
-	struct Stack            signal_stack;
-	sigset_t                signal_bitmap;
-	sigset_t                signal_bitmask;
-	struct Signal           signal_queue[KERNEL_NUM_SIGNALS];
 	// Preemption
 	clock_t                 start_time;
 	size_t                  run_time;
@@ -64,7 +61,7 @@ extern void            Process_Preempt();
 
 extern pid_t           Process_Fork();
 extern void            Process_ShiftEndPoint(int32_t shift);
-extern void            Process_Exit(int status);
+extern void            Process_Terminate(struct Process* proc, int status);
 extern pid_t           Process_Wait();
 
 #endif

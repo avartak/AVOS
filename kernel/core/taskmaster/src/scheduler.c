@@ -71,3 +71,12 @@ void Scheduler_RaiseAlarm(void* alarm) {
 	}
 }
 
+// Must run under the process lock
+struct Process* Scheduler_GetProcess(pid_t proc_id) {
+
+    for (size_t i = 0; i < KERNEL_MAX_PROCS; i++) {
+        if (Scheduler_processes[i].id == proc_id) return &(Scheduler_processes[i]);
+    }
+
+	return PROCESS_NULL;
+}

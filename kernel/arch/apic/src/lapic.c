@@ -79,14 +79,11 @@ bool LocalAPIC_Initialize() {
 	return true;
 }
 
-size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
+size_t LocalAPIC_GetTimerFrequency() {
 
-	// Can't do this unless the PIT is up and running
-	if (!PIT_enabled) return 0;
-	PIT_Set(10000);
-
+	size_t iter = 10;
 	size_t freq = 0;
-	for (size_t i = 0; i < iterations; i++) {
+	for (size_t i = 0; i < iter; i++) {
 		
 		// Tell APIC timer to use divider 16
 		LocalAPIC_WriteTo(LAPIC_REG_TDCR, LAPIC_TDCR_DIVIDE_BY_16);
@@ -108,13 +105,12 @@ size_t LocalAPIC_GetTimerFrequency(size_t iterations) {
 	
 	}
 
-	PIT_Reset();
-
 	// The timer frequency
-	freq /= iterations;
-	freq *= 1600;
+	freq /= iter;
+	freq /= 10;
+	freq = freq << 4;
 
-	Console_Print("CPU %d timer frequency: %u\n", LocalAPIC_ID(), freq);
+	Console_Print("CPU %d timer frequency : %u\n", LocalAPIC_ID(), freq);
 
 	return freq;
 
@@ -124,7 +120,7 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 
 	LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_MASKED);
 
-	size_t lapic_freq = LocalAPIC_GetTimerFrequency(10);
+	size_t lapic_freq = LocalAPIC_GetTimerFrequency();
 	if (lapic_freq == 0) return;
 
 	SpinLock_Acquire(&State_lock);
@@ -135,7 +131,7 @@ void LocalAPIC_Initialize_Timer(uint8_t vector, size_t freq) {
 
     LocalAPIC_WriteTo(LAPIC_REG_TDCR, LAPIC_TDCR_DIVIDE_BY_16);
     LocalAPIC_WriteTo(LAPIC_REG_TIMER, LAPIC_LVT_TIMER_MODE_PERIODIC | vector);
-    LocalAPIC_WriteTo(LAPIC_REG_TICR, lapic_freq/freq);
+    LocalAPIC_WriteTo(LAPIC_REG_TICR, (lapic_freq/freq)*1000);
 }
 
 void LocalAPIC_Timer_HandleInterrupt(__attribute__((unused))struct IContext* frame) {

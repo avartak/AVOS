@@ -30,7 +30,7 @@ bool Process_Initialize(struct Process* proc) {
 	return true;
 }
 
-// Must be run under thr process lock
+// Must be run under the process lock
 void Process_SleepOn(struct SleepLock* lock) {
 
     struct Process* proc = STATE_CURRENT->process;
@@ -38,7 +38,7 @@ void Process_SleepOn(struct SleepLock* lock) {
     proc->wakeup_on = lock;
     proc->status = PROCESS_ASLEEP;
     SCHEDULER_RETURN;
-    proc->wakeup_on = (void*)0;
+    proc->wakeup_on = PROCESS_ALARM_OFF;
 }
 
 void Process_Preempt() {
@@ -150,11 +150,8 @@ pid_t Process_Wait() {
 	return retval;
 }
 
-void Process_Exit(int status) {
-
-    struct Process* proc = STATE_CURRENT->process;
-
-    SpinLock_Acquire(&Process_lock);
+// Must be run under the process lock
+void Process_Terminate(struct Process* proc, int status) {
 
     struct Process* kid = proc->child;
     while (kid != PROCESS_NULL) {
@@ -169,7 +166,4 @@ void Process_Exit(int status) {
     proc->status = PROCESS_DEAD;
 
 	// Send the SIGCHLD signal here
-
-	SCHEDULER_RETURN;
 }
-

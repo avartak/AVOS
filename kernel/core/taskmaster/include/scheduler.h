@@ -20,6 +20,7 @@ extern void            Scheduler_Initialize();
 extern struct Process* Scheduler_Book();
 extern void            Scheduler_RaiseAlarm(void* alarm);
 extern bool            Scheduler_Preempt(struct Process* proc);
+extern struct Process* Scheduler_GetProcess(pid_t proc_id);
 
 extern void            Schedule()__attribute__ ((noreturn));
 
