@@ -4,6 +4,8 @@ This is a hobby operating system currently under development. Work on this OS ha
 # Bootloader
 AVOS uses its own bootloader that has been written from scratch. The bootloader was the starting point of this project, and therefore, is the most advanced in terms of completeness. It is designed to be compliant with the [Multiboot2 specification](https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html) but with certain caveats.
 
+   ## Current Scope ##
+
    * The bootloader does not support UEFI. It has been designed to run on a BIOS supported machine. The aim is to eventually support UEFI, but only after other aspects of the OS (mainly the kernel) get sufficient timeand attention. 
    * There is no support for any kind of networking information in the bootloader. 
    * There is no support for reading any filesystems in the bootloader. The OS and other essential modules are loaded through a block list. Support for at least the native filesystem of the OS (whatever that might be) is envisioned for the future. 
