@@ -1,0 +1,7 @@
+%ifndef KERNEL_GDT_INC
+%define KERNEL_GDT_INC
+
+GDT_SEG_KERN_CODE  equ 8
+GDT_SEG_KERN_DATA  equ 0x10
+
+%endif
